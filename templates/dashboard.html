@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Validation Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .chat-bubble {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        
+        .chatbot-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        .scroll-smooth {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="h-8 w-8 gradient-bg rounded-lg flex items-center justify-center">
+                            <i data-lucide="shield-check" class="h-5 w-5 text-white"></i>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <h1 class="text-xl font-semibold text-gray-900">Check Validation Dashboard</h1>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="p-2 rounded-lg text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors">
+                        <i data-lucide="bell" class="h-5 w-5"></i>
+                    </button>
+                    <div class="h-8 w-8 rounded-full gradient-bg flex items-center justify-center">
+                        <i data-lucide="user" class="h-4 w-4 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Checks -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Checks</p>
+                        <p class="text-2xl font-bold text-gray-900">2,847</p>
+                        <p class="text-sm text-green-600 flex items-center mt-1">
+                            <i data-lucide="trending-up" class="h-3 w-3 mr-1"></i>
+                            +12.5% from last month
+                        </p>
+                    </div>
+                    <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i data-lucide="file-check" class="h-6 w-6 text-blue-600"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Validated -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Validated</p>
+                        <p class="text-2xl font-bold text-gray-900">2,634</p>
+                        <p class="text-sm text-green-600 flex items-center mt-1">
+                            <i data-lucide="check-circle" class="h-3 w-3 mr-1"></i>
+                            92.5% success rate
+                        </p>
+                    </div>
+                    <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i data-lucide="check-circle-2" class="h-6 w-6 text-green-600"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Failed -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Failed</p>
+                        <p class="text-2xl font-bold text-gray-900">127</p>
+                        <p class="text-sm text-red-600 flex items-center mt-1">
+                            <i data-lucide="x-circle" class="h-3 w-3 mr-1"></i>
+                            4.5% failure rate
+                        </p>
+                    </div>
+                    <div class="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
+                        <i data-lucide="x-circle" class="h-6 w-6 text-red-600"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Pending</p>
+                        <p class="text-2xl font-bold text-gray-900">86</p>
+                        <p class="text-sm text-yellow-600 flex items-center mt-1">
+                            <i data-lucide="clock" class="h-3 w-3 mr-1"></i>
+                            3% processing
+                        </p>
+                    </div>
+                    <div class="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <i data-lucide="clock" class="h-6 w-6 text-yellow-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <!-- Recent Activity -->
+            <div class="lg:col-span-2 bg-white rounded-xl p-6 card-shadow">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900">Recent Check Activity</h2>
+                    <button class="text-sm text-blue-600 hover:text-blue-700 font-medium">View All</button>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                        <div class="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                            <i data-lucide="check" class="h-5 w-5 text-green-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900">Check #CH-2024-0847</p>
+                            <p class="text-sm text-gray-600">Validated successfully - Amount: $2,450.00</p>
+                        </div>
+                        <span class="text-xs text-gray-500">2 min ago</span>
+                    </div>
+                    
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                        <div class="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                            <i data-lucide="x" class="h-5 w-5 text-red-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900">Check #CH-2024-0846</p>
+                            <p class="text-sm text-gray-600">Validation failed - Invalid signature</p>
+                        </div>
+                        <span class="text-xs text-gray-500">5 min ago</span>
+                    </div>
+                    
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                        <div class="h-10 w-10 bg-yellow-100 rounded-full flex items-center justify-center mr-4 pulse-animation">
+                            <i data-lucide="clock" class="h-5 w-5 text-yellow-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900">Check #CH-2024-0845</p>
+                            <p class="text-sm text-gray-600">Processing validation - Amount: $1,230.50</p>
+                        </div>
+                        <span class="text-xs text-gray-500">8 min ago</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <h2 class="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h2>
+                <div class="space-y-3">
+                    <button class="w-full p-4 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors group">
+                        <div class="flex items-center">
+                            <div class="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3 group-hover:bg-blue-700 transition-colors">
+                                <i data-lucide="upload" class="h-4 w-4 text-white"></i>
+                            </div>
+                            <span class="font-medium text-gray-900">Upload New Check</span>
+                        </div>
+                    </button>
+                    
+                    <button class="w-full p-4 bg-green-50 hover:bg-green-100 rounded-lg text-left transition-colors group">
+                        <div class="flex items-center">
+                            <div class="h-8 w-8 bg-green-600 rounded-lg flex items-center justify-center mr-3 group-hover:bg-green-700 transition-colors">
+                                <i data-lucide="search" class="h-4 w-4 text-white"></i>
+                            </div>
+                            <span class="font-medium text-gray-900">Batch Validation</span>
+                        </div>
+                    </button>
+                    
+                    <button class="w-full p-4 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors group">
+                        <div class="flex items-center">
+                            <div class="h-8 w-8 bg-purple-600 rounded-lg flex items-center justify-center mr-3 group-hover:bg-purple-700 transition-colors">
+                                <i data-lucide="bar-chart-3" class="h-4 w-4 text-white"></i>
+                            </div>
+                            <span class="font-medium text-gray-900">Generate Report</span>
+                        </div>
+                    </button>
+                    
+                    <button class="w-full p-4 bg-orange-50 hover:bg-orange-100 rounded-lg text-left transition-colors group">
+                        <div class="flex items-center">
+                            <div class="h-8 w-8 bg-orange-600 rounded-lg flex items-center justify-center mr-3 group-hover:bg-orange-700 transition-colors">
+                                <i data-lucide="settings" class="h-4 w-4 text-white"></i>
+                            </div>
+                            <span class="font-medium text-gray-900">Validation Settings</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot -->
+    <div class="fixed bottom-6 right-6 z-50">
+        <!-- Chat Toggle Button -->
+        <button id="chatToggle" class="h-14 w-14 gradient-bg rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group">
+            <i data-lucide="message-circle" class="h-6 w-6 text-white group-hover:scale-110 transition-transform"></i>
+        </button>
+
+        <!-- Chat Window -->
+        <div id="chatWindow" class="hidden absolute bottom-16 right-0 w-96 h-96 chatbot-container rounded-2xl shadow-2xl border border-gray-200 flex flex-col">
+            <!-- Chat Header -->
+            <div class="gradient-bg p-4 rounded-t-2xl flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="h-8 w-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <i data-lucide="bot" class="h-4 w-4 text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold">Check Validation Assistant</h3>
+                        <p class="text-white text-xs opacity-90">Online</p>
+                    </div>
+                </div>
+                <button id="chatClose" class="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded-lg transition-colors">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+
+            <!-- Chat Messages -->
+            <div id="chatMessages" class="flex-1 p-4 overflow-y-auto scroll-smooth space-y-3">
+                <div class="chat-bubble flex items-start space-x-2">
+                    <div class="h-6 w-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <i data-lucide="bot" class="h-3 w-3 text-blue-600"></i>
+                    </div>
+                    <div class="bg-gray-100 rounded-lg p-3 max-w-xs">
+                        <p class="text-sm text-gray-800">Hello! I'm here to help you with check validation. How can I assist you today?</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex space-x-2">
+                    <input 
+                        id="chatInput" 
+                        type="text" 
+                        placeholder="Ask about check validation..."
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    >
+                    <button id="sendMessage" class="px-4 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition-opacity">
+                        <i data-lucide="send" class="h-4 w-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Chatbot functionality
+        const chatToggle = document.getElementById('chatToggle');
+        const chatWindow = document.getElementById('chatWindow');
+        const chatClose = document.getElementById('chatClose');
+        const chatInput = document.getElementById('chatInput');
+        const sendMessage = document.getElementById('sendMessage');
+        const chatMessages = document.getElementById('chatMessages');
+
+        let chatOpen = false;
+
+        // Toggle chat window
+        function toggleChat() {
+            chatOpen = !chatOpen;
+            if (chatOpen) {
+                chatWindow.classList.remove('hidden');
+                chatWindow.style.transform = 'scale(0.8)';
+                chatWindow.style.opacity = '0';
+                setTimeout(() => {
+                    chatWindow.style.transform = 'scale(1)';
+                    chatWindow.style.opacity = '1';
+                }, 10);
+                chatInput.focus();
+            } else {
+                chatWindow.style.transform = 'scale(0.8)';
+                chatWindow.style.opacity = '0';
+                setTimeout(() => {
+                    chatWindow.classList.add('hidden');
+                }, 200);
+            }
+        }
+
+        chatToggle.addEventListener('click', toggleChat);
+        chatClose.addEventListener('click', toggleChat);
+
+        // Add message to chat
+        function addMessage(message, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-bubble flex items-start space-x-2';
+            
+            if (isUser) {
+                messageDiv.className += ' justify-end';
+                messageDiv.innerHTML = `
+                    <div class="bg-blue-500 rounded-lg p-3 max-w-xs text-white">
+                        <p class="text-sm">${message}</p>
+                    </div>
+                    <div class="h-6 w-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <i data-lucide="user" class="h-3 w-3 text-white"></i>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="h-6 w-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <i data-lucide="bot" class="h-3 w-3 text-blue-600"></i>
+                    </div>
+                    <div class="bg-gray-100 rounded-lg p-3 max-w-xs">
+                        <p class="text-sm text-gray-800">${message}</p>
+                    </div>
+                `;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            lucide.createIcons();
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Send message
+        function sendChatMessage() {
+            const message = chatInput.value.trim();
+            if (message) {
+                addMessage(message, true);
+                chatInput.value = '';
+                
+                // Simulate bot response
+                setTimeout(() => {
+                    const responses = [
+                        "I can help you validate checks. Please upload an image or provide check details.",
+                        "For batch validation, you can upload multiple checks at once through the Quick Actions panel.",
+                        "Check validation typically takes 30-60 seconds. Failed validations are usually due to poor image quality or missing signatures.",
+                        "You can view detailed validation reports including MICR analysis, signature verification, and fraud detection results.",
+                        "Is there a specific check validation issue you're experiencing? I'm here to help!"
+                    ];
+                    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                    addMessage(randomResponse);
+                }, 1000);
+            }
+        }
+
+        sendMessage.addEventListener('click', sendChatMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+
+        // Apply smooth transitions
+        chatWindow.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+    </script>
+</body>
+</html>
