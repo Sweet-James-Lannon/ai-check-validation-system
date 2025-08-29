@@ -4,6 +4,7 @@ from config import Config
 # Import blueprints
 from routes.auth_routes import auth_bp
 from routes.dashboard_routes import dashboard_bp
+from routes.debug_routes import debug_bp
 
 app = Flask(__name__)
 config = Config()
@@ -27,13 +28,10 @@ app.config.update(
 # Update your configuration variables
 is_production = config.IS_PRODUCTION
 
-
-
-
-
 # Register blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
+app.register_blueprint(debug_bp)
 
 if __name__ == "__main__":
     app.run(host='localhost', port=5000, debug=True)
