@@ -46,7 +46,7 @@ def authorized():
             "preferred_username": result["id_token_claims"].get("preferred_username"),
             "oid": result["id_token_claims"].get("oid"),
         }
-        return redirect(url_for("dashboard.index"))
+        return redirect(url_for("dashboard.dashboard_home"))
     return "Login failed", 400
 
 @auth_bp.route("/logout")

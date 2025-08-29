@@ -13,7 +13,7 @@ class Config:
     """Centralized configuration management"""
     
     # Core Flask settings
-    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-12345')
+    SECRET_KEY = os.getenv('SECRET_KEY', 'my-super-secret-flask-key-for-check-validation-2024')
     PERMANENT_SESSION_LIFETIME = timedelta(hours=1)
     
     # Smart environment detection
@@ -63,7 +63,6 @@ class Config:
     AZURE_TENANT_ID = os.getenv('AZURE_TENANT_ID')
     AZURE_SCOPE = ["User.Read"]
     
-    # Smart redirect URI detection
     @property
     def AUTH_REDIRECT_URI(self):
         # If explicitly set in environment, use that
@@ -73,9 +72,9 @@ class Config:
         
         # Auto-detect based on environment
         if self.IS_PRODUCTION:
-            return 'https://sj-recordingstream-dash-ffbbegamh8eybxfp.westus3-01.azurewebsites.net/auth/callback'
+            return 'https://sweet-docs-ghewhwdubmhbe9b3.westus3-01.azurewebsites.net/getAToken'
         else:
-            return 'http://localhost:5051/auth/callback'
+            return 'http://localhost:5000/getAToken'
     
     @property
     def azure_authority(self):
