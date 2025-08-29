@@ -14,3 +14,4 @@ def debug():
         "ENVIRONMENT": os.getenv('ENVIRONMENT', 'NOT_SET'),
         "auth_enabled": config.auth_enabled
     }
+
