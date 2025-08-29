@@ -1,16 +1,17 @@
 from flask import Blueprint, redirect, url_for, session, request, render_template_string
 from msal import ConfidentialClientApplication
+from config import Config
 import uuid
-import os
 
 auth_bp = Blueprint("auth", __name__)
+config = Config()
 
-CLIENT_ID = os.environ.get("AZURE_CLIENT_ID", "YOUR_CLIENT_ID")
-CLIENT_SECRET = os.environ.get("AZURE_CLIENT_SECRET", "YOUR_CLIENT_SECRET")
-TENANT_ID = os.environ.get("AZURE_TENANT_ID", "YOUR_TENANT_ID")
-AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
+CLIENT_ID = config.AZURE_CLIENT_ID
+CLIENT_SECRET = config.AZURE_CLIENT_SECRET
+TENANT_ID = config.AZURE_TENANT_ID
+AUTHORITY = config.azure_authority
 REDIRECT_PATH = "/getAToken"
-SCOPE = ["User.Read"]
+SCOPE = config.AZURE_SCOPE
 
 @auth_bp.route("/login")
 def login():
@@ -21,7 +22,7 @@ def login():
     auth_url = auth_app.get_authorization_request_url(
         SCOPE,
         state=session["state"],
-        redirect_uri=url_for("auth.authorized", _external=True)
+        redirect_uri=config.AUTH_REDIRECT_URI
     )
     return redirect(auth_url)
 
@@ -38,7 +39,7 @@ def authorized():
     result = auth_app.acquire_token_by_authorization_code(
         code,
         scopes=SCOPE,
-        redirect_uri=url_for("auth.authorized", _external=True)
+        redirect_uri=config.AUTH_REDIRECT_URI
     )
     if "id_token_claims" in result:
         session["user"] = {
@@ -53,5 +54,5 @@ def authorized():
 def logout():
     session.clear()
     return redirect(
-        f"{AUTHORITY}/oauth2/v2.0/logout?post_logout_redirect_uri={url_for('dashboard.index', _external=True)}"
+        f"{AUTHORITY}/oauth2/v2.0/logout?post_logout_redirect_uri={url_for('dashboard.dashboard_home', _external=True)}"
     )
