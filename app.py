@@ -27,6 +27,8 @@ app.config.update(
 # Update your configuration variables
 is_production = config.IS_PRODUCTION
 
+
+
 # Register blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
