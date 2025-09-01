@@ -6,6 +6,15 @@ from routes.auth_routes import auth_bp
 from routes.dashboard_routes import dashboard_bp
 from routes.debug_routes import debug_bp
 
+# Try to import chat routes with error handling
+try:
+    from routes.chat_routes import chat_bp
+    CHAT_ROUTES_AVAILABLE = True
+    print("✅ Chat routes imported successfully")
+except ImportError as e:
+    print(f"❌ Failed to import chat routes: {e}")
+    CHAT_ROUTES_AVAILABLE = False
+
 app = Flask(__name__)
 config = Config()
 app.secret_key = config.SECRET_KEY
@@ -33,6 +42,25 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(debug_bp)
 
+# Only register chat routes if import was successful
+if CHAT_ROUTES_AVAILABLE:
+    app.register_blueprint(chat_bp)
+    print("✅ Chat routes registered")
+else:
+    print("⚠️ Chat routes NOT registered - check services/ai_service.py")
+
+# Add a debug route to check what's registered
+@app.route("/debug/routes")
+def debug_routes():
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append({
+            'endpoint': rule.endpoint,
+            'methods': list(rule.methods),
+            'rule': rule.rule
+        })
+    return {"routes": routes}
+
 if __name__ == "__main__":
+    print(f"🚀 Starting Flask app in {'production' if is_production else 'development'} mode")
     app.run(host='localhost', port=5000, debug=True)
-    # app.run(host='0.0.0.0', port=5000, debug=not is_production)
