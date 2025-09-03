@@ -16,7 +16,6 @@ N8N_API_KEY = os.getenv('N8N_API_KEY', 'your-generated-secret-key-here')
 def process_check_from_n8n():
     """
     Dedicated endpoint for n8n check processing automation
-    Separate from user-facing routes - bypasses Entra ID for automation only
     """
     try:
         # Verify automation request
@@ -26,41 +25,45 @@ def process_check_from_n8n():
             api_logger.warning(f"Unauthorized automation request from {request.remote_addr}")
             return {'error': 'Unauthorized automation request'}, 401
         
-        # Optional: IP whitelist for extra security
-        # allowed_ips = ['your-n8n-server-ip']
-        # if request.remote_addr not in allowed_ips:
-        #     return {'error': 'Request from unauthorized IP'}, 403
-        
-        # Get the check data from n8n
-        data = request.json
+        # Handle both JSON object and JSON string from n8n
+        try:
+            if isinstance(request.json, str):
+                import json
+                data = json.loads(request.json)
+            else:
+                data = request.json
+        except (json.JSONDecodeError, TypeError) as e:
+            api_logger.error(f"Invalid JSON data: {str(e)}")
+            return {'error': 'Invalid JSON data'}, 400
         
         if not data:
             return {'error': 'No data provided'}, 400
         
-        # Extract check information
-        extracted_data = data.get('extractedData', {})
-        business_validation = data.get('businessValidation', {})
+        # Extract check information (with safe defaults)
+        extracted_data = data.get('extractedData', {}) if isinstance(data, dict) else {}
+        business_validation = data.get('businessValidation', {}) if isinstance(data, dict) else {}
         
         # Log the automation request
-        api_logger.info(f"n8n automation check received - Amount: {extracted_data.get('amountNumeric')}, Payee: {extracted_data.get('payee')}")
+        amount = extracted_data.get('amountNumeric', 'Unknown') if extracted_data else 'Unknown'
+        payee = extracted_data.get('payee', 'Unknown') if extracted_data else 'Unknown'
+        api_logger.info(f"n8n automation check received - Amount: {amount}, Payee: {payee}")
         
-        # Process the check data (add your business logic here)
+        # Process the check data
         result = {
             'status': 'success',
             'transaction_id': f"AUTO-{secrets.token_hex(8)}",
             'message': 'Check processed successfully via n8n automation',
             'processed_at': datetime.utcnow().isoformat(),
             'check_data': {
-                'amount': extracted_data.get('amountNumeric'),
-                'payee': extracted_data.get('payee'),
-                'date': extracted_data.get('date'),
-                'check_number': extracted_data.get('checkNumber'),
-                'validation_score': data.get('validationScore')
-            }
+                'amount': amount,
+                'payee': payee,
+                'date': extracted_data.get('date', 'Unknown') if extracted_data else 'Unknown',
+                'check_number': extracted_data.get('checkNumber', 'Unknown') if extracted_data else 'Unknown',
+                'validation_score': data.get('validationScore', 0) if isinstance(data, dict) else 0
+            },
+            'received_data_type': type(data).__name__,
+            'debug_info': str(data)[:200]  # First 200 chars for debugging
         }
-        
-        # You can add database storage here:
-        # save_check_to_database(extracted_data, business_validation)
         
         api_logger.info(f"Check processed successfully: {result['transaction_id']}")
         return jsonify(result), 200
@@ -72,6 +75,7 @@ def process_check_from_n8n():
             'details': str(e),
             'status': 'error'
         }, 500
+
 
 @automation_bp.route('/api/automation/health', methods=['GET'])
 def automation_health():
