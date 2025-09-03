@@ -5,6 +5,7 @@ from config import Config
 from routes.auth_routes import auth_bp
 from routes.dashboard_routes import dashboard_bp
 from routes.debug_routes import debug_bp
+from routes.automation_routes import automation_bp
 
 # Try to import chat routes with error handling
 try:
@@ -41,6 +42,7 @@ is_production = config.IS_PRODUCTION
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(debug_bp)
+app.register_blueprint(automation_bp)
 
 # Only register chat routes if import was successful
 if CHAT_ROUTES_AVAILABLE:
@@ -57,7 +59,7 @@ def debug_routes():
         routes.append({
             'endpoint': rule.endpoint,
             'methods': list(rule.methods),
-            'rule': rule.rule
+            'rule': rule.ruleç
         })
     return {"routes": routes}
 

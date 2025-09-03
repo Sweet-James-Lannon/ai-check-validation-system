@@ -12,10 +12,17 @@ class ChatInterface {
         
         // Quick action mappings for realistic queries
         this.quickActions = {
+            // === NL2SQL QUERIES (Structured Database Lookups) ===
             'Search by payee name': 'Show me all checks from ABC Corporation in the last 30 days',
-            'Date range analysis': 'Analyze check validation patterns for the month of August 2024',
-            'Amount threshold review': 'Find all checks over $10,000 that were flagged for manual review',
-            'View flagged transactions': 'Show me the highest risk transactions from this week and explain why they were flagged'
+            'Date range analysis': 'Find all transactions between $5,000-$50,000 processed in December 2024',
+            'Amount threshold review': 'List the top 10 highest value checks that failed validation this quarter',
+            'Transaction frequency': 'How many checks has Johnson & Associates submitted in the past 6 months?',
+            
+            // === VECTOR RAG QUERIES (Contextual Document Search) ===
+            'Fraud pattern guidance': 'What are the key indicators of check fraud I should watch for in large transactions?',
+            'Compliance best practices': 'What documentation is required when manually overriding a failed validation?',
+            'Risk assessment help': 'How should I handle a check with unusual signatures but valid MICR encoding?',
+            'Regulatory guidance': 'What are the current banking regulations for processing international corporate checks?'
         };
     }
 
