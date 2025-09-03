@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 import secrets
 import os
+import json
 from datetime import datetime
 from utils.logger import get_api_logger
 from config import Config
@@ -25,13 +26,18 @@ def process_check_from_n8n():
             api_logger.warning(f"Unauthorized automation request from {request.remote_addr}")
             return {'error': 'Unauthorized automation request'}, 401
         
+        # Debug: Log the raw request data
+        api_logger.info(f"Raw request data type: {type(request.json)}")
+        api_logger.info(f"Raw request data: {str(request.json)[:500]}")
+        
         # Handle both JSON object and JSON string from n8n
+        raw_data = request.json
+        
         try:
-            if isinstance(request.json, str):
-                import json
-                data = json.loads(request.json)
+            if isinstance(raw_data, str):
+                data = json.loads(raw_data)
             else:
-                data = request.json
+                data = raw_data
         except (json.JSONDecodeError, TypeError) as e:
             api_logger.error(f"Invalid JSON data: {str(e)}")
             return {'error': 'Invalid JSON data'}, 400
@@ -39,13 +45,28 @@ def process_check_from_n8n():
         if not data:
             return {'error': 'No data provided'}, 400
         
-        # Extract check information (with safe defaults)
-        extracted_data = data.get('extractedData', {}) if isinstance(data, dict) else {}
-        business_validation = data.get('businessValidation', {}) if isinstance(data, dict) else {}
+        # Extract check information safely
+        extracted_data = {}
+        business_validation = {}
+        validation_score = 0
+        
+        if isinstance(data, dict):
+            extracted_data = data.get('extractedData', {})
+            business_validation = data.get('businessValidation', {})
+            validation_score = data.get('validationScore', 0)
         
         # Log the automation request
-        amount = extracted_data.get('amountNumeric', 'Unknown') if extracted_data else 'Unknown'
-        payee = extracted_data.get('payee', 'Unknown') if extracted_data else 'Unknown'
+        amount = 'Unknown'
+        payee = 'Unknown'
+        date = 'Unknown'
+        check_number = 'Unknown'
+        
+        if isinstance(extracted_data, dict):
+            amount = extracted_data.get('amountNumeric', 'Unknown')
+            payee = extracted_data.get('payee', 'Unknown')
+            date = extracted_data.get('date', 'Unknown')
+            check_number = extracted_data.get('checkNumber', 'Unknown')
+        
         api_logger.info(f"n8n automation check received - Amount: {amount}, Payee: {payee}")
         
         # Process the check data
@@ -57,9 +78,9 @@ def process_check_from_n8n():
             'check_data': {
                 'amount': amount,
                 'payee': payee,
-                'date': extracted_data.get('date', 'Unknown') if extracted_data else 'Unknown',
-                'check_number': extracted_data.get('checkNumber', 'Unknown') if extracted_data else 'Unknown',
-                'validation_score': data.get('validationScore', 0) if isinstance(data, dict) else 0
+                'date': date,
+                'check_number': check_number,
+                'validation_score': validation_score
             },
             'received_data_type': type(data).__name__,
             'debug_info': str(data)[:200]  # First 200 chars for debugging
@@ -70,18 +91,21 @@ def process_check_from_n8n():
         
     except Exception as e:
         api_logger.error(f"Automation check processing failed: {str(e)}")
-        return {
+        import traceback
+        api_logger.error(f"Full traceback: {traceback.format_exc()}")
+        
+        return jsonify({
             'error': 'Processing failed',
             'details': str(e),
             'status': 'error'
-        }, 500
+        }), 500
 
 
 @automation_bp.route('/api/automation/health', methods=['GET'])
 def automation_health():
     """Health check for automation endpoints"""
-    return {
+    return jsonify({
         'status': 'healthy',
         'service': 'n8n automation endpoints',
         'timestamp': datetime.utcnow().isoformat()
-    }
+    })
