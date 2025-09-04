@@ -7,6 +7,7 @@ from routes.dashboard_routes import dashboard_bp
 from routes.debug_routes import debug_bp
 from routes.automation_routes import automation_bp
 
+
 # Try to import chat routes with error handling
 try:
     from routes.chat_routes import chat_bp
