@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Review Queue - Check Validation System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="surface-elevated sticky top-0 z-50 backdrop-blur-md bg-white/95">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-shield-halved fa-lg text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-semibold text-primary">Check Review Queue</h1>
+                        <p class="text-xs text-tertiary font-medium">MANUAL VALIDATION REQUIRED</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="/" class="btn-secondary">
+                        <i class="fa-solid fa-arrow-left w-4 h-4 mr-2"></i>
+                        Back to Dashboard
+                    </a>
+                    {% if user %}
+                    <div class="flex items-center gap-4 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-slate-800">{{ user.name }}</div>
+                            <div class="text-xs text-slate-600">{{ user.preferred_username }}</div>
+                        </div>
+                        <div class="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-user w-4 h-4 text-white"></i>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Queue Status -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">PENDING REVIEW</span>
+                    <i class="fa-solid fa-clock w-4 h-4 text-yellow-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-primary mb-1" id="pendingCount">-</div>
+                <div class="text-xs text-secondary">Requires manual validation</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">AVG REVIEW TIME</span>
+                    <i class="fa-regular fa-clock w-4 h-4 text-blue-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-primary mb-1">45s</div>
+                <div class="text-xs text-secondary">Per check validation</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">TODAY APPROVED</span>
+                    <i class="fa-solid fa-check w-4 h-4 text-green-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-primary mb-1" id="approvedCount">-</div>
+                <div class="text-xs text-secondary">Manual validations</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">ACCURACY RATE</span>
+                    <i class="fa-solid fa-bullseye w-4 h-4 text-purple-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-primary mb-1">98.7%</div>
+                <div class="text-xs text-secondary">Manual review accuracy</div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="text-center py-12">
+            <div class="w-8 h-8 mx-auto mb-4">
+                <i class="fa-solid fa-spinner fa-spin text-2xl text-gray-400"></i>
+            </div>
+            <p class="text-gray-600">Loading pending checks...</p>
+        </div>
+
+        <!-- Check Cards Container -->
+        <div id="checkCardsContainer" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Check cards will be loaded here via JavaScript -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-12">
+            <div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                <i class="fa-solid fa-check-double w-8 h-8 text-green-600"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">All caught up!</h3>
+            <p class="text-gray-600">No checks currently require manual review.</p>
+            <button id="refreshBtn" class="mt-4 btn-primary">
+                <i class="fa-solid fa-refresh w-4 h-4 mr-2"></i>
+                Refresh
+            </button>
+        </div>
+    </main>
+
+    <!-- Rejection Modal -->
+    <div id="rejectionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-96 max-w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Reject Check</h3>
+            <textarea id="rejectionReason" class="w-full p-3 border rounded-lg resize-none" rows="4" 
+                placeholder="Please provide a reason for rejection..."></textarea>
+            <div class="flex justify-end gap-3 mt-4">
+                <button id="cancelReject" class="btn-secondary">Cancel</button>
+                <button id="confirmReject" class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700">
+                    Reject Check
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class CheckReviewInterface {
+            constructor() {
+                this.currentRejectCheckId = null;
+                this.initializeElements();
+                this.setupEventListeners();
+                this.loadPendingChecks();
+                this.loadStats();
+                
+                // Auto-refresh every 30 seconds
+                setInterval(() => this.loadPendingChecks(), 30000);
+            }
+
+            initializeElements() {
+                this.container = document.getElementById('checkCardsContainer');
+                this.loadingState = document.getElementById('loadingState');
+                this.emptyState = document.getElementById('emptyState');
+                this.pendingCount = document.getElementById('pendingCount');
+                this.approvedCount = document.getElementById('approvedCount');
+                this.rejectionModal = document.getElementById('rejectionModal');
+                this.rejectionReason = document.getElementById('rejectionReason');
+                this.cancelReject = document.getElementById('cancelReject');
+                this.confirmReject = document.getElementById('confirmReject');
+                this.refreshBtn = document.getElementById('refreshBtn');
+            }
+
+            setupEventListeners() {
+                this.cancelReject.addEventListener('click', () => this.hideRejectionModal());
+                this.confirmReject.addEventListener('click', () => this.confirmRejection());
+                this.refreshBtn.addEventListener('click', () => this.loadPendingChecks());
+                
+                // Close modal on escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && !this.rejectionModal.classList.contains('hidden')) {
+                        this.hideRejectionModal();
+                    }
+                });
+            }
+
+            async loadPendingChecks() {
+                try {
+                    this.showLoading();
+                    const response = await fetch('/api/checks/pending');
+                    const data = await response.json();
+                    this.renderChecks(data.checks || []);
+                } catch (error) {
+                    console.error('Failed to load checks:', error);
+                    this.showError('Failed to load pending checks. Please refresh the page.');
+                }
+            }
+
+            async loadStats() {
+                try {
+                    const response = await fetch('/api/checks/stats');
+                    const stats = await response.json();
+                    this.approvedCount.textContent = stats.manual_approved || 0;
+                } catch (error) {
+                    console.error('Failed to load stats:', error);
+                }
+            }
+
+            showLoading() {
+                this.loadingState.classList.remove('hidden');
+                this.container.classList.add('hidden');
+                this.emptyState.classList.add('hidden');
+            }
+
+            showError(message) {
+                this.loadingState.classList.add('hidden');
+                this.container.classList.add('hidden');
+                this.emptyState.classList.remove('hidden');
+                this.emptyState.querySelector('h3').textContent = 'Error Loading Checks';
+                this.emptyState.querySelector('p').textContent = message;
+            }
+
+            renderChecks(checks) {
+                this.loadingState.classList.add('hidden');
+                
+                if (checks.length === 0) {
+                    this.container.classList.add('hidden');
+                    this.emptyState.classList.remove('hidden');
+                    this.pendingCount.textContent = '0';
+                    return;
+                }
+
+                this.container.classList.remove('hidden');
+                this.emptyState.classList.add('hidden');
+                this.pendingCount.textContent = checks.length;
+
+                this.container.innerHTML = checks.map(check => this.createCheckCard(check)).join('');
+                
+                // Setup event listeners for buttons
+                this.setupCheckCardListeners();
+            }
+
+            createCheckCard(check) {
+                const confidencePercent = Math.round((check.confidence || 0) * 100);
+                const confidenceColor = check.confidence > 0.8 ? 'text-green-600' : 
+                                      check.confidence > 0.6 ? 'text-yellow-600' : 'text-red-600';
+                
+                const receivedDate = new Date(check.received_at).toLocaleString();
+                
+                return `
+                    <div class="surface rounded-xl p-6 border-l-4 border-l-yellow-400" data-check-id="${check.id}">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-lg">Check ${check.check_number || check.id.slice(-6)}</h3>
+                            <span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">
+                                REQUIRES REVIEW
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="text-xs font-medium text-tertiary uppercase">Payee</label>
+                                <div class="font-medium text-primary">${check.payee || 'Unknown'}</div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-tertiary uppercase">Amount</label>
+                                <div class="font-medium text-primary text-lg">${check.amount || 'Unknown'}</div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-tertiary uppercase">Date</label>
+                                <div class="font-medium text-primary">${check.date || 'Unknown'}</div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-tertiary uppercase">Confidence</label>
+                                <div class="font-medium ${confidenceColor}">${confidencePercent}%</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="text-xs font-medium text-tertiary uppercase">Received</label>
+                            <div class="text-sm text-secondary">${receivedDate}</div>
+                        </div>
+
+                        ${check.flags && check.flags.length > 0 ? `
+                        <div class="mb-4">
+                            <label class="text-xs font-medium text-tertiary uppercase">Issues Detected</label>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                ${check.flags.map(flag => `
+                                    <span class="text-xs px-2 py-1 bg-red-100 text-red-800 rounded">
+                                        ${flag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="flex gap-3">
+                            <button class="approve-btn flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                                <i class="fa-solid fa-check mr-2"></i>
+                                Approve
+                            </button>
+                            <button class="reject-btn flex-1 bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">
+                                <i class="fa-solid fa-times mr-2"></i>
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            setupCheckCardListeners() {
+                document.querySelectorAll('.approve-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const checkId = e.target.closest('[data-check-id]').dataset.checkId;
+                        this.approveCheck(checkId);
+                    });
+                });
+
+                document.querySelectorAll('.reject-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const checkId = e.target.closest('[data-check-id]').dataset.checkId;
+                        this.showRejectionModal(checkId);
+                    });
+                });
+            }
+
+            async approveCheck(checkId) {
+                try {
+                    const response = await fetch(`/api/checks/approve/${checkId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    if (response.ok) {
+                        this.removeCheckCard(checkId);
+                        this.showNotification('Check approved successfully!', 'success');
+                        this.loadStats(); // Refresh stats
+                    } else {
+                        throw new Error('Failed to approve check');
+                    }
+                } catch (error) {
+                    console.error('Failed to approve check:', error);
+                    this.showNotification('Failed to approve check. Please try again.', 'error');
+                }
+            }
+
+            showRejectionModal(checkId) {
+                this.currentRejectCheckId = checkId;
+                this.rejectionReason.value = '';
+                this.rejectionModal.classList.remove('hidden');
+                this.rejectionReason.focus();
+            }
+
+            hideRejectionModal() {
+                this.currentRejectCheckId = null;
+                this.rejectionModal.classList.add('hidden');
+            }
+
+            async confirmRejection() {
+                if (!this.currentRejectCheckId || !this.rejectionReason.value.trim()) {
+                    this.showNotification('Please provide a reason for rejection.', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/checks/reject/${this.currentRejectCheckId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: this.rejectionReason.value.trim() })
+                    });
+                    
+                    if (response.ok) {
+                        this.removeCheckCard(this.currentRejectCheckId);
+                        this.hideRejectionModal();
+                        this.showNotification('Check rejected successfully!', 'success');
+                        this.loadStats(); // Refresh stats
+                    } else {
+                        throw new Error('Failed to reject check');
+                    }
+                } catch (error) {
+                    console.error('Failed to reject check:', error);
+                    this.showNotification('Failed to reject check. Please try again.', 'error');
+                }
+            }
+
+            removeCheckCard(checkId) {
+                const card = document.querySelector(`[data-check-id="${checkId}"]`);
+                if (card) {
+                    card.style.opacity = '0.5';
+                    card.style.transform = 'scale(0.95)';
+                    
+                    setTimeout(() => {
+                        card.remove();
+                        const remaining = document.querySelectorAll('[data-check-id]').length;
+                        this.pendingCount.textContent = remaining;
+                        
+                        if (remaining === 0) {
+                            this.container.classList.add('hidden');
+                            this.emptyState.classList.remove('hidden');
+                        }
+                    }, 300);
+                }
+            }
+
+            showNotification(message, type = 'info') {
+                // Simple toast notification
+                const toast = document.createElement('div');
+                toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white font-medium ${
+                    type === 'success' ? 'bg-green-600' :
+                    type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+                }`;
+                toast.textContent = message;
+                
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new CheckReviewInterface();
+        });
+    </script>
+
+    <style>
+        .surface {
+            transition: all 0.3s ease;
+        }
+        
+        [data-check-id] {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+    </style>
+</body>
+</html>

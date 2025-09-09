@@ -16,7 +16,6 @@ def dashboard_home():
     user = session.get("user")
     return render_template("dashboard.html", user=user)
 
-
 @dashboard_bp.route("/checks/queue")
 @login_required
 def check_queue():
@@ -138,9 +137,12 @@ def check_detail(check_id):
         return render_template("error.html", 
                              user=user,
                              error_message=f"Failed to load check {check_id}"), 500
-    
-######################################################################################
 
 
+@dashboard_bp.route("/checks/review")
+@login_required
+def check_review():
+    """Check review queue page for manual validation"""
+    user = session.get("user")
+    return render_template("check_review.html", user=user)
 
-######################################################################################
