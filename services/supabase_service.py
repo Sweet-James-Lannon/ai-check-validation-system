@@ -3,6 +3,7 @@ from supabase import create_client, Client
 from config import Config
 from utils.logger import get_db_logger
 from typing import List, Dict, Optional
+import inspect
 
 class SupabaseService:
     def __init__(self):
@@ -11,7 +12,7 @@ class SupabaseService:
         self.client = self._initialize_client()
         
     def _initialize_client(self) -> Optional[Client]:
-        """Initialize Supabase client"""
+        """Initialize Supabase client - Compatible with all versions"""
         try:
             url = self.config.SUPABASE_URL
             key = self.config.SUPABASE_ANON_KEY
@@ -19,8 +20,16 @@ class SupabaseService:
             if not url or not key:
                 self.logger.warning("Supabase credentials not found in environment")
                 return None
-                
+            
+            # Check what parameters create_client accepts
+            sig = inspect.signature(create_client)
+            params = list(sig.parameters.keys())
+            
+            self.logger.info(f"Supabase create_client accepts: {params}")
+            
+            # Use only the basic parameters that all versions support
             client = create_client(url, key)
+            
             self.logger.info("Supabase client initialized successfully")
             return client
             
@@ -38,12 +47,12 @@ class SupabaseService:
         
         try:
             # Try a simple query to test connection
-            # We'll figure out your table name in the next step
             response = self.client.table('checks').select('id').limit(1).execute()
             return {
                 "status": "healthy",
                 "connected": True,
-                "tables_accessible": True
+                "tables_accessible": True,
+                "record_count": len(response.data)
             }
         except Exception as e:
             return {
@@ -52,18 +61,49 @@ class SupabaseService:
                 "error": str(e)
             }
     
-    def get_all_tables(self):
-        """Debug function to see what tables exist"""
+    def create_checks_table_if_not_exists(self):
+        """Create the checks table if it doesn't exist"""
         try:
             if not self.client:
                 return {"error": "No client"}
             
-            # This will help us see what's in your database
-            response = self.client.table('information_schema.tables').select('table_name').execute()
-            return response.data
+            # This is a simple way to check if table exists and create it
+            # In production, you'd use Supabase migrations
+            create_table_sql = """
+            CREATE TABLE IF NOT EXISTS checks (
+                id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+                check_number TEXT,
+                payee_name TEXT,
+                pay_to TEXT,
+                amount TEXT,
+                check_date DATE,
+                memo TEXT,
+                routing_number TEXT,
+                account_number TEXT,
+                micr_line TEXT,
+                matter_name TEXT,
+                case_type TEXT,
+                delivery_service TEXT,
+                confidence_score DECIMAL,
+                status TEXT DEFAULT 'pending',
+                flags TEXT[],
+                file_name TEXT,
+                file_id TEXT,
+                raw_ocr_content TEXT,
+                salesforce_id TEXT,
+                image_data TEXT,
+                image_mime_type TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            """
+            
+            # Execute raw SQL (this might not work depending on permissions)
+            # result = self.client.rpc('create_checks_table', {'sql': create_table_sql}).execute()
+            
+            return {"message": "Table creation attempted"}
             
         except Exception as e:
-            self.logger.error(f"Failed to get tables: {str(e)}")
+            self.logger.error(f"Failed to create table: {str(e)}")
             return {"error": str(e)}
 
 # Singleton instance

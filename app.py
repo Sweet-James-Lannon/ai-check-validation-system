@@ -7,6 +7,8 @@ from routes.dashboard_routes import dashboard_bp
 from routes.debug_routes import debug_bp
 from routes.automation_routes import automation_bp
 from routes.supabase_debug_routes import supabase_debug_bp
+from routes.direct_test_routes import direct_test_bp
+
 
 
 # Try to import chat routes with error handling
@@ -46,6 +48,7 @@ app.register_blueprint(dashboard_bp)
 app.register_blueprint(debug_bp)
 app.register_blueprint(automation_bp)
 app.register_blueprint(supabase_debug_bp)
+app.register_blueprint(direct_test_bp)
 
 # Only register chat routes if import was successful
 if CHAT_ROUTES_AVAILABLE:
