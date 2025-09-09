@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Check Validation System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+            <div class="text-center">
+                <i class="fa-solid fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                <h1 class="text-xl font-bold text-gray-900 mb-2">Error</h1>
+                <p class="text-gray-600 mb-4">{{ error_message }}</p>
+                <a href="/checks/queue" class="btn-primary">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>
+                    Back to Queue
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

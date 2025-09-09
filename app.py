@@ -5,7 +5,7 @@ from config import Config
 from routes.auth_routes import auth_bp
 from routes.dashboard_routes import dashboard_bp
 from routes.debug_routes import debug_bp
-from routes.automation_routes import automation_bp
+from routes.automation_routes import automation_bp        
 
 # Try to import chat routes with error handling
 try:

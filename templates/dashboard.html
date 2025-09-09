@@ -117,7 +117,17 @@
 
                 <!-- Quick Actions -->
                 <div class="surface rounded-2xl p-6">
-                    <h3 class="text-sm font-semibold text-primary mb-4 uppercase tracking-wide">Quick Queries</h3>
+                    <h3 class="text-sm font-semibold text-primary mb-4 uppercase tracking-wide">Quick Actions</h3>
+
+                    <!-- NEW: Check Queue Button (Add this at the top) -->
+                    <a href="/checks/queue" class="btn-secondary w-full text-left flex items-center gap-3 mb-3 bg-blue-50 hover:bg-blue-100 border-blue-200">
+                        <i class="fa-solid fa-list-check w-4 h-4 text-blue-600"></i>
+                        <div>
+                            <div class="font-medium text-blue-800">View Check Queue</div>
+                            <div class="text-xs text-blue-600">Review pending validations</div>
+                        </div>
+                    </a>
+
                     <div class="space-y-2">
                         <button class="btn-secondary w-full text-left flex items-center gap-3">
                             <i class="fa-solid fa-magnifying-glass w-4 h-4"></i>
@@ -142,14 +152,6 @@
                         <button class="btn-secondary w-full text-left flex items-center gap-3">
                             <i class="fa-solid fa-clipboard-check w-4 h-4"></i>
                             Compliance best practices
-                        </button>
-                        <button class="btn-secondary w-full text-left flex items-center gap-3">
-                            <i class="fa-solid fa-scale-balanced w-4 h-4"></i>
-                            Risk assessment help
-                        </button>
-                        <button class="btn-secondary w-full text-left flex items-center gap-3">
-                            <i class="fa-solid fa-gavel w-4 h-4"></i>
-                            Regulatory guidance
                         </button>
                     </div>
                 </div>
