@@ -136,11 +136,10 @@
                             {% if check.file_name %}
                             <span><i class="fa-solid fa-file mr-1"></i>{{ check.file_name }}</span>
                             {% endif %}
-                            <span id="imageDimensions"><i class="fa-solid fa-ruler-combined mr-1"></i>Loading...</span>
+                            <span id="imageDimensions"><i class="fa-solid fa-ruler-combined mr-1"></i></span>
                         </div>
                         <div class="flex items-center gap-4">
                             <span><i class="fa-solid fa-mouse-pointer mr-1"></i>Click and drag to pan</span>
-                            <span><i class="fa-solid fa-magnifying-glass mr-1"></i>Scroll to zoom</span>
                         </div>
                     </div>
 
@@ -367,7 +366,7 @@
     </div>
 
 
-        <script>
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             const checkImage = document.getElementById('checkImage');
             const imageContainer = document.getElementById('imageContainer');
