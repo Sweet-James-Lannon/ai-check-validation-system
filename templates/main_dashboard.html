@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sweet-Docs - Universal Document Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        /* Dashboard CSS - Universal Document Intelligence */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        :root {
+            --primary: #1e293b;
+            --primary-light: #334155;
+            --surface: #ffffff;
+            --surface-secondary: #f8fafc;
+            --border-light: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-tertiary: #94a3b8;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: var(--text-primary);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .surface {
+            background: var(--surface);
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow);
+        }
+
+        .surface-elevated {
+            background: var(--surface);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .metric-card {
+            background: var(--surface);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .metric-card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+        }
+
+        .chat-container {
+            background: var(--surface);
+            border-radius: 16px;
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            padding: 20px 24px;
+            color: white;
+        }
+
+        .chat-messages {
+            min-height: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 24px;
+            background: var(--surface-secondary);
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .message-assistant {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .message-user {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message-assistant .message-content {
+            background: var(--surface);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .message-user .message-content {
+            background: var(--primary);
+            color: white;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .avatar-assistant {
+            background: var(--surface-secondary);
+            color: var(--text-secondary);
+        }
+
+        .avatar-user {
+            background: var(--primary);
+            color: white;
+        }
+
+        .chat-input-container {
+            padding: 20px 24px;
+            background: var(--surface);
+            border-top: 1px solid var(--border-light);
+        }
+
+        .chat-input {
+            width: 100%;
+            resize: none;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 14px;
+            background: var(--surface);
+            color: var(--text-primary);
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+        }
+
+        .sidebar-nav-item {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .sidebar-nav-item:hover {
+            background: #f1f5f9;
+            color: var(--text-primary);
+        }
+
+        .sidebar-nav-active {
+            background: var(--primary);
+            color: white !important;
+        }
+
+        .sidebar-nav-active:hover {
+            background: var(--primary-light);
+            color: white !important;
+        }
+
+        .sidebar-section {
+            margin-top: 24px;
+        }
+
+        .sidebar-section-title {
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar-text { display: none; }
+            #sidebar { width: 80px; }
+            #sidebar.sidebar-expanded { width: 256px; }
+            #sidebar.sidebar-expanded .sidebar-text { display: inline; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+            display: none;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay lg:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-0 z-40 w-64 h-screen transition-transform -translate-x-full lg:translate-x-0">
+        <div class="h-full px-3 py-4 overflow-y-auto bg-white border-r border-gray-200">
+            <!-- Logo Section -->
+            <div class="flex items-center gap-3 px-3 py-4 mb-6 border-b border-gray-200">
+                <div class="w-10 h-10 bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-brain fa-lg text-white"></i>
+                </div>
+                <div class="sidebar-text">
+                    <h1 class="text-sm font-semibold text-slate-800">Sweet-Docs</h1>
+                    <p class="text-xs text-slate-600 font-medium">DOCUMENT INTELLIGENCE</p>
+                </div>
+            </div>
+
+            <!-- Navigation Menu -->
+            <nav class="space-y-2">
+                <!-- Main Dashboard -->
+                <a href="/" class="sidebar-nav-item sidebar-nav-active flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors">
+                    <i class="fa-solid fa-house w-4 h-4"></i>
+                    <span class="sidebar-text">Main Dashboard</span>
+                </a>
+
+                <!-- Document Types -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <span class="sidebar-text">Document Types</span>
+                    </div>
+                    <a href="/checks/" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors">
+                        <i class="fa-solid fa-money-check w-4 h-4"></i>
+                        <span class="sidebar-text">Checks</span>
+                        <span class="ml-auto bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full sidebar-text">342</span>
+                    </a>
+                    <a href="/contracts/" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors">
+                        <i class="fa-solid fa-file-contract w-4 h-4"></i>
+                        <span class="sidebar-text">Contracts</span>
+                        <span class="ml-auto bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full sidebar-text">156</span>
+                    </a>
+                    <a href="/legal-documents/" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors">
+                        <i class="fa-solid fa-balance-scale w-4 h-4"></i>
+                        <span class="sidebar-text">Legal Documents</span>
+                        <span class="ml-auto bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full sidebar-text">89</span>
+                    </a>
+                    <a href="/documents/" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors">
+                        <i class="fa-solid fa-file-alt w-4 h-4"></i>
+                        <span class="sidebar-text">General Documents</span>
+                        <span class="ml-auto bg-gray-100 text-gray-800 text-xs px-2 py-0.5 rounded-full sidebar-text">234</span>
+                    </a>
+                </div>
+
+                <!-- Analytics -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <span class="sidebar-text">Analytics</span>
+                    </div>
+                    <a href="#" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors">
+                        <i class="fa-solid fa-chart-line w-4 h-4"></i>
+                        <span class="sidebar-text">Cross-Document Analysis</span>
+                    </a>
+                    <a href="#" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors">
+                        <i class="fa-solid fa-search w-4 h-4"></i>
+                        <span class="sidebar-text">Entity Relationships</span>
+                    </a>
+                </div>
+
+                <!-- Data Sources -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <span class="sidebar-text">Data Sources</span>
+                    </div>
+                    <a href="#" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors">
+                        <i class="fa-brands fa-salesforce w-4 h-4"></i>
+                        <span class="sidebar-text">Salesforce</span>
+                        <div class="ml-auto w-2 h-2 bg-green-500 rounded-full sidebar-text"></div>
+                    </a>
+                    <a href="#" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors">
+                        <i class="fa-solid fa-database w-4 h-4"></i>
+                        <span class="sidebar-text">Vector Database</span>
+                        <div class="ml-auto w-2 h-2 bg-green-500 rounded-full sidebar-text"></div>
+                    </a>
+                </div>
+
+                <!-- System -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <span class="sidebar-text">System</span>
+                    </div>
+                    <a href="#" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors">
+                        <i class="fa-solid fa-upload w-4 h-4"></i>
+                        <span class="sidebar-text">Bulk Upload</span>
+                    </a>
+                    <a href="/debug" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors">
+                        <i class="fa-solid fa-bug w-4 h-4"></i>
+                        <span class="sidebar-text">Debug Info</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Header -->
+    <header class="fixed top-0 right-0 left-0 lg:left-64 z-30 surface-elevated backdrop-blur-md bg-white/95">
+        <div class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <!-- Mobile menu button -->
+                    <button id="sidebar-toggle" class="lg:hidden w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-800">
+                        <i class="fa-solid fa-bars w-4 h-4"></i>
+                    </button>
+                    
+                    <div class="lg:hidden">
+                        <h1 class="text-lg font-semibold text-slate-800">Sweet-Docs</h1>
+                        <p class="text-xs text-slate-600 font-medium">SWEET DOCUMENT INTELLIGENCE</p>
+                    </div>
+                    
+                    <!-- Search bar for larger screens -->
+                    <div class="hidden lg:flex items-center gap-4">
+                        <div class="relative">
+                            <input type="text" placeholder="Search across all documents, entities, and relationships..." 
+                                   class="w-96 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                            <i class="fa-solid fa-search absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <!-- AI Status Indicator -->
+                    <div class="hidden lg:flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span class="text-xs font-medium text-green-700">AI Ready</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-slate-800">{{ user.name }}</div>
+                            <div class="text-xs text-slate-600">{{ user.preferred_username }}</div>
+                        </div>
+                        <div class="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-user w-4 h-4 text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-20 pb-8 lg:ml-64">
+        <div class="px-6">
+            <!-- Hero Section -->
+            <div class="mb-8 mt-12">
+                <h1 class="text-3xl font-bold text-slate-800 mb-2">Smart Document Center</h1>
+                <p class="text-slate-600">AI-powered analysis across all your document types - from financial checks to legal contracts</p>
+            </div>
+
+            <!-- System-Wide Metrics -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+                <div class="metric-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-slate-600 uppercase tracking-wide">TOTAL DOCUMENTS</span>
+                        <i class="fa-solid fa-files w-4 h-4 text-blue-500"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800 mb-1">821</div>
+                    <div class="text-xs text-slate-600">Across all categories</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-slate-600 uppercase tracking-wide">PROCESSED TODAY</span>
+                        <i class="fa-solid fa-bolt w-4 h-4 text-green-500"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800 mb-1">60</div>
+                    <div class="text-xs text-slate-600">Documents analyzed</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-slate-600 uppercase tracking-wide">PENDING REVIEW</span>
+                        <i class="fa-solid fa-clock w-4 h-4 text-yellow-500"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800 mb-1">18</div>
+                    <div class="text-xs text-slate-600">Awaiting validation</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-slate-600 uppercase tracking-wide">AVG ACCURACY</span>
+                        <i class="fa-solid fa-bullseye w-4 h-4 text-purple-500"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-slate-800 mb-1">95.1%</div>
+                    <div class="text-xs text-slate-600">AI processing accuracy</div>
+                </div>
+            </div>
+
+            <!-- Document Type Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+                <!-- Checks -->
+                <div class="surface rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-blue-500" onclick="window.location.href='/checks/'">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-money-check w-6 h-6 text-blue-600"></i>
+                        </div>
+                        <span class="text-2xl font-bold text-blue-600">342</span>
+                    </div>
+                    <h3 class="font-semibold text-slate-800 mb-2">Financial Checks</h3>
+                    <p class="text-sm text-slate-600 mb-4">Automated validation, fraud detection, and compliance checking</p>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600">Today: +23</span>
+                        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full">94.2% accuracy</span>
+                    </div>
+                </div>
+
+                <!-- Contracts -->
+                <div class="surface rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-green-500" onclick="window.location.href='/contracts/'">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-file-contract w-6 h-6 text-green-600"></i>
+                        </div>
+                        <span class="text-2xl font-bold text-green-600">156</span>
+                    </div>
+                    <h3 class="font-semibold text-slate-800 mb-2">Contracts</h3>
+                    <p class="text-sm text-slate-600 mb-4">Terms extraction, risk analysis, and compliance monitoring</p>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600">Today: +12</span>
+                        <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full">97.1% accuracy</span>
+                    </div>
+                </div>
+
+                <!-- Legal Documents -->
+                <div class="surface rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-purple-500" onclick="window.location.href='/legal-documents/'">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-balance-scale w-6 h-6 text-purple-600"></i>
+                        </div>
+                        <span class="text-2xl font-bold text-purple-600">89</span>
+                    </div>
+                    <h3 class="font-semibold text-slate-800 mb-2">Legal Documents</h3>
+                    <p class="text-sm text-slate-600 mb-4">Case files, depositions, evidence, and legal research</p>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600">Today: +7</span>
+                        <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full">95.8% accuracy</span>
+                    </div>
+                </div>
+
+                <!-- General Documents -->
+                <div class="surface rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-gray-500" onclick="window.location.href='/documents/'">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-file-alt w-6 h-6 text-gray-600"></i>
+                        </div>
+                        <span class="text-2xl font-bold text-gray-600">234</span>
+                    </div>
+                    <h3 class="font-semibold text-slate-800 mb-2">General Documents</h3>
+                    <p class="text-sm text-slate-600 mb-4">PDFs, emails, reports, and miscellaneous files</p>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600">Today: +18</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">93.4% accuracy</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Universal AI Chat Interface -->
+            <div class="mb-8">
+                <div class="chat-container">
+                    <!-- Chat Header -->
+                    <div class="chat-header">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                                    <i class="fa-solid fa-brain w-5 h-5 text-white"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-white">Universal Document Intelligence</h3>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                        <span class="text-xs text-white/80">CROSS-DOCUMENT AI ANALYSIS</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center hover:bg-white/20 transition-colors">
+                                    <i class="fa-solid fa-up-right-and-down-left-from-center w-4 h-4 text-white"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Messages -->
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Welcome Message -->
+                        <div class="message message-assistant">
+                            <div class="avatar avatar-assistant">
+                                <i class="fa-solid fa-sparkles w-4 h-4"></i>
+                            </div>
+                            <div class="message-content">
+                                <p class="mb-3">Welcome to your Universal Document Intelligence system. I can analyze and correlate information across all your document types.</p>
+                                <div class="text-xs text-slate-600 space-y-1">
+                                    <div>• <strong>Cross-Document Analysis:</strong> "Compare contract terms across all ABC Corp agreements"</div>
+                                    <div>• <strong>Entity Relationships:</strong> "Show all documents related to Johnson & Associates"</div>
+                                    <div>• <strong>Financial Patterns:</strong> "Find checks and contracts for amounts over $50K"</div>
+                                    <div>• <strong>Legal Research:</strong> "Extract all liability clauses from contracts and legal docs"</div>
+                                    <div>• <strong>Compliance Monitoring:</strong> "Check for GDPR compliance across all document types"</div>
+                                </div>
+                                <p class="mt-3 text-xs text-slate-600">Ask me anything about your documents - I can search, analyze, and find patterns across your entire document ecosystem.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="chat-input-container">
+                        <div class="flex gap-3">
+                            <div class="flex-1">
+                                <textarea 
+                                    id="chatInput" 
+                                    class="chat-input"
+                                    rows="1"
+                                    placeholder="Ask about relationships between documents, search across all types, or analyze patterns..."
+                                    style="min-height: 44px; max-height: 120px;"
+                                ></textarea>
+                                <div class="flex items-center justify-between mt-2">
+                                    <div class="flex items-center gap-4 text-xs text-slate-600">
+                                        <div class="flex items-center gap-1">
+                                            <i class="fa-solid fa-shield w-3 h-3"></i>
+                                            <span>Encrypted</span>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <i class="fa-solid fa-database w-3 h-3"></i>
+                                            <span>821 docs searchable</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-xs text-slate-600" id="charCount">0/1000</div>
+                                </div>
+                            </div>
+                            <button 
+                                id="sendButton" 
+                                class="btn-primary flex items-center justify-center w-12 h-12 rounded-lg"
+                            >
+                                <i class="fa-solid fa-paper-plane w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        // Sidebar functionality
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('-translate-x-full');
+            sidebarOverlay.classList.toggle('active');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.remove('active');
+        }
+
+        sidebarToggle?.addEventListener('click', toggleSidebar);
+        sidebarOverlay?.addEventListener('click', closeSidebar);
+
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 1024) {
+                sidebarOverlay.classList.remove('active');
+            }
+        });
+
+        // Universal Chat functionality
+        class UniversalChatInterface {
+            constructor() {
+                this.isWaitingForResponse = false;
+                this.initializeElements();
+                this.setupEventListeners();
+            }
+
+            initializeElements() {
+                this.chatMessages = document.getElementById('chatMessages');
+                this.chatInput = document.getElementById('chatInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.charCount = document.getElementById('charCount');
+                
+            }
+
+            setupEventListeners() {
+                this.chatInput?.addEventListener('input', () => {
+                    this.chatInput.style.height = 'auto';
+                    this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
+                    this.charCount.textContent = `${this.chatInput.value.length}/1000`;
+                });
+
+                this.sendButton?.addEventListener('click', () => this.sendMessage());
+
+                this.chatInput?.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+            }
+
+            addMessage(content, isUser = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isUser ? 'message-user' : 'message-assistant'}`;
+                
+                if (isUser) {
+                    messageDiv.innerHTML = `
+                        <div class="message-content">${this.escapeHtml(content)}</div>
+                        <div class="avatar avatar-user">
+                            <i class="fa-solid fa-user w-4 h-4"></i>
+                        </div>
+                    `;
+                } else {
+                    messageDiv.innerHTML = `
+                        <div class="avatar avatar-assistant">
+                            <i class="fa-solid fa-brain w-4 h-4"></i>
+                        </div>
+                        <div class="message-content">${this.formatAIResponse(content)}</div>
+                    `;
+                }
+                
+                this.chatMessages.appendChild(messageDiv);
+                // this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            formatAIResponse(content) {
+                let formatted = content
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/\n/g, '<br>');
+                
+                return `<p>${formatted}</p>`;
+            }
+
+            escapeHtml(text) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, (m) => map[m]);
+            }
+
+            async sendMessage() {
+                const message = this.chatInput.value.trim();
+                if (!message || this.isWaitingForResponse) return;
+
+                this.addMessage(message, true);
+                this.chatInput.value = '';
+                this.chatInput.style.height = 'auto';
+                this.charCount.textContent = '0/1000';
+
+                // Enhanced AI response based on query type
+                setTimeout(() => {
+                    let response = "I can help you analyze documents across all categories. ";
+                    
+                    if (message.toLowerCase().includes('contract') || message.toLowerCase().includes('agreement')) {
+                        response += "For contract analysis, I can extract terms, identify risks, and compare clauses across multiple agreements. Would you like me to search for specific contract types or analyze particular terms?";
+                    } else if (message.toLowerCase().includes('check') || message.toLowerCase().includes('payment')) {
+                        response += "For financial documents, I can validate transactions, detect patterns, and flag potential fraud. I can also correlate payments across different document types.";
+                    } else if (message.toLowerCase().includes('legal') || message.toLowerCase().includes('case')) {
+                        response += "For legal documents, I can extract case details, identify precedents, and analyze evidence patterns. I can also find relationships between cases and financial documents.";
+                    } else {
+                        response += "This is a demo of the universal document intelligence system. The full AI will provide cross-document analysis, entity relationship mapping, and intelligent search across all your document types.";
+                    }
+                    
+                    this.addMessage(response);
+                }, 1000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            new UniversalChatInterface();
+        });
+    </script>
+</body>
+</html>

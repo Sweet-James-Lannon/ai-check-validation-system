@@ -13,8 +13,67 @@ dashboard_bp = Blueprint("dashboard", __name__)
 @dashboard_bp.route("/")
 @login_required
 def dashboard_home():
+    """Universal Document Ingestion RAG System - Main Dashboard"""
     user = session.get("user")
-    return render_template("dashboard.html", user=user)
+    
+    # Get system-wide metrics across all document types
+    try:
+        # Get checks metrics
+        checks_response = supabase_service.client.table('checks').select('*').execute()
+        total_checks = len(checks_response.data) if checks_response.data else 0
+        
+        # TODO: Add other document type metrics when tables are created
+        # contracts_response = supabase_service.client.table('contracts').select('*').execute()
+        # legal_docs_response = supabase_service.client.table('legal_documents').select('*').execute()
+        
+        document_metrics = {
+            'checks': {
+                'total': total_checks,
+                'processed_today': 23,  # TODO: Calculate from database
+                'pending': 8,           # TODO: Calculate from database
+                'success_rate': 94.2    # TODO: Calculate from database
+            },
+            'contracts': {
+                'total': 156,          # TODO: Get from database
+                'processed_today': 12,
+                'pending': 3,
+                'success_rate': 97.1
+            },
+            'legal_documents': {
+                'total': 89,           # TODO: Get from database
+                'processed_today': 7,
+                'pending': 2,
+                'success_rate': 95.8
+            },
+            'general_documents': {
+                'total': 234,          # TODO: Get from database
+                'processed_today': 18,
+                'pending': 5,
+                'success_rate': 93.4
+            }
+        }
+        
+        api_logger.info("Loading universal document dashboard")
+        return render_template("main_dashboard.html", user=user, metrics=document_metrics)
+        
+    except Exception as e:
+        api_logger.error(f"Error loading main dashboard: {str(e)}")
+        # Fallback metrics if database fails
+        document_metrics = {
+            'checks': {'total': 0, 'processed_today': 0, 'pending': 0, 'success_rate': 0},
+            'contracts': {'total': 0, 'processed_today': 0, 'pending': 0, 'success_rate': 0},
+            'legal_documents': {'total': 0, 'processed_today': 0, 'pending': 0, 'success_rate': 0},
+            'general_documents': {'total': 0, 'processed_today': 0, 'pending': 0, 'success_rate': 0}
+        }
+        return render_template("main_dashboard.html", user=user, metrics=document_metrics, error_message="Failed to load system metrics")
+
+
+@dashboard_bp.route("/checks/")
+@login_required
+def checks_dashboard():
+    """Check-specific dashboard with AI chat and validation tools"""
+    user = session.get("user")
+    return render_template("checks_dashboard.html", user=user)
 
 
 @dashboard_bp.route("/checks/queue")
@@ -59,11 +118,6 @@ def check_queue():
             formatted_checks.append(formatted_check)
         
         api_logger.info(f"Retrieved {len(formatted_checks)} pending checks for queue view")
-
-        # Add this debug line before return render_template
-        print(f"DEBUG: image_data length: {len(formatted_checks[0].get('image_data', ''))}")
-        print(f"DEBUG: image_mime_type: {formatted_checks[0].get('image_mime_type')}")
-
         
         return render_template("check_queue.html", 
                              user=user, 
@@ -138,9 +192,36 @@ def check_detail(check_id):
         return render_template("error.html", 
                              user=user,
                              error_message=f"Failed to load check {check_id}"), 500
-    
-######################################################################################
 
 
+@dashboard_bp.route("/checks/review")
+@login_required
+def check_review():
+    """Check review queue page for manual validation"""
+    user = session.get("user")
+    return render_template("check_review.html", user=user)
 
-######################################################################################
+
+# NEW DOCUMENT TYPE ROUTES
+@dashboard_bp.route("/contracts/")
+@login_required
+def contracts_dashboard():
+    """Contracts-specific dashboard with AI chat and analysis tools"""
+    user = session.get("user")
+    return render_template("contracts_dashboard.html", user=user)
+
+
+@dashboard_bp.route("/legal-documents/")
+@login_required
+def legal_documents_dashboard():
+    """Legal documents dashboard with AI chat and analysis tools"""
+    user = session.get("user")
+    return render_template("legal_documents_dashboard.html", user=user)
+
+
+@dashboard_bp.route("/documents/")
+@login_required
+def general_documents_dashboard():
+    """General documents dashboard with AI chat and analysis tools"""
+    user = session.get("user")
+    return render_template("general_documents_dashboard.html", user=user)
