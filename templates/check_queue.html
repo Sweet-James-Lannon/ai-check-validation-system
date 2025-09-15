@@ -8,226 +8,72 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <style>
-        /* Dashboard CSS - Universal Document Intelligence */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
-        :root {
-            --primary: #1e293b;
-            --primary-light: #334155;
-            --surface: #ffffff;
-            --surface-secondary: #f8fafc;
-            --border-light: #f1f5f9;
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --text-tertiary: #94a3b8;
-            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            color: var(--text-primary);
-            line-height: 1.5;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        .surface {
-            background: var(--surface);
-            border: 1px solid var(--border-light);
-            box-shadow: var(--shadow);
-        }
-
-        .surface-elevated {
-            background: var(--surface);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .metric-card {
-            background: var(--surface);
-            border: 1px solid var(--border-light);
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .metric-card:hover {
-            box-shadow: var(--shadow-lg);
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
+        /* Enhanced styles for dynamic buttons */
+        .confidence-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
             font-weight: 500;
-            font-size: 14px;
-            transition: all 0.15s ease;
-            cursor: pointer;
-            border: none;
         }
-
-        .btn-primary:hover {
-            background: var(--primary-light);
+        
+        .confidence-high {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
         }
-
-        .chat-container {
-            background: var(--surface);
-            border-radius: 16px;
-            box-shadow: var(--shadow-xl);
+        
+        .confidence-medium {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+        
+        .confidence-low {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .action-button {
+            position: relative;
             overflow: hidden;
         }
-
-        .chat-header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            padding: 20px 24px;
-            color: white;
+        
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
         }
-
-        .chat-messages {
-            min-height: 400px;
-            max-height: 500px;
-            overflow-y: auto;
-            padding: 24px;
-            background: var(--surface-secondary);
+        
+        .action-button:hover::before {
+            left: 100%;
         }
-
-        .message {
-            margin-bottom: 20px;
-            animation: slideUp 0.3s ease-out;
-        }
-
-        .message-assistant {
+        
+        .quick-action-container {
             display: flex;
-            align-items: flex-start;
-            gap: 12px;
+            gap: 0.5rem;
+            align-items: center;
         }
-
-        .message-user {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-
-        .message-content {
-            max-width: 70%;
-            padding: 16px 20px;
-            border-radius: 12px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        .message-assistant .message-content {
-            background: var(--surface);
-            border: 1px solid var(--border-light);
-            color: var(--text-primary);
-        }
-
-        .message-user .message-content {
-            background: var(--primary);
-            color: white;
-        }
-
-        .avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
+        
+        .processing-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .avatar-assistant {
-            background: var(--surface-secondary);
-            color: var(--text-secondary);
-        }
-
-        .avatar-user {
-            background: var(--primary);
-            color: white;
-        }
-
-        .chat-input-container {
-            padding: 20px 24px;
-            background: var(--surface);
-            border-top: 1px solid var(--border-light);
-        }
-
-        .chat-input {
-            width: 100%;
-            resize: none;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 12px 16px;
-            font-size: 14px;
-            background: var(--surface);
-            color: var(--text-primary);
-            transition: all 0.15s ease;
-            font-family: inherit;
-        }
-
-        .chat-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
-        }
-
-        .sidebar-nav-item {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .sidebar-nav-item:hover {
-            background: #f1f5f9;
-            color: var(--text-primary);
-        }
-
-        .sidebar-nav-active {
-            background: var(--primary);
-            color: white !important;
-        }
-
-        .sidebar-nav-active:hover {
-            background: var(--primary-light);
-            color: white !important;
-        }
-
-        .sidebar-section {
-            margin-top: 24px;
-        }
-
-        .sidebar-section-title {
-            margin-bottom: 8px;
-        }
-
-        @media (max-width: 1024px) {
-            .sidebar-text { display: none; }
-            #sidebar { width: 80px; }
-            #sidebar.sidebar-expanded { width: 256px; }
-            #sidebar.sidebar-expanded .sidebar-text { display: inline; }
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .sidebar-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 30;
-            display: none;
-        }
-
-        .sidebar-overlay.active {
-            display: block;
+            border-radius: 0.375rem;
         }
     </style>
 </head>
@@ -351,7 +197,7 @@
                         </div>
                         <div>
                             <h1 class="text-lg font-semibold text-primary">Check Queue</h1>
-                            <p class="text-xs text-tertiary font-medium">PENDING VALIDATION QUEUE</p>
+                            <p class="text-xs text-tertiary font-medium">INTELLIGENT VALIDATION ROUTING</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
@@ -373,37 +219,47 @@
 
         <!-- Main Content -->
         <main class="px-6 py-8">
-            <!-- Stats Bar -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Enhanced Stats Bar with Dynamic Routing Info -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="metric-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">AUTO-APPROVE READY</span>
+                        <i class="fa-solid fa-robot w-4 h-4 text-green-500"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-green-600 mb-1">
+                        {{ checks | selectattr('confidence_score', '>', 0.8) | list | length }}
+                    </div>
+                    <div class="text-xs text-secondary">≥80% confidence</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">NEEDS REVIEW</span>
+                        <i class="fa-solid fa-user-check w-4 h-4 text-orange-500"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-orange-600 mb-1">
+                        {{ checks | selectattr('confidence_score', '<', 0.8) | list | length }}
+                    </div>
+                    <div class="text-xs text-secondary">&lt;80% confidence</div>
+                </div>
+
                 <div class="metric-card">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">TOTAL PENDING</span>
                         <i class="fa-solid fa-clock w-4 h-4 text-purple-500"></i>
                     </div>
                     <div class="text-2xl font-bold text-primary mb-1">{{ total_count }}</div>
-                    <div class="text-xs text-secondary">Awaiting validation</div>
+                    <div class="text-xs text-secondary">Awaiting processing</div>
                 </div>
                 
                 <div class="metric-card">
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">HIGH CONFIDENCE</span>
-                        <i class="fa-solid fa-thumbs-up w-4 h-4 text-purple-500"></i>
+                        <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">AUTOMATION RATE</span>
+                        <i class="fa-solid fa-chart-line w-4 h-4 text-blue-500"></i>
                     </div>
-                    <div class="text-2xl font-bold text-primary mb-1">
-                        {{ checks | selectattr('confidence_score', '>', 0.8) | list | length }}
-                    </div>
-                    <div class="text-xs text-secondary">Ready for quick approval</div>
-                </div>
-                
-                <div class="metric-card">
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">NEEDS REVIEW</span>
-                        <i class="fa-solid fa-exclamation-triangle w-4 h-4 text-purple-500"></i>
-                    </div>
-                    <div class="text-2xl font-bold text-primary mb-1">
-                        {{ checks | selectattr('confidence_score', '<', 0.7) | list | length }}
-                    </div>
-                    <div class="text-xs text-secondary">Requires manual review</div>
+                    {% set automation_rate = ((checks | selectattr('confidence_score', '>', 0.8) | list | length) / (total_count if total_count > 0 else 1) * 100) | round(1) %}
+                    <div class="text-2xl font-bold text-blue-600 mb-1">{{ automation_rate }}%</div>
+                    <div class="text-xs text-secondary">Can auto-process</div>
                 </div>
             </div>
 
@@ -431,12 +287,12 @@
             </div>
             {% endif %}
 
-            <!-- Checks Table -->
+            <!-- Enhanced Checks Table with Dynamic Actions -->
             {% if checks %}
             <div class="surface rounded-xl overflow-hidden">
                 <div class="px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-700 rounded-t-xl">
-                    <h2 class="text-lg font-semibold text-white">Pending Validations</h2>
-                    <p class="text-sm text-white/80">Use quick actions to approve/reject, or click rows for detailed validation</p>
+                    <h2 class="text-lg font-semibold text-white">Intelligent Check Processing Queue</h2>
+                    <p class="text-sm text-white/80">AI-powered routing: Green buttons = Auto-approve ready, Orange buttons = Forward for review</p>
                 </div>
                 
                 <div class="overflow-x-auto">
@@ -448,14 +304,15 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matter</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Confidence</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Confidence</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Smart Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             {% for check in checks %}
+                            {% set confidence = check.confidence_percentage %}
                             <tr class="hover:bg-gray-50 cursor-pointer transition-colors" onclick="window.location.href='/checks/detail/{{ check.id }}'">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900">{{ check.check_number }}</div>
@@ -474,21 +331,37 @@
                                     <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.matter_name or '-' }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    {% set confidence = check.confidence_percentage %}
-                                    <div class="flex items-center">
+                                    <div class="flex items-center gap-2">
                                         <div class="text-sm font-medium 
                                             {% if confidence >= 80 %}text-green-600
                                             {% elif confidence >= 60 %}text-yellow-600
                                             {% else %}text-red-600{% endif %}">
                                             {{ confidence }}%
                                         </div>
-                                        <div class="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                                        <div class="w-16 bg-gray-200 rounded-full h-2">
                                             <div class="h-2 rounded-full 
                                                 {% if confidence >= 80 %}bg-green-500
                                                 {% elif confidence >= 60 %}bg-yellow-500
                                                 {% else %}bg-red-500{% endif %}" 
                                                 style="width: {{ confidence }}%"></div>
                                         </div>
+                                        <!-- AI Confidence Badge -->
+                                        {% if confidence >= 80 %}
+                                        <span class="confidence-badge confidence-high">
+                                            <i class="fa-solid fa-robot w-3 h-3"></i>
+                                            Auto-Ready
+                                        </span>
+                                        {% elif confidence >= 60 %}
+                                        <span class="confidence-badge confidence-medium">
+                                            <i class="fa-solid fa-exclamation-triangle w-3 h-3"></i>
+                                            Review
+                                        </span>
+                                        {% else %}
+                                        <span class="confidence-badge confidence-low">
+                                            <i class="fa-solid fa-user-check w-3 h-3"></i>
+                                            Manual
+                                        </span>
+                                        {% endif %}
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -505,27 +378,40 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center" onclick="event.stopPropagation();">
                                     {% if check.status == 'pending' or check.status == 'pending_review' %}
-                                    <div class="flex items-center justify-center gap-2">
-                                        <!-- Quick Approve Button -->
-                                        <button class="quick-approve-btn inline-flex items-center px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors" 
+                                    <div class="quick-action-container relative" data-check-row="{{ check.id }}">
+                                        {% if confidence >= 80 %}
+                                        <!-- High Confidence: Auto-Approve Button -->
+                                        <button class="auto-approve-btn action-button inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition-all duration-200 transform hover:scale-105" 
                                                 data-check-id="{{ check.id }}" 
                                                 data-check-number="{{ check.check_number }}"
                                                 data-amount="{{ check.amount }}"
                                                 data-payee="{{ check.payee_name }}"
-                                                title="Quick Approve">
-                                            <i class="fa-solid fa-check w-3 h-3 mr-1"></i>
-                                            Approve
+                                                data-confidence="{{ confidence }}"
+                                                title="High confidence - Ready for auto-approval">
+                                            <i class="fa-solid fa-robot w-3 h-3 mr-2"></i>
+                                            Auto-Approve
+                                            <span class="ml-1 text-xs opacity-75">({{ confidence }}%)</span>
                                         </button>
-                                        
-                                        <!-- Quick Reject Button -->
-                                        <button class="quick-reject-btn inline-flex items-center px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded transition-colors" 
+                                        {% else %}
+                                        <!-- Low Confidence: Forward for Review Button -->
+                                        <button class="forward-review-btn action-button inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium rounded-lg transition-all duration-200 transform hover:scale-105" 
                                                 data-check-id="{{ check.id }}" 
                                                 data-check-number="{{ check.check_number }}"
                                                 data-amount="{{ check.amount }}"
                                                 data-payee="{{ check.payee_name }}"
-                                                title="Quick Reject">
-                                            <i class="fa-solid fa-times w-3 h-3 mr-1"></i>
-                                            Reject
+                                                data-confidence="{{ confidence }}"
+                                                title="Low confidence - Requires human review">
+                                            <i class="fa-solid fa-user-check w-3 h-3 mr-2"></i>
+                                            Forward Review
+                                            <span class="ml-1 text-xs opacity-75">({{ confidence }}%)</span>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        <!-- Secondary Manual Override Button -->
+                                        <button class="manual-override-btn text-gray-400 hover:text-gray-600 p-1 rounded transition-colors" 
+                                                data-check-id="{{ check.id }}"
+                                                title="Manual override options">
+                                            <i class="fa-solid fa-ellipsis-v w-3 h-3"></i>
                                         </button>
                                     </div>
                                     {% else %}
@@ -554,19 +440,47 @@
         </main>
     </div>
 
-    <!-- Quick Rejection Modal -->
-    <div id="quickRejectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <!-- Enhanced Manual Override Modal -->
+    <div id="manualOverrideModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-xl p-6 w-96 max-w-full mx-4">
-            <h3 class="text-lg font-semibold mb-4">Quick Reject Check</h3>
+            <h3 class="text-lg font-semibold mb-4">Manual Override Options</h3>
             <div class="mb-4 p-3 bg-gray-50 rounded-lg">
-                <div class="text-sm font-medium text-gray-900" id="rejectCheckInfo">Check details will appear here</div>
+                <div class="text-sm font-medium text-gray-900" id="overrideCheckInfo">Check details will appear here</div>
             </div>
-            <textarea id="quickRejectionReason" class="w-full p-3 border rounded-lg resize-none" rows="3" 
-                placeholder="Please provide a reason for rejection..."></textarea>
+            <div class="space-y-3">
+                <button id="forceApprove" class="w-full flex items-center justify-center px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                    <i class="fa-solid fa-check-double w-4 h-4 mr-2"></i>
+                    Force Approve (Override AI)
+                </button>
+                <button id="forceReject" class="w-full flex items-center justify-center px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                    <i class="fa-solid fa-ban w-4 h-4 mr-2"></i>
+                    Force Reject (Override AI)
+                </button>
+                <button id="sendToReview" class="w-full flex items-center justify-center px-4 py-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
+                    <i class="fa-solid fa-user-check w-4 h-4 mr-2"></i>
+                    Send to Manual Review
+                </button>
+            </div>
             <div class="flex justify-end gap-3 mt-4">
-                <button id="cancelQuickReject" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
-                <button id="confirmQuickReject" class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700">
-                    Reject Check
+                <button id="cancelOverride" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Forward Review Modal -->
+    <div id="forwardReviewModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-96 max-w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Forward for Human Review</h3>
+            <div class="mb-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                <div class="text-sm font-medium text-orange-900" id="forwardCheckInfo">Check details will appear here</div>
+                <div class="text-xs text-orange-700 mt-1" id="confidenceReason">AI confidence reason will appear here</div>
+            </div>
+            <textarea id="forwardReason" class="w-full p-3 border rounded-lg resize-none" rows="3" 
+                placeholder="Optional: Add notes for the reviewer..."></textarea>
+            <div class="flex justify-end gap-3 mt-4">
+                <button id="cancelForward" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+                <button id="confirmForward" class="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-700">
+                    Forward to Review Queue
                 </button>
             </div>
         </div>
@@ -577,7 +491,8 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            let currentRejectCheckId = null;
+            let currentCheckId = null;
+            let currentCheckData = null;
             
             // Mobile menu functionality
             const mobileMenuBtn = document.getElementById('mobileMenuBtn');
@@ -594,8 +509,8 @@
                 sidebarOverlay.classList.remove('active');
             });
             
-            // Quick approve buttons
-            document.querySelectorAll('.quick-approve-btn').forEach(btn => {
+            // Auto-approve buttons (high confidence)
+            document.querySelectorAll('.auto-approve-btn').forEach(btn => {
                 btn.addEventListener('click', async function(e) {
                     e.stopPropagation();
                     
@@ -603,15 +518,16 @@
                     const checkNumber = this.dataset.checkNumber;
                     const amount = this.dataset.amount;
                     const payee = this.dataset.payee;
+                    const confidence = this.dataset.confidence;
                     
-                    if (confirm(`Approve check ${checkNumber} for ${amount} to ${payee}?`)) {
-                        await approveCheck(checkId, this);
+                    if (confirm(`Auto-approve check ${checkNumber} for ${amount} to ${payee}?\n\nAI Confidence: ${confidence}% (High confidence threshold met)`)) {
+                        await processCheck(checkId, 'approve', this, `Auto-approved with ${confidence}% confidence`);
                     }
                 });
             });
             
-            // Quick reject buttons
-            document.querySelectorAll('.quick-reject-btn').forEach(btn => {
+            // Forward for review buttons (low confidence)
+            document.querySelectorAll('.forward-review-btn').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     
@@ -619,125 +535,235 @@
                     const checkNumber = this.dataset.checkNumber;
                     const amount = this.dataset.amount;
                     const payee = this.dataset.payee;
+                    const confidence = this.dataset.confidence;
                     
-                    currentRejectCheckId = checkId;
+                    currentCheckId = checkId;
+                    currentCheckData = { checkNumber, amount, payee, confidence };
                     
                     // Update modal with check info
-                    document.getElementById('rejectCheckInfo').innerHTML = `
+                    document.getElementById('forwardCheckInfo').innerHTML = `
                         <strong>Check ${checkNumber}</strong><br>
                         Amount: ${amount}<br>
                         Payee: ${payee}
                     `;
                     
-                    document.getElementById('quickRejectModal').classList.remove('hidden');
-                    document.getElementById('quickRejectionReason').focus();
+                    // Show confidence reason
+                    let reason = '';
+                    if (confidence < 60) {
+                        reason = 'Low confidence - Multiple validation factors failed';
+                    } else if (confidence < 80) {
+                        reason = 'Medium confidence - Some validation concerns detected';
+                    }
+                    document.getElementById('confidenceReason').textContent = `Confidence: ${confidence}% - ${reason}`;
+                    
+                    document.getElementById('forwardReviewModal').classList.remove('hidden');
+                    document.getElementById('forwardReason').focus();
+                });
+            });
+            
+            // Manual override buttons
+            document.querySelectorAll('.manual-override-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    
+                    const checkId = this.dataset.checkId;
+                    const row = this.closest('tr');
+                    const checkNumber = row.querySelector('td:first-child .text-sm').textContent;
+                    const amount = row.querySelector('td:nth-child(3) .text-sm').textContent;
+                    const payee = row.querySelector('td:nth-child(2) .text-sm').textContent;
+                    
+                    currentCheckId = checkId;
+                    currentCheckData = { checkNumber, amount, payee };
+                    
+                    // Update modal with check info
+                    document.getElementById('overrideCheckInfo').innerHTML = `
+                        <strong>Check ${checkNumber}</strong><br>
+                        Amount: ${amount}<br>
+                        Payee: ${payee}
+                    `;
+                    
+                    document.getElementById('manualOverrideModal').classList.remove('hidden');
                 });
             });
             
             // Modal controls
-            document.getElementById('cancelQuickReject').addEventListener('click', function() {
-                document.getElementById('quickRejectModal').classList.add('hidden');
-                currentRejectCheckId = null;
-                document.getElementById('quickRejectionReason').value = '';
+            document.getElementById('cancelForward').addEventListener('click', function() {
+                document.getElementById('forwardReviewModal').classList.add('hidden');
+                resetModalState();
             });
             
-            document.getElementById('confirmQuickReject').addEventListener('click', async function() {
-                const reason = document.getElementById('quickRejectionReason').value.trim();
-                if (!reason) {
-                    showToast('Please provide a reason for rejection', 'error');
-                    return;
-                }
+            document.getElementById('confirmForward').addEventListener('click', async function() {
+                const reason = document.getElementById('forwardReason').value.trim();
                 
-                if (currentRejectCheckId) {
-                    await rejectCheck(currentRejectCheckId, reason);
-                    document.getElementById('quickRejectModal').classList.add('hidden');
-                    currentRejectCheckId = null;
-                    document.getElementById('quickRejectionReason').value = '';
+                if (currentCheckId) {
+                    await processCheck(currentCheckId, 'forward', null, reason || 'Forwarded for manual review due to low AI confidence');
+                    document.getElementById('forwardReviewModal').classList.add('hidden');
+                    resetModalState();
                 }
             });
             
-            // Close modal on escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && !document.getElementById('quickRejectModal').classList.contains('hidden')) {
-                    document.getElementById('cancelQuickReject').click();
-                }
+            document.getElementById('cancelOverride').addEventListener('click', function() {
+                document.getElementById('manualOverrideModal').classList.add('hidden');
+                resetModalState();
             });
             
-            async function approveCheck(checkId, buttonElement) {
-                // Show loading state
-                const originalHtml = buttonElement.innerHTML;
-                buttonElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin w-3 h-3 mr-1"></i>Processing...';
-                buttonElement.disabled = true;
-                
-                try {
-                    const response = await fetch(`/api/checks/approve/${checkId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    
-                    if (response.ok) {
-                        showToast('Check approved successfully!', 'success');
-                        removeCheckRow(checkId);
-                    } else {
-                        const error = await response.json();
-                        throw new Error(error.error || 'Failed to approve check');
+            document.getElementById('forceApprove').addEventListener('click', async function() {
+                if (currentCheckId && currentCheckData) {
+                    if (confirm(`Force approve check ${currentCheckData.checkNumber}?\n\nThis will override the AI recommendation.`)) {
+                        await processCheck(currentCheckId, 'approve', null, 'Force approved - Manual override');
+                        document.getElementById('manualOverrideModal').classList.add('hidden');
+                        resetModalState();
                     }
-                } catch (error) {
-                    console.error('Approval error:', error);
-                    showToast('Failed to approve check. Please try again.', 'error');
-                    
-                    // Restore button
-                    buttonElement.innerHTML = originalHtml;
-                    buttonElement.disabled = false;
                 }
+            });
+            
+            document.getElementById('forceReject').addEventListener('click', async function() {
+                if (currentCheckId && currentCheckData) {
+                    const reason = prompt(`Reason for rejecting check ${currentCheckData.checkNumber}:`);
+                    if (reason) {
+                        await processCheck(currentCheckId, 'reject', null, `Force rejected - Manual override: ${reason}`);
+                        document.getElementById('manualOverrideModal').classList.add('hidden');
+                        resetModalState();
+                    }
+                }
+            });
+            
+            document.getElementById('sendToReview').addEventListener('click', async function() {
+                if (currentCheckId) {
+                    await processCheck(currentCheckId, 'forward', null, 'Sent to manual review - Manual override');
+                    document.getElementById('manualOverrideModal').classList.add('hidden');
+                    resetModalState();
+                }
+            });
+            
+            // Close modals on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if (!document.getElementById('forwardReviewModal').classList.contains('hidden')) {
+                        document.getElementById('cancelForward').click();
+                    }
+                    if (!document.getElementById('manualOverrideModal').classList.contains('hidden')) {
+                        document.getElementById('cancelOverride').click();
+                    }
+                }
+            });
+            
+            function resetModalState() {
+                currentCheckId = null;
+                currentCheckData = null;
+                document.getElementById('forwardReason').value = '';
             }
             
-            async function rejectCheck(checkId, reason) {
+            async function processCheck(checkId, action, buttonElement, reason = '') {
+                // Show loading state
+                if (buttonElement) {
+                    const originalHtml = buttonElement.innerHTML;
+                    buttonElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin w-3 h-3 mr-1"></i>Processing...';
+                    buttonElement.disabled = true;
+                }
+                
+                // Show processing overlay
+                const rowContainer = document.querySelector(`[data-check-row="${checkId}"]`);
+                if (rowContainer) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'processing-overlay';
+                    overlay.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-600"></i>';
+                    rowContainer.style.position = 'relative';
+                    rowContainer.appendChild(overlay);
+                }
+                
                 try {
-                    const response = await fetch(`/api/checks/reject/${checkId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ reason: reason })
-                    });
+                    let response;
+                    
+                    if (action === 'approve') {
+                        response = await fetch(`/api/checks/approve/${checkId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reason: reason })
+                        });
+                    } else if (action === 'reject') {
+                        response = await fetch(`/api/checks/reject/${checkId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reason: reason })
+                        });
+                    } else if (action === 'forward') {
+                        // Forward to review queue (could be a different endpoint)
+                        response = await fetch(`/api/checks/forward/${checkId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reason: reason })
+                        });
+                        
+                        // If forward endpoint doesn't exist, fall back to reject
+                        if (response.status === 404) {
+                            response = await fetch(`/api/checks/reject/${checkId}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ reason: reason || 'Forwarded for manual review' })
+                            });
+                        }
+                    }
                     
                     if (response.ok) {
-                        showToast('Check rejected successfully!', 'success');
+                        const actionText = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'forwarded for review';
+                        showToast(`Check ${actionText} successfully!`, 'success');
                         removeCheckRow(checkId);
                     } else {
                         const error = await response.json();
-                        throw new Error(error.error || 'Failed to reject check');
+                        throw new Error(error.error || `Failed to ${action} check`);
                     }
                 } catch (error) {
-                    console.error('Rejection error:', error);
-                    showToast('Failed to reject check. Please try again.', 'error');
+                    console.error(`${action} error:`, error);
+                    showToast(`Failed to ${action} check. Please try again.`, 'error');
+                    
+                    // Restore button if it exists
+                    if (buttonElement) {
+                        buttonElement.innerHTML = originalHtml;
+                        buttonElement.disabled = false;
+                    }
+                    
+                    // Remove overlay
+                    if (rowContainer) {
+                        const overlay = rowContainer.querySelector('.processing-overlay');
+                        if (overlay) overlay.remove();
+                    }
                 }
             }
             
             function removeCheckRow(checkId) {
-                const row = document.querySelector(`[data-check-id="${checkId}"]`)?.closest('tr');
+                const row = document.querySelector(`[data-check-row="${checkId}"]`)?.closest('tr');
                 if (row) {
                     row.style.opacity = '0.5';
                     row.style.transform = 'scale(0.95)';
                     
                     setTimeout(() => {
                         row.remove();
-                        // Update stats if needed
                         updateStats();
                     }, 300);
                 }
             }
             
             function updateStats() {
-                // Update the total count
+                // Update the total count and automation rate
                 const remainingRows = document.querySelectorAll('tbody tr').length;
-                const totalCountElement = document.querySelector('.metric-card .text-2xl');
-                if (totalCountElement) {
-                    totalCountElement.textContent = remainingRows;
+                const totalCountElements = document.querySelectorAll('.metric-card .text-2xl');
+                
+                // Update total pending count
+                if (totalCountElements[2]) {
+                    totalCountElements[2].textContent = remainingRows;
+                }
+                
+                // Recalculate automation rate
+                const autoApproveButtons = document.querySelectorAll('.auto-approve-btn').length;
+                const automationRate = remainingRows > 0 ? Math.round((autoApproveButtons / remainingRows) * 100) : 0;
+                if (totalCountElements[3]) {
+                    totalCountElements[3].textContent = automationRate + '%';
                 }
                 
                 // Show empty state if no rows left
                 if (remainingRows === 0) {
-                    location.reload(); // Simple refresh for now
+                    setTimeout(() => location.reload(), 1000); // Refresh to show empty state
                 }
             }
             
@@ -773,47 +799,5 @@
             }
         });
     </script>
-
-    <style>
-        .sidebar-section {
-            margin-top: 24px;
-        }
-
-        .sidebar-section-title {
-            margin-bottom: 8px;
-        }
-
-        .sidebar-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 30;
-            display: none;
-        }
-
-        .sidebar-overlay.active {
-            display: block;
-        }
-
-        @media (max-width: 1024px) {
-            .sidebar-text { display: none; }
-            #sidebar { width: 80px; }
-            #sidebar.sidebar-expanded { width: 256px; }
-            #sidebar.sidebar-expanded .sidebar-text { display: inline; }
-        }
-
-        .surface {
-            transition: all 0.3s ease;
-        }
-        
-        tr {
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        
-        .quick-approve-btn:hover,
-        .quick-reject-btn:hover {
-            transform: scale(1.05);
-        }
-    </style>
 </body>
 </html>

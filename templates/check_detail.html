@@ -19,11 +19,38 @@
         .grid-background-hidden {
             background-image: none;
         }
+
+        /* Field status indicators */
+        .field-status {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+        }
+        
+        /* Remove the field status icon styles */
+        .field-container {
+            position: relative;
+        }
+
+        .field-complete {
+            border-color: #10b981;
+            background-color: #f0fdf4;
+        }
+
+        .field-incomplete {
+            border-color: #f59e0b;
+            background-color: #fffbeb;
+        }
+
+        .field-error {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
     </style>
 </head>
 <body>
-
-    
     <!-- Header -->
     <header class="surface-elevated sticky top-0 z-50 backdrop-blur-md bg-white/95">
         <div class="max-w-7xl mx-auto px-6 py-4">
@@ -38,9 +65,9 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <a href="/checks/queue" class="btn-secondary">
+                    <a href="/checks/queue" class="btn-secondary"> 
                         <i class="fa-solid fa-arrow-left w-4 h-4 mr-2"></i>
-                        Back to Queue
+                        Back to Queue     
                     </a>
                     {% if user %}
                     <div class="flex items-center gap-4 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg">
@@ -60,53 +87,50 @@
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-6 py-8">
-
-    <div class="surface rounded-xl mb-8 overflow-hidden">
-        <!-- Header with Confidence Score -->
-        <div class="px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-700 rounded-t-xl">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-lg font-semibold text-white">Check Validation Workspace</h2>
-                    <p class="text-sm text-white/80">Review image and extracted data side-by-side</p>
-                </div>
-                
-                
-                <div class="flex items-center gap-4">
-                    <div class="text-right">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-sm text-white/70">Confidence Score:</span>
-                            <span class="text-lg font-bold 
-                                {% if check.confidence_score >= 0.8 %}text-green-400
-                                {% elif check.confidence_score >= 0.6 %}text-yellow-400
-                                {% else %}text-red-400{% endif %}">
-                                {{ check.confidence_percentage }}%
-                            </span>
-                        </div>
-                        <div class="text-xs 
-                            {% if check.confidence_score >= 0.8 %}text-green-300
-                            {% elif check.confidence_score >= 0.6 %}text-yellow-300
-                            {% else %}text-red-300{% endif %}">
-                            {% if check.confidence_score >= 0.8 %}
-                                Ready for quick approval
-                            {% elif check.confidence_score >= 0.6 %}
-                                Review recommended
-                            {% else %}
-                                Manual verification required
-                            {% endif %}
-                        </div>
+        <div class="surface rounded-xl mb-8 overflow-hidden">
+            <!-- Header with Confidence Score -->
+            <div class="px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-700 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-white">Check Validation Workspace</h2>
+                        <p class="text-sm text-white/80">Review image and extracted data side-by-side</p>
                     </div>
                     
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                        {% if check.status == 'pending' %}bg-yellow-100 text-yellow-800
-                        {% elif check.status == 'approved' %}bg-green-100 text-green-800
-                        {% elif check.status == 'rejected' %}bg-red-100 text-red-800
-                        {% else %}bg-gray-100 text-gray-800{% endif %}">
-                        {{ check.status | replace('_', ' ') | title }}
-                    </span>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm text-white/70">Confidence Score:</span>
+                                <span class="text-lg font-bold 
+                                    {% if check.confidence_score >= 0.8 %}text-green-400
+                                    {% elif check.confidence_score >= 0.6 %}text-yellow-400
+                                    {% else %}text-red-400{% endif %}">
+                                    {{ check.confidence_percentage }}%
+                                </span>
+                            </div>
+                            <div class="text-xs 
+                                {% if check.confidence_score >= 0.8 %}text-green-300
+                                {% elif check.confidence_score >= 0.6 %}text-yellow-300
+                                {% else %}text-red-300{% endif %}">
+                                {% if check.confidence_score >= 0.8 %}
+                                    Ready for quick approval
+                                {% elif check.confidence_score >= 0.6 %}
+                                    Review recommended
+                                {% else %}
+                                    Manual verification required
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                            {% if check.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% elif check.status == 'approved' %}bg-green-100 text-green-800
+                            {% elif check.status == 'rejected' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ check.status | replace('_', ' ') | title }}
+                        </span>
+                    </div>
                 </div>
-
             </div>
-        </div>
 
             <!-- Action Controls Bar -->
             <div class="px-6 py-3 bg-slate-700 border-t border-slate-600">
@@ -175,7 +199,6 @@
                                     <p class="text-sm text-red-500">Unable to display check image</p>
                                 </div>
                             </div>
-
                         {% else %}
                             <!-- Placeholder when no image available -->
                             <div class="h-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
@@ -213,196 +236,224 @@
                 </div>
 
                 <!-- Right Side - Check Details Form -->
-<div class="lg:w-1/2 bg-white border-l-2 border-gray-300">
-    <div class="p-6 h-full overflow-y-auto">
-        <form id="checkDetailsForm">
-            <!-- Extracted Fields Grid -->
-            <div class="space-y-5">
-                <!-- Payee Information -->
-                <div class="space-y-3">
-                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
-                        <i class="fa-solid fa-user mr-2 text-gray-700"></i>Payee Information
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Payee Name</label>
-                            <input type="text" value="{{ check.payee_name }}" 
-                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                   name="payee_name">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Pay To</label>
-                            <input type="text" value="{{ check.pay_to }}" 
-                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                   name="pay_to">
-                        </div>
-                    </div>
-                </div>
+                <div class="lg:w-1/2 bg-white border-l-2 border-gray-300">
+                    <div class="p-6 h-full overflow-y-auto">
+                        <form id="checkDetailsForm">
+                            <!-- Extracted Fields Grid -->
+                            <div class="space-y-5">
+                                <!-- Payee Information -->
+                                <div class="space-y-3">
+                                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
+                                        <i class="fa-solid fa-user mr-2 text-gray-700"></i>Payee Information
+                                    </h3>
+                                    
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <div class="field-container">
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Payee Name</label>
+                                            <input type="text" value="{{ check.payee_name }}" 
+                                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                                   name="payee_name" data-required="true">
+                                            <div class="field-status">
+                                                <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="field-container">
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Pay To</label>
+                                            <input type="text" value="{{ check.pay_to }}" 
+                                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                                   name="pay_to" data-required="true">
+                                            <div class="field-status">
+                                                <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                <!-- Amount & Date -->
-                <div class="space-y-3">
-                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
-                        <i class="fa-solid fa-dollar-sign mr-2 text-gray-700"></i>Amount & Date
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Amount</label>
-                            <input type="text" value="{{ check.amount }}" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-semibold text-green-700"
-                                   name="amount">
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Check Date</label>
-                                <input type="date" value="{{ check.check_date }}" 
-                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                       name="check_date">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Check Number</label>
-                                <input type="text" value="{{ check.check_number }}" 
-                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                       name="check_number">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                <!-- Insurance & Claims Information -->
+                                <div class="space-y-3">
+                                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
+                                        <i class="fa-solid fa-shield-halved mr-2 text-gray-700"></i>Insurance & Claims
+                                    </h3>
+                                    
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <div class="field-container">
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Insurance Company Name</label>
+                                            <input type="text" value="{{ check.insurance_company_name }}" 
+                                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                                   name="insurance_company_name" data-required="true">
+                                            <div class="field-status">
+                                                <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Claim Number</label>
+                                                <input type="text" value="{{ check.claim_number }}" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
+                                                       name="claim_number" placeholder="Auto-extracted from check">
+                                                <div class="field-status">
+                                                    <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Policy Number</label>
+                                                <input type="text" value="{{ check.policy_number }}" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
+                                                       name="policy_number" placeholder="Auto-extracted from check">
+                                                <div class="field-status">
+                                                    <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                <!-- Banking Information -->
-                <div class="space-y-3">
-                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
-                        <i class="fa-solid fa-university mr-2 text-gray-700"></i>Banking Information
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 gap-3">
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Routing Number</label>
-                                <input type="text" value="{{ check.routing_number }}" 
-                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
-                                       name="routing_number">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Account Number</label>
-                                <input type="text" value="{{ check.account_number }}" 
-                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
-                                       name="account_number">
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">MICR Line</label>
-                            <input type="text" value="{{ check.micr_line }}" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono text-sm"
-                                   name="micr_line">
-                        </div>
-                    </div>
-                </div>
+                                <!-- Amount & Date -->
+                                <div class="space-y-3">
+                                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
+                                        <i class="fa-solid fa-dollar-sign mr-2 text-gray-700"></i>Amount & Date
+                                    </h3>
+                                    
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <div class="field-container">
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Amount</label>
+                                            <input type="text" value="{{ check.amount }}" 
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-semibold text-green-700"
+                                                   name="amount" data-required="true">
+                                            <div class="field-status">
+                                                <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Check Issue Date</label>
+                                                <input type="date" 
+                                                       value="{{ check.check_issue_date or check.check_date }}"
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                                       name="check_issue_date" data-required="true">
+                                                <div class="field-status">
+                                                    <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Check Number</label>
+                                                <input type="text" value="{{ check.check_number }}" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
+                                                       name="check_number" data-required="true">
+                                                <div class="field-status">
+                                                    <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                <!-- Case Information -->
-                <div class="space-y-3">
-                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
-                        <i class="fa-solid fa-briefcase mr-2 text-gray-700"></i>Case Information
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Matter Name</label>
-                            <input type="text" value="{{ check.matter_name }}" 
-                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                   name="matter_name">
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Case Type</label>
-                                <input type="text" value="{{ check.case_type }}" 
-                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                       name="case_type">
+                                <!-- Banking Information -->
+                                <div class="space-y-3">
+                                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
+                                        <i class="fa-solid fa-university mr-2 text-gray-700"></i>Banking Information
+                                    </h3>
+                                    
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Routing Number</label>
+                                                <input type="text" value="{{ check.routing_number }}" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
+                                                       name="routing_number" data-required="true">
+                                                <div class="field-status">
+                                                    <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Account Number</label>
+                                                <input type="text" value="{{ check.account_number }}" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
+                                                       name="account_number" data-required="true">
+                                                <div class="field-status">
+                                                    <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Case Information -->
+                                <div class="space-y-3">
+                                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
+                                        <i class="fa-solid fa-briefcase mr-2 text-gray-700"></i>Case Information
+                                    </h3>
+                                    
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <div class="field-container">
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Matter Name</label>
+                                            <input type="text" value="{{ check.matter_name }}" 
+                                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                                   name="matter_name" placeholder="Auto-populated from memo">
+                                            <div class="field-status">
+                                                <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Matter ID</label>
+                                                <input type="text" value="{{ check.matter_id or '' }}" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 font-mono"
+                                                       name="matter_id" readonly placeholder="From Salesforce lookup">
+                                            </div>
+                                            
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Delivery Service <span class="text-gray-400">(Coming Soon)</span></label>
+                                                <input type="text" value="{{ check.delivery_service or '' }}" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50"
+                                                       name="delivery_service" disabled placeholder="Will be added later">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Additional Information -->
+                                <div class="space-y-3">
+                                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
+                                        <i class="fa-solid fa-sticky-note mr-2 text-gray-700"></i>Additional Information
+                                    </h3>
+                                    
+                                    <div class="field-container">
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Memo</label>
+                                        <textarea 
+                                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                                               name="memo" rows="2" placeholder="Auto-extracted from check">{{ check.memo }}</textarea>
+                                        <div class="field-status">
+                                            <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                            <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 mb-1">Delivery Service</label>
-                                <input type="text" value="{{ check.delivery_service }}" 
-                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                       name="delivery_service">
-                            </div>
-                        </div>
+                        </form>
                     </div>
                 </div>
-
-                <!-- Additional Information -->
-                <div class="space-y-3">
-                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
-                        <i class="fa-solid fa-sticky-note mr-2 text-gray-700"></i>Additional Information
-                    </h3>
-                    
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Memo</label>
-                        <textarea 
-                               class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
-                               name="memo" rows="2">{{ check.memo }}</textarea>
-                    </div>
-                </div>
-
-                <!-- System Information -->
-                <div class="space-y-3">
-                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
-                        <i class="fa-solid fa-cog mr-2 text-gray-700"></i>System Information
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Salesforce ID</label>
-                            <input type="text" value="{{ check.salesforce_id }}" 
-                                   class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg font-mono text-sm"
-                                   name="salesforce_id" readonly>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Created At</label>
-                            <input type="text" value="{{ check.created_at[:19] if check.created_at else '' }}" 
-                                   class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm"
-                                   readonly>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Validation Flags -->
-                {% if check.flags %}
-                <div class="space-y-3">
-                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
-                        <i class="fa-solid fa-flag mr-2 text-gray-700"></i>Validation Flags
-                    </h3>
-                    <div class="flex flex-wrap gap-2">
-                        {% for flag in check.flags %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            <i class="fa-solid fa-exclamation-triangle w-3 h-3 mr-1"></i>
-                            {{ flag | replace('_', ' ') | title }}
-                        </span>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </form>
-    </div>
-</div>
-            
-            
-            
-            
             </div>
         </div>
-
-        
-
+    </main>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -423,7 +474,7 @@
             let isDragging = false;
             let lastX = 0;
             let lastY = 0;
-            let isMouseDown = false;
+            let isMouseDown = false; 
             let dragThreshold = 3;
             let gridVisible = true;
             
@@ -495,28 +546,26 @@
                 });
             }
 
-
-            
-        // Update the grid toggle functionality section:
-        if (toggleGridBtn && imageContainer) {
-            // Set initial state - grid visible by default
-            imageContainer.classList.remove('grid-background-hidden');
-            imageContainer.classList.add('grid-background');
-            toggleGridBtn.classList.add('bg-blue-100', 'text-blue-700');
-            
-            toggleGridBtn.addEventListener('click', () => {
-                gridVisible = !gridVisible;
-                if (gridVisible) {
-                    imageContainer.classList.remove('grid-background-hidden');
-                    imageContainer.classList.add('grid-background');
-                    toggleGridBtn.classList.add('bg-blue-100', 'text-blue-700');
-                } else {
-                    imageContainer.classList.remove('grid-background');
-                    imageContainer.classList.add('grid-background-hidden');
-                    toggleGridBtn.classList.remove('bg-blue-100', 'text-blue-700');
-                }
-            });
-        }
+            // Grid toggle functionality
+            if (toggleGridBtn && imageContainer) {
+                // Set initial state - grid visible by default
+                imageContainer.classList.remove('grid-background-hidden');
+                imageContainer.classList.add('grid-background');
+                toggleGridBtn.classList.add('bg-blue-100', 'text-blue-700');
+                
+                toggleGridBtn.addEventListener('click', () => {
+                    gridVisible = !gridVisible;
+                    if (gridVisible) {
+                        imageContainer.classList.remove('grid-background-hidden');
+                        imageContainer.classList.add('grid-background');
+                        toggleGridBtn.classList.add('bg-blue-100', 'text-blue-700');
+                    } else {
+                        imageContainer.classList.remove('grid-background');
+                        imageContainer.classList.add('grid-background-hidden');
+                        toggleGridBtn.classList.remove('bg-blue-100', 'text-blue-700');
+                    }
+                });
+            }
             
             // Enhanced drag functionality
             function startDrag(clientX, clientY) {
@@ -649,45 +698,83 @@
                 }
             });
 
-            // NEW: Quick Approve functionality
+            // Enhanced field validation status indicators
+            function updateFieldStatus() {
+                // Get all form fields (inputs and textareas)
+                const allFields = document.querySelectorAll('input, textarea');
+                
+                allFields.forEach(field => {
+                    // Skip disabled and readonly fields
+                    if (field.disabled || field.readOnly) return;
+                    
+                    const container = field.closest('.field-container');
+                    if (!container) return;
+                    
+                    const checkIcon = container.querySelector('.fa-check');
+                    const warningIcon = container.querySelector('.fa-exclamation-triangle');
+                    const isRequired = field.hasAttribute('data-required');
+                    
+                    // Check if field has a meaningful value (not just placeholder text)
+                    const fieldValue = field.value ? field.value.trim() : '';
+                    const placeholderValues = ['none', 'null', 'n/a', 'na', '', 'undefined', 'nil'];
+                    const hasRealValue = fieldValue !== '' && !placeholderValues.includes(fieldValue.toLowerCase());
+                    
+                    if (hasRealValue) {
+                        // Field has real value - show as complete (green)
+                        field.classList.remove('field-incomplete', 'field-error');
+                        field.classList.add('field-complete');
+                        if (checkIcon) {
+                            checkIcon.classList.remove('hidden');
+                        }
+                        if (warningIcon) {
+                            warningIcon.classList.add('hidden');
+                        }
+                    } else if (isRequired) {
+                        // Required field with no real value - show as incomplete (red)
+                        field.classList.remove('field-complete', 'field-error');
+                        field.classList.add('field-incomplete');
+                        if (checkIcon) {
+                            checkIcon.classList.add('hidden');
+                        }
+                        if (warningIcon) {
+                            warningIcon.classList.remove('hidden');
+                        }
+                    } else {
+                        // Optional field with no real value - neutral state
+                        field.classList.remove('field-complete', 'field-incomplete', 'field-error');
+                        if (checkIcon) {
+                            checkIcon.classList.add('hidden');
+                        }
+                        if (warningIcon) {
+                            warningIcon.classList.add('hidden');
+                        }
+                    }
+                });
+            }
+
+            // Add event listeners for field validation
+            document.querySelectorAll('input, textarea').forEach(field => {
+                field.addEventListener('blur', updateFieldStatus);
+                field.addEventListener('input', updateFieldStatus);
+            });
+
+            // Initial field status check when page loads
+            updateFieldStatus();
+
+            // Action button functionality
             document.getElementById('quickApprove')?.addEventListener('click', function() {
                 if (confirm('Are you sure you want to approve this check?')) {
                     alert('Quick approve functionality will be implemented next');
                 }
             });
 
-            // NEW: Send to Review functionality
             document.getElementById('sendToReview')?.addEventListener('click', function() {
-                document.getElementById('reviewModal').classList.remove('hidden');
+                alert('Send to review functionality will be implemented next');
             });
 
-            // NEW: Save Progress functionality  
             document.getElementById('saveProgress')?.addEventListener('click', function() {
                 alert('Save progress functionality will be implemented next');
             });
-
-            // NEW: Review modal handlers
-            document.getElementById('cancelReview')?.addEventListener('click', function() {
-                document.getElementById('reviewModal').classList.add('hidden');
-            });
-
-            document.getElementById('confirmReview')?.addEventListener('click', function() {
-                const reason = document.getElementById('reviewReason').value;
-                const notes = document.getElementById('reviewNotes').value.trim();
-                const priority = document.querySelector('input[name="priority"]:checked')?.value;
-                
-                if (!reason) {
-                    alert('Please select a reason for review');
-                    return;
-                }
-                
-                // Here you would send the review data to your backend
-                console.log('Review data:', { reason, notes, priority });
-                alert('Check sent to review queue');
-                document.getElementById('reviewModal').classList.add('hidden');
-            });
-
-
         });
     </script>
 </body>
