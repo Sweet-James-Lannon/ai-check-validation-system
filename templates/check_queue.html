@@ -452,10 +452,7 @@
                     <i class="fa-solid fa-check-double w-4 h-4 mr-2"></i>
                     Force Approve (Override AI)
                 </button>
-                <button id="forceReject" class="w-full flex items-center justify-center px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
-                    <i class="fa-solid fa-ban w-4 h-4 mr-2"></i>
-                    Force Reject (Override AI)
-                </button>
+
                 <button id="sendToReview" class="w-full flex items-center justify-center px-4 py-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
                     <i class="fa-solid fa-user-check w-4 h-4 mr-2"></i>
                     Send to Manual Review
@@ -617,16 +614,7 @@
                 }
             });
             
-            document.getElementById('forceReject').addEventListener('click', async function() {
-                if (currentCheckId && currentCheckData) {
-                    const reason = prompt(`Reason for rejecting check ${currentCheckData.checkNumber}:`);
-                    if (reason) {
-                        await processCheck(currentCheckId, 'reject', null, `Force rejected - Manual override: ${reason}`);
-                        document.getElementById('manualOverrideModal').classList.add('hidden');
-                        resetModalState();
-                    }
-                }
-            });
+
             
             document.getElementById('sendToReview').addEventListener('click', async function() {
                 if (currentCheckId) {
