@@ -67,14 +67,12 @@ def dashboard_home():
         }
         return render_template("main_dashboard.html", user=user, metrics=document_metrics, error_message="Failed to load system metrics")
 
-
 @dashboard_bp.route("/checks/")
 @login_required
 def checks_dashboard():
     """Check-specific dashboard with AI chat and validation tools"""
     user = session.get("user")
     return render_template("checks_dashboard.html", user=user)
-
 
 @dashboard_bp.route("/checks/queue")
 @login_required
@@ -138,7 +136,6 @@ def check_queue():
                              total_count=0,
                              error_message="Failed to load checks from database")
     
-
 @dashboard_bp.route("/checks/detail/<check_id>")
 @login_required
 def check_detail(check_id):
@@ -203,14 +200,12 @@ def check_detail(check_id):
                              user=user,
                              error_message=f"Failed to load check {check_id}"), 500
 
-
 @dashboard_bp.route("/checks/review")
 @login_required
 def check_review():
     """Check review queue page for manual validation"""
     user = session.get("user")
     return render_template("check_review.html", user=user)
-
 
 # NEW DOCUMENT TYPE ROUTES
 @dashboard_bp.route("/contracts/")
@@ -220,14 +215,12 @@ def contracts_dashboard():
     user = session.get("user")
     return render_template("contracts_dashboard.html", user=user)
 
-
 @dashboard_bp.route("/legal-documents/")
 @login_required
 def legal_documents_dashboard():
     """Legal documents dashboard with AI chat and analysis tools"""
     user = session.get("user")
     return render_template("legal_documents_dashboard.html", user=user)
-
 
 @dashboard_bp.route("/documents/")
 @login_required
