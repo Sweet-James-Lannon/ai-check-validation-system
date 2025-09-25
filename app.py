@@ -1,5 +1,34 @@
+
+"""
+=============================================================================
+MAIN APPLICATION ENTRY POINT - Check Validation System
+=============================================================================
+Flask application factory and configuration for the AI-powered check validation
+system. Handles blueprint registration, session management, and environment
+configuration for both development and production deployments.
+
+System Overview:
+- AI-powered financial check validation
+- Azure Entra ID enterprise authentication
+- Supabase database integration
+- OpenAI/Azure AI model flexibility
+- n8n automation pipeline integration
+
+Deployment Targets:
+- Development: Local Flask server
+- Production: Azure Web App with GitHub Actions CI/CD
+
+Author: Sweet James Development Team
+Last Updated: September 2025
+=============================================================================
+"""
+
 from flask import Flask
 from config import Config
+
+# =============================================================================
+# BLUEPRINT IMPORTS - Route Module Registration
+# =============================================================================
 
 # Import blueprints
 from routes.auth_routes import auth_bp
@@ -9,7 +38,8 @@ from routes.automation_routes import automation_bp
 from routes.supabase_debug_routes import supabase_debug_bp
 from routes.direct_test_routes import direct_test_bp
 
-# Try to import chat routes with error handling
+# === AI Service Integration - With Error Handling ===
+
 try:
     from routes.chat_routes import chat_bp
     CHAT_ROUTES_AVAILABLE = True
@@ -18,8 +48,18 @@ except ImportError as e:
     print(f"❌ Failed to import chat routes: {e}")
     CHAT_ROUTES_AVAILABLE = False
 
+# =============================================================================
+# FLASK APPLICATION SETUP
+# =============================================================================
+
+
 app = Flask(__name__)
 config = Config()
+
+# =============================================================================
+# SECURITY & SESSION CONFIGURATION
+# =============================================================================
+
 app.secret_key = config.SECRET_KEY
 app.config.update(
     PERMANENT_SESSION_LIFETIME=config.PERMANENT_SESSION_LIFETIME,
@@ -37,8 +77,18 @@ app.config.update(
     SESSION_SERIALIZATION_FORMAT=config.SESSION_SERIALIZATION_FORMAT,
 )
 
+# =============================================================================
+# ENVIRONMENT DETECTION & CONFIGURATION
+# =============================================================================
+
+
 # Update your configuration variables
 is_production = config.IS_PRODUCTION
+
+# =============================================================================
+# BLUEPRINT REGISTRATION - Route Module Activation
+# =============================================================================
+
 
 # Register blueprints
 app.register_blueprint(auth_bp)
@@ -55,6 +105,10 @@ if CHAT_ROUTES_AVAILABLE:
 else:
     print("⚠️ Chat routes NOT registered - check services/ai_service.py")
 
+# =============================================================================
+# SYSTEM DIAGNOSTICS & DEBUGGING
+# =============================================================================
+
 # Add a debug route to check what's registered
 @app.route("/debug/routes")
 def debug_routes():
@@ -66,6 +120,11 @@ def debug_routes():
             'rule': rule.ruleç
         })
     return {"routes": routes}
+
+# =============================================================================
+# APPLICATION STARTUP & DEVELOPMENT SERVER
+# =============================================================================
+
 
 if __name__ == "__main__":
     print(f"🚀 Starting Flask app in {'production' if is_production else 'development'} mode")

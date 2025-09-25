@@ -1,3 +1,15 @@
+"""
+=============================================================================
+DASHBOARD ROUTES - Check Validation System
+=============================================================================
+Primary routes for check validation dashboard and document management.
+Handles main UI, check queues, validation workflows, and document dashboards.
+
+Author: Sweet James Development Team  
+Last Updated: September 2025
+=============================================================================
+"""
+
 from flask import Blueprint, render_template, session, redirect, url_for
 from utils.decorators import (
     login_required,
@@ -5,10 +17,17 @@ from utils.decorators import (
 from utils.logger import get_api_logger
 from services.supabase_service import supabase_service
 
+# =============================================================================
+# CONFIGURATION & SETUP
+# =============================================================================
+
 api_logger = get_api_logger()
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
+# =============================================================================
+# MAIN DASHBOARD ROUTES
+# =============================================================================
 
 @dashboard_bp.route("/")
 @login_required
@@ -66,6 +85,10 @@ def dashboard_home():
             'general_documents': {'total': 0, 'processed_today': 0, 'pending': 0, 'success_rate': 0}
         }
         return render_template("main_dashboard.html", user=user, metrics=document_metrics, error_message="Failed to load system metrics")
+
+# =============================================================================
+# CHECK VALIDATION ROUTES
+# =============================================================================
 
 @dashboard_bp.route("/checks/")
 @login_required
@@ -207,7 +230,10 @@ def check_review():
     user = session.get("user")
     return render_template("check_review.html", user=user)
 
-# NEW DOCUMENT TYPE ROUTES
+# =============================================================================
+# DOCUMENT MANAGEMENT ROUTES
+# =============================================================================
+
 @dashboard_bp.route("/contracts/")
 @login_required
 def contracts_dashboard():
@@ -228,3 +254,7 @@ def general_documents_dashboard():
     """General documents dashboard with AI chat and analysis tools"""
     user = session.get("user")
     return render_template("general_documents_dashboard.html", user=user)
+
+# =============================================================================
+# END OF FILE
+# =============================================================================

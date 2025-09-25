@@ -1,7 +1,30 @@
+"""
+=============================================================================
+AUTHENTICATION ROUTES - Azure Entra ID Integration
+=============================================================================
+Handles user authentication using Microsoft Azure Entra ID (formerly Azure AD).
+Implements OAuth 2.0 authorization code flow with PKCE for secure enterprise SSO.
+
+Features:
+- Azure Entra ID OAuth 2.0 integration
+- Session management with CSRF protection
+- Automatic user profile extraction
+- Secure token handling and validation
+- Environment-aware redirect URIs
+
+Author: Sweet James Development Team
+Last Updated: September 2025
+=============================================================================
+"""
+
 from flask import Blueprint, redirect, url_for, session, request, render_template_string
 from msal import ConfidentialClientApplication
 from config import Config
 import uuid
+
+# =============================================================================
+# CONFIGURATION & SETUP
+# =============================================================================
 
 auth_bp = Blueprint("auth", __name__)
 config = Config()
