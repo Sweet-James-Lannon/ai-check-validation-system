@@ -9,8 +9,6 @@ from routes.automation_routes import automation_bp
 from routes.supabase_debug_routes import supabase_debug_bp
 from routes.direct_test_routes import direct_test_bp
 
-
-
 # Try to import chat routes with error handling
 try:
     from routes.chat_routes import chat_bp
