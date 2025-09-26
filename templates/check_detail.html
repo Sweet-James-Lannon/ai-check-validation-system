@@ -894,7 +894,7 @@
                 const result = await response.json();
                 
                 if (result.status === 'success') {
-                    showApprovedBanner(result.validated_at);
+                    showApprovedBanner(result.validated_at, result.validated_by_name);
                     showNotification('Check approved! Salesforce protocol initiated.', 'success');
                     disableFormEditing();
                 } else {
@@ -951,8 +951,7 @@
             }
         });
 
-        // Helper functions for UI updates
-        function showApprovedBanner(validatedAt) {
+        function showApprovedBanner(validatedAt, validatedByName) {
             const main = document.querySelector('main');
             const banner = document.createElement('div');
             banner.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-r-lg';
@@ -961,7 +960,7 @@
                     <i class="fa-solid fa-check-circle w-5 h-5 mr-3"></i>
                     <div>
                         <strong>✓ Check Approved!</strong> Salesforce protocol has been initiated.
-                        <div class="text-sm mt-1">Validated at: ${new Date(validatedAt).toLocaleString()}</div>
+                        <div class="text-sm mt-1">Validated at: ${new Date(validatedAt).toLocaleString()}${validatedByName ? ` by ${validatedByName}` : ''}</div>
                     </div>
                 </div>
             `;

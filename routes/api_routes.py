@@ -167,6 +167,7 @@ def approve_check(check_id):
         update_data.update({
             'status': 'approved',
             'validated_at': approval_timestamp,  # ← THIS triggers Jai's edge function
+            'validated_by': user.get('preferred_username', 'unknown'),  # ← Capture approving user
             'updated_at': approval_timestamp,
             'reviewed_by': user.get('preferred_username', 'unknown'),
             'reviewed_at': approval_timestamp
@@ -181,6 +182,8 @@ def approve_check(check_id):
                 "status": "success", 
                 "message": "Check approved successfully - Salesforce protocol initiated",
                 "validated_at": response.data[0].get('validated_at'),
+                "validated_by": response.data[0].get('validated_by'),
+                "validated_by_name": user.get('name', user.get('preferred_username', 'Unknown')),
                 "new_status": "approved"
             })
         else:
