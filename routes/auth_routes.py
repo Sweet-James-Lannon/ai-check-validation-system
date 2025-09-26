@@ -36,6 +36,10 @@ AUTHORITY = config.azure_authority
 REDIRECT_PATH = "/getAToken"
 SCOPE = config.AZURE_SCOPE
 
+# =============================================================================
+# AUTHENTICATION FLOW ROUTES
+# =============================================================================
+
 @auth_bp.route("/login")
 def login():
     session["state"] = str(uuid.uuid4())
@@ -79,3 +83,7 @@ def logout():
     return redirect(
         f"{AUTHORITY}/oauth2/v2.0/logout?post_logout_redirect_uri={url_for('dashboard.dashboard_home', _external=True)}"
     )
+
+# =============================================================================
+# END OF FILE
+# =============================================================================

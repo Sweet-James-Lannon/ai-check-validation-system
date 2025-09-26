@@ -48,6 +48,83 @@
             border-color: #ef4444;
             background-color: #fef2f2;
         }
+
+        /* ===================================================================== */
+        /* L-SHAPED CORNER MARKERS - Precisely Aligned to Document Edges */
+        /* ===================================================================== */
+        
+        .image-with-corners {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .corner-marker {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        /* L-shaped corner using CSS borders - Top Left */
+        /* Positioned with 15px offset to float around the document */
+        .corner-top-left {
+            top: -20px;
+            left: -20px;
+            width: 16px;
+            height: 16px;
+            border-left: 5px solid rgba(0, 0, 0, 0.9);
+            border-top: 5px solid rgba(0, 0, 0, 0.9);
+        }
+        
+        /* L-shaped corner - Top Right */
+        .corner-top-right {
+            top: -20px;
+            right: -20px;
+            width: 16px;
+            height: 16px;
+            border-right: 5px solid rgba(0, 0, 0, 0.9);
+            border-top: 5px solid rgba(0, 0, 0, 0.9);
+        }
+        
+        /* L-shaped corner - Bottom Left */
+        .corner-bottom-left {
+            bottom: -20px;
+            left: -20px;
+            width: 16px;
+            height: 16px;
+            border-left: 5px solid rgba(0, 0, 0, 0.9);
+            border-bottom: 5px solid rgba(0, 0, 0, 0.9);
+        }
+        
+        /* L-shaped corner - Bottom Right */
+        .corner-bottom-right {
+            bottom: -20px;
+            right: -20px;
+            width: 16px;
+            height: 16px;
+            border-right: 5px solid rgba(0, 0, 0, 0.9);
+            border-bottom: 5px solid rgba(0, 0, 0, 0.9);
+        }
+        
+        /* Subtle animation for professional feel */
+        @keyframes cornerPulse {
+            0%, 100% { opacity: 0.9; }
+            50% { opacity: 1; }
+        }
+        
+        .corner-marker:hover {
+            animation: cornerPulse 1s ease-in-out;
+        }
+        
+        /* Completely hide corners when grid is off */
+        .corners-hidden .corner-marker {
+            display: none;
+        }
+        
+        /* Fade corners to light grey when dragging in grid mode */
+        .corners-faded .corner-marker {
+            opacity: 0.3;
+            transition: opacity 0.2s ease;
+        }
     </style>
 </head>
 <body>
@@ -179,15 +256,23 @@
                     <div class="flex-1 relative">
                         {% if check.image_data %}
                             <div id="imageContainer" class="h-full overflow-auto bg-gray-50 grid-background-hidden" style="cursor: grab;">
-                                <div id="imageWrapper" class="p-4 h-full flex items-center justify-center">
-                                    <img id="checkImage" 
-                                        src="data:{{ check.image_mime_type }};base64,{{ check.image_data }}" 
-                                        alt="Check Image - {{ check.check_number }}" 
-                                        class="border shadow-lg bg-white max-w-full max-h-full object-contain"
-                                        style="transform: scale(0.9) translate(0px, 0px); transition: transform 0.1s ease-out;"
-                                        draggable="false"
-                                        onload="console.log('Image loaded successfully')"
-                                        onerror="console.error('Image failed to load'); this.style.display='none'; document.getElementById('imageError').style.display='flex';">
+                                <div id="imageWrapper" class="p-4 h-full flex items-center justify-center relative">
+                                    <div class="image-with-corners">
+                                        <img id="checkImage" 
+                                            src="data:{{ check.image_mime_type }};base64,{{ check.image_data }}" 
+                                            alt="Check Image - {{ check.check_number }}" 
+                                            class="border shadow-lg bg-white max-w-full max-h-full object-contain"
+                                            style="transition: transform 0.1s ease-out;"
+                                            draggable="false"
+                                            onload="console.log('Image loaded successfully')"
+                                            onerror="console.error('Image failed to load'); this.style.display='none'; document.getElementById('imageError').style.display='flex';">
+                                        
+                                        <!-- L-shaped Corner Markers - Follow Image Transform -->
+                                        <div class="corner-marker corner-top-left"></div>
+                                        <div class="corner-marker corner-top-right"></div>
+                                        <div class="corner-marker corner-bottom-left"></div>
+                                        <div class="corner-marker corner-bottom-right"></div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -226,11 +311,11 @@
                             {% if check.file_name %}
                             <span><i class="fa-solid fa-file mr-1"></i>{{ check.file_name }}</span>
                             {% endif %}
-                            <span id="imageDimensions"><i class="fa-solid fa-ruler-combined mr-1"></i></span>
+                            <!-- <span id="imageDimensions"><i class="fa-solid fa-ruler-combined mr-1"></i></span> -->
                         </div>
                         <div class="flex items-center gap-4">
                             <span><i class="fa-solid fa-mouse-pointer mr-1"></i>Drag to pan</span>
-                            <span id="zoomLevel">90%</span>
+                            <span id="zoomLevel">80%</span>
                         </div>
                     </div>
                 </div>
@@ -466,9 +551,10 @@
             const toggleGridBtn = document.getElementById('toggleGrid');
             const imageDimensions = document.getElementById('imageDimensions');
             const zoomLevel = document.getElementById('zoomLevel');
+            const imageWithCorners = document.querySelector('.image-with-corners');
             
             // Enhanced pan and zoom state
-            let currentZoom = 0.9;
+            let currentZoom = 0.8;
             let panX = 0;
             let panY = 0;
             let isDragging = false;
@@ -478,17 +564,29 @@
             let dragThreshold = 3;
             let gridVisible = true;
             
+            // Apply initial state immediately - wait for DOM to be fully ready
+            setTimeout(() => {
+                if (imageWithCorners) {
+                    updateZoomLevel();
+                    updateTransform();
+                    console.log('Initial zoom applied:', currentZoom);
+                }
+            }, 100);
+            
             // Update display when image loads
             if (checkImage) {
                 checkImage.onload = function() {
                     updateImageDimensions();
                     updateZoomLevel();
+                    updateTransform(); // Apply initial zoom transform
                 };
             }
             
             function updateTransform() {
-                if (checkImage) {
-                    checkImage.style.transform = `scale(${currentZoom}) translate(${panX}px, ${panY}px)`;
+                if (imageWithCorners) {
+                    // Apply transform to the entire image-with-corners container
+                    // This ensures corners follow the image exactly
+                    imageWithCorners.style.transform = `scale(${currentZoom}) translate(${panX}px, ${panY}px)`;
                 }
             }
             
@@ -540,7 +638,7 @@
             
             if (resetZoomBtn) {
                 resetZoomBtn.addEventListener('click', () => {
-                    currentZoom = 0.9;
+                    currentZoom = 0.8;
                     centerImage();
                     updateZoomLevel();
                 });
@@ -556,18 +654,26 @@
                 toggleGridBtn.addEventListener('click', () => {
                     gridVisible = !gridVisible;
                     if (gridVisible) {
+                        // Show grid and corners
                         imageContainer.classList.remove('grid-background-hidden');
                         imageContainer.classList.add('grid-background');
                         toggleGridBtn.classList.add('bg-blue-100', 'text-blue-700');
+                        if (imageWithCorners) {
+                            imageWithCorners.classList.remove('corners-hidden');
+                        }
                     } else {
+                        // Hide grid and corners
                         imageContainer.classList.remove('grid-background');
                         imageContainer.classList.add('grid-background-hidden');
                         toggleGridBtn.classList.remove('bg-blue-100', 'text-blue-700');
+                        if (imageWithCorners) {
+                            imageWithCorners.classList.add('corners-hidden');
+                        }
                     }
                 });
             }
             
-            // Enhanced drag functionality
+            // Enhanced drag functionality with corner marker interaction
             function startDrag(clientX, clientY) {
                 isDragging = false; // Will become true only if mouse moves
                 isMouseDown = true;
@@ -575,6 +681,11 @@
                 lastY = clientY;
                 imageContainer.style.cursor = 'grabbing';
                 imageContainer.style.userSelect = 'none';
+                
+                // Fade corner markers while dragging if grid is visible
+                if (imageWithCorners && gridVisible) {
+                    imageWithCorners.classList.add('corners-faded');
+                }
             }
             
             function updateDrag(clientX, clientY) {
@@ -604,6 +715,11 @@
                 isMouseDown = false;
                 imageContainer.style.cursor = 'grab';
                 imageContainer.style.userSelect = '';
+                
+                // Remove fade effect when dragging ends if grid is visible
+                if (imageWithCorners && gridVisible) {
+                    imageWithCorners.classList.remove('corners-faded');
+                }
             }
             
             // Mouse events
@@ -686,7 +802,7 @@
                     case 'r':
                     case 'R':
                         e.preventDefault();
-                        currentZoom = 0.9;
+                        currentZoom = 0.8;
                         centerImage();
                         updateZoomLevel();
                         break;

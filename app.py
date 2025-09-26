@@ -52,7 +52,6 @@ except ImportError as e:
 # FLASK APPLICATION SETUP
 # =============================================================================
 
-
 app = Flask(__name__)
 config = Config()
 
@@ -89,7 +88,6 @@ is_production = config.IS_PRODUCTION
 # BLUEPRINT REGISTRATION - Route Module Activation
 # =============================================================================
 
-
 # Register blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
@@ -117,14 +115,13 @@ def debug_routes():
         routes.append({
             'endpoint': rule.endpoint,
             'methods': list(rule.methods),
-            'rule': rule.ruleç
+            'rule': rule.rule
         })
     return {"routes": routes}
 
 # =============================================================================
 # APPLICATION STARTUP & DEVELOPMENT SERVER
 # =============================================================================
-
 
 if __name__ == "__main__":
     print(f"🚀 Starting Flask app in {'production' if is_production else 'development'} mode")
