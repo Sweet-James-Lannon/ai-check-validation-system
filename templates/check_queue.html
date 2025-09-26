@@ -297,6 +297,88 @@
         .sidebar-overlay.active {
             display: block;
         }
+
+        /* Manila Folder Tab Navigation Styles */
+        .tab-button {
+            color: #6b7280;
+            position: relative;
+            z-index: 10;
+            border: none;
+            outline: none;
+            border-radius: 12px 12px 0 0;
+            margin-right: 8px;
+            padding-left: 24px;
+            padding-right: 24px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        .tab-button:hover {
+            color: #374151;
+            background: #f1f5f9;
+        }
+
+        .tab-button.active {
+            color: #ffffff;
+            background: #1e293b;
+            z-index: 20;
+        }
+
+        .tab-button:not(.active) {
+            background: #e2e8f0;
+            color: #64748b;
+        }
+
+        .tab-button:first-child {
+            margin-left: 0;
+        }
+
+        .tab-button:last-child {
+            margin-right: 0;
+        }
+
+        /* Remove any border/gap between tabs and content */
+        .tab-content .surface {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            margin-top: -2px;
+            border-top: none !important;
+        }
+        
+        /* Make tabs perfectly flush */
+        .tab-button.active {
+            margin-bottom: -1px;
+        }
+
+        .tab-count {
+            transition: all 0.2s ease;
+        }
+
+        /* Tab badge styling */
+        .tab-button:not(.active) .tab-count {
+            background-color: rgba(255, 255, 255, 0.3) !important;
+            color: #475569 !important;
+        }
+
+        .tab-button.active .tab-count {
+            background-color: rgba(255, 255, 255, 0.2) !important;
+            color: #ffffff !important;
+        }
+
+        /* Tab Content Styles */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Table top-right corner rounding */
+        .tab-content table thead tr th:last-child {
+            border-top-right-radius: 12px;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -509,10 +591,37 @@
             </div>
             {% endif %}
 
-            <!-- Enhanced Checks Table with Dynamic Actions -->
-            {% if checks %}
-            <div class="surface rounded-xl overflow-hidden">
-                <div class="px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-700 rounded-t-xl">
+            <!-- Manila Folder Style Tab Navigation -->
+            <div class="mb-0" style="margin-bottom: 2px; margin-left: 1px;">
+                <nav class="flex">
+                    <button class="tab-button active py-3 font-medium text-sm transition-all duration-200" 
+                            data-tab="pending">
+                        <i class="fa-solid fa-clock w-4 h-4 mr-2"></i>
+                        Pending
+                        <span class="ml-2 bg-white/20 text-slate-600 text-xs px-2 py-0.5 rounded-full tab-count" id="pending-count">0</span>
+                    </button>
+                    
+                    <button class="tab-button py-3 font-medium text-sm transition-all duration-200" 
+                            data-tab="needs_review">
+                        <i class="fa-solid fa-exclamation-triangle w-4 h-4 mr-2"></i>
+                        Needs Review
+                        <span class="ml-2 bg-white/30 text-slate-700 text-xs px-2 py-0.5 rounded-full tab-count" id="needs_review-count">0</span>
+                    </button>
+                    
+                    <button class="tab-button py-3 font-medium text-sm transition-all duration-200" 
+                            data-tab="approved">
+                        <i class="fa-solid fa-check-circle w-4 h-4 mr-2"></i>
+                        Approved
+                        <span class="ml-2 bg-white/30 text-slate-700 text-xs px-2 py-0.5 rounded-full tab-count" id="approved-count">0</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content for Pending -->
+            <div class="tab-content active" id="pending-content">
+                {% if checks %}
+                <div class="surface rounded-b-xl overflow-hidden" style="border-top: none;">
+                <div class="px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-700">
                     <h2 class="text-lg font-semibold text-white">Intelligent Check Processing Queue</h2>
                     <p class="text-sm text-white/80">AI-powered routing: Green buttons = Auto-approve ready, Orange buttons = Forward for review</p>
                 </div>
@@ -659,6 +768,35 @@
                 </div>
             </div>
             {% endif %}
+            </div>
+
+            <!-- Tab Content for Needs Review -->
+            <div class="tab-content" id="needs_review-content">
+                <div class="surface rounded-b-xl overflow-hidden" style="border-top: none;">
+                <div class="px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-700">
+                        <h2 class="text-lg font-semibold text-white">Checks Requiring Manual Review</h2>
+                        <p class="text-sm text-white/80">Low confidence checks flagged for human validation</p>
+                    </div>
+                    <div class="p-6 text-center text-gray-500">
+                        <i class="fa-solid fa-exclamation-triangle w-12 h-12 mx-auto mb-4 text-gray-300"></i>
+                        <p>No checks requiring manual review at this time</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content for Approved -->
+            <div class="tab-content" id="approved-content">
+                <div class="surface rounded-b-xl overflow-hidden" style="border-top: none;">
+                <div class="px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-700">
+                        <h2 class="text-lg font-semibold text-white">Approved Checks</h2>
+                        <p class="text-sm text-white/80">Successfully validated and approved checks</p>
+                    </div>
+                    <div class="p-6 text-center text-gray-500">
+                        <i class="fa-solid fa-check-circle w-12 h-12 mx-auto mb-4 text-gray-300"></i>
+                        <p>No approved checks to display</p>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -712,6 +850,31 @@
         document.addEventListener('DOMContentLoaded', function() {
             let currentCheckId = null;
             let currentCheckData = null;
+            
+            // Tab functionality
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetTab = this.dataset.tab;
+                    
+                    // Remove active class from all buttons
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Hide all tab contents
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Show target tab content
+                    document.getElementById(targetTab + '-content').classList.add('active');
+                });
+            });
+            
+            // Initialize tab counts
+            updateTabCounts();
             
             // Mobile menu functionality
             const mobileMenuBtn = document.getElementById('mobileMenuBtn');
@@ -975,6 +1138,18 @@
                 if (remainingRows === 0) {
                     setTimeout(() => location.reload(), 1000); // Refresh to show empty state
                 }
+            }
+            
+            function updateTabCounts() {
+                // Count checks by status from the current data
+                const pendingCount = document.querySelectorAll('tbody tr').length; // Current pending checks
+                const needsReviewCount = 0; // Would come from backend  
+                const approvedCount = 0; // Would come from backend
+                
+                // Update tab counts
+                document.getElementById('pending-count').textContent = pendingCount;
+                document.getElementById('needs_review-count').textContent = needsReviewCount;
+                document.getElementById('approved-count').textContent = approvedCount;
             }
             
             function showToast(message, type = 'info') {

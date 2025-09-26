@@ -249,7 +249,7 @@
             </div>
             
             <!-- Main Content Area - Image Left, Fields Right -->
-            <div class="flex flex-col lg:flex-row min-h-[700px]">
+            <div class="flex flex-col lg:flex-row min-h-[700px]" style="border-top-right-radius: 12px; overflow: hidden;">
                 <!-- Left Side - Check Image -->
                 <div class="lg:w-1/2 bg-gray-50 border-r border-gray-200 flex flex-col">
                     <!-- Image Container -->
@@ -951,7 +951,7 @@
             }
         });
 
-        function showApprovedBanner(validatedAt, validatedByName) {
+        function showApprovedBanner(validatedAt) {
             const main = document.querySelector('main');
             const banner = document.createElement('div');
             banner.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-r-lg';
@@ -960,7 +960,7 @@
                     <i class="fa-solid fa-check-circle w-5 h-5 mr-3"></i>
                     <div>
                         <strong>✓ Check Approved!</strong> Salesforce protocol has been initiated.
-                        <div class="text-sm mt-1">Validated at: ${new Date(validatedAt).toLocaleString()}${validatedByName ? ` by ${validatedByName}` : ''}</div>
+                        <div class="text-sm mt-1">Validated at: ${new Date(validatedAt).toLocaleString()}</div>
                     </div>
                 </div>
             `;
