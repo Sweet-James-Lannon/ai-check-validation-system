@@ -1,0 +1,280 @@
+"""
+=============================================================================
+API ROUTES - Check Validation System
+=============================================================================
+RESTful API endpoints for check validation operations.
+Handles CRUD operations, approval workflows, and data persistence.
+
+Author: Sweet James Development Team  
+Last Updated: September 2025
+=============================================================================
+"""
+
+from flask import Blueprint, request, jsonify, session
+from utils.decorators import login_required
+from utils.logger import get_api_logger
+from services.supabase_service import supabase_service
+from datetime import datetime
+
+# =============================================================================
+# CONFIGURATION & SETUP
+# =============================================================================
+
+api_logger = get_api_logger()
+api_bp = Blueprint("api", __name__)
+
+# =============================================================================
+# CHECK VALIDATION API ENDPOINTS
+# =============================================================================
+
+@api_bp.route("/api/checks/save/<check_id>", methods=["POST"])
+@login_required
+def save_check(check_id):
+    """
+    Save check modifications without triggering validation
+    Updates Supabase record but does NOT set validated_at timestamp
+    """
+    try:
+        user = session.get("user")
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({"status": "error", "message": "No data provided"}), 400
+        
+        # Prepare update data - only include fields that exist in schema
+        update_data = {}
+        
+        # Map form fields to database fields
+        field_mapping = {
+            'payee_name': 'payee_name',
+            'pay_to': 'pay_to', 
+            'amount': 'amount',
+            'check_date': 'check_date',
+            'check_number': 'check_number',
+            'routing_number': 'routing_number',
+            'account_number': 'account_number',
+            'micr_line': 'micr_line',
+            'matter_name': 'matter_name',
+            'case_type': 'case_type',
+            'delivery_service': 'delivery_service',
+            'memo': 'memo',
+            'policy_number': 'policy_number',
+            'claim_number': 'claim_number',
+            'insurance_company_name': 'insurance_company_name',
+            'matter_id': 'matter_id',
+            'check_issue_date': 'check_issue_date'
+        }
+        
+        # Process each field from the form
+        for form_field, db_field in field_mapping.items():
+            if form_field in data and data[form_field] is not None:
+                value = data[form_field]
+                
+                # Handle amount conversion
+                if form_field == 'amount':
+                    try:
+                        # Remove currency symbols and convert to float
+                        if isinstance(value, str):
+                            value = value.replace('$', '').replace(',', '').strip()
+                        update_data[db_field] = float(value) if value else 0.0
+                    except (ValueError, TypeError):
+                        update_data[db_field] = 0.0
+                else:
+                    update_data[db_field] = str(value).strip() if value else None
+        
+        # Add metadata (but NOT validated_at - that's only for approval)
+        update_data.update({
+            'updated_at': datetime.utcnow().isoformat(),
+            'reviewed_by': user.get('preferred_username', 'unknown'),
+            'reviewed_at': datetime.utcnow().isoformat()
+        })
+        
+        # Update in Supabase
+        response = supabase_service.client.table('checks').update(update_data).eq('id', check_id).execute()
+        
+        if response.data and len(response.data) > 0:
+            api_logger.info(f"Check {check_id} saved by {user.get('preferred_username')}")
+            return jsonify({
+                "status": "success", 
+                "message": "Check saved successfully",
+                "updated_at": response.data[0].get('updated_at'),
+                "reviewed_by": response.data[0].get('reviewed_by')
+            })
+        else:
+            api_logger.error(f"No data returned when saving check {check_id}")
+            return jsonify({"status": "error", "message": "Failed to save check - no data returned"}), 500
+            
+    except Exception as e:
+        api_logger.error(f"Error saving check {check_id}: {str(e)}")
+        return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
+
+@api_bp.route("/api/checks/approve/<check_id>", methods=["POST"])
+@login_required  
+def approve_check(check_id):
+    """
+    Approve check and trigger Salesforce protocol
+    Sets validated_at timestamp which triggers Jai's edge function
+    """
+    try:
+        user = session.get("user")
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({"status": "error", "message": "No data provided"}), 400
+        
+        # Prepare update data with all current form values
+        update_data = {}
+        
+        # Map form fields to database fields (same as save)
+        field_mapping = {
+            'payee_name': 'payee_name',
+            'pay_to': 'pay_to', 
+            'amount': 'amount',
+            'check_date': 'check_date',
+            'check_number': 'check_number',
+            'routing_number': 'routing_number',
+            'account_number': 'account_number',
+            'micr_line': 'micr_line',
+            'matter_name': 'matter_name',
+            'case_type': 'case_type',
+            'delivery_service': 'delivery_service',
+            'memo': 'memo',
+            'policy_number': 'policy_number',
+            'claim_number': 'claim_number',
+            'insurance_company_name': 'insurance_company_name',
+            'matter_id': 'matter_id',
+            'check_issue_date': 'check_issue_date'
+        }
+        
+        # Process form fields
+        for form_field, db_field in field_mapping.items():
+            if form_field in data and data[form_field] is not None:
+                value = data[form_field]
+                
+                # Handle amount conversion
+                if form_field == 'amount':
+                    try:
+                        if isinstance(value, str):
+                            value = value.replace('$', '').replace(',', '').strip()
+                        update_data[db_field] = float(value) if value else 0.0
+                    except (ValueError, TypeError):
+                        update_data[db_field] = 0.0
+                else:
+                    update_data[db_field] = str(value).strip() if value else None
+        
+        # Add approval metadata - THIS TRIGGERS THE EDGE FUNCTION
+        approval_timestamp = datetime.utcnow().isoformat()
+        update_data.update({
+            'status': 'approved',
+            'validated_at': approval_timestamp,  # ← THIS triggers Jai's edge function
+            'updated_at': approval_timestamp,
+            'reviewed_by': user.get('preferred_username', 'unknown'),
+            'reviewed_at': approval_timestamp
+        })
+        
+        # Update in Supabase
+        response = supabase_service.client.table('checks').update(update_data).eq('id', check_id).execute()
+        
+        if response.data and len(response.data) > 0:
+            api_logger.info(f"Check {check_id} APPROVED by {user.get('preferred_username')} - triggering Salesforce protocol")
+            return jsonify({
+                "status": "success", 
+                "message": "Check approved successfully - Salesforce protocol initiated",
+                "validated_at": response.data[0].get('validated_at'),
+                "new_status": "approved"
+            })
+        else:
+            api_logger.error(f"No data returned when approving check {check_id}")
+            return jsonify({"status": "error", "message": "Failed to approve check - no data returned"}), 500
+            
+    except Exception as e:
+        api_logger.error(f"Error approving check {check_id}: {str(e)}")
+        return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
+
+@api_bp.route("/api/checks/<check_id>", methods=["GET"])
+@login_required
+def get_check_details(check_id):
+    """Get detailed information for a specific check"""
+    try:
+        response = supabase_service.client.table('checks').select('*').eq('id', check_id).single().execute()
+        
+        if response.data:
+            return jsonify({
+                "status": "success",
+                "check": response.data
+            })
+        else:
+            return jsonify({"status": "error", "message": "Check not found"}), 404
+            
+    except Exception as e:
+        api_logger.error(f"Error getting check {check_id}: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route("/api/checks/stats", methods=["GET"])
+@login_required
+def get_check_stats():
+    """Get check processing statistics"""
+    try:
+        # Get all checks
+        response = supabase_service.client.table('checks').select('status, confidence_score, created_at').execute()
+        
+        if not response.data:
+            return jsonify({
+                "status": "success",
+                "stats": {
+                    "total": 0,
+                    "pending": 0,
+                    "approved": 0,
+                    "rejected": 0,
+                    "high_confidence": 0,
+                    "low_confidence": 0
+                }
+            })
+        
+        checks = response.data
+        total = len(checks)
+        
+        # Calculate statistics
+        stats = {
+            "total": total,
+            "pending": len([c for c in checks if c.get('status') == 'pending']),
+            "approved": len([c for c in checks if c.get('status') == 'approved']),
+            "rejected": len([c for c in checks if c.get('status') == 'rejected']),
+            "high_confidence": len([c for c in checks if (c.get('confidence_score') or 0) > 0.8]),
+            "low_confidence": len([c for c in checks if (c.get('confidence_score') or 0) < 0.7])
+        }
+        
+        return jsonify({
+            "status": "success",
+            "stats": stats
+        })
+        
+    except Exception as e:
+        api_logger.error(f"Error getting check stats: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# =============================================================================
+# SYSTEM HEALTH API ENDPOINTS
+# =============================================================================
+
+@api_bp.route("/api/health", methods=["GET"])
+def api_health():
+    """Health check for API endpoints"""
+    try:
+        # Test Supabase connection
+        supabase_health = supabase_service.health_check()
+        
+        return jsonify({
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "services": {
+                "supabase": supabase_health
+            }
+        })
+        
+    except Exception as e:
+        api_logger.error(f"API health check failed: {str(e)}")
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e)
+        }), 503

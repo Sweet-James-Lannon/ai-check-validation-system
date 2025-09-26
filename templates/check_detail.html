@@ -868,29 +868,158 @@
                 });
             }
 
-            // Add event listeners for field validation
-            document.querySelectorAll('input, textarea').forEach(field => {
-                field.addEventListener('blur', updateFieldStatus);
-                field.addEventListener('input', updateFieldStatus);
-            });
-
-            // Initial field status check when page loads
-            updateFieldStatus();
-
-            // Action button functionality
-            document.getElementById('quickApprove')?.addEventListener('click', function() {
-                if (confirm('Are you sure you want to approve this check?')) {
-                    alert('Quick approve functionality will be implemented next');
+        document.getElementById('quickApprove')?.addEventListener('click', async function() {
+            if (!confirm('Are you sure you want to approve this check? This will trigger the Salesforce protocol.')) {
+                return;
+            }
+            
+            const formData = new FormData(document.getElementById('checkDetailsForm'));
+            const checkId = '{{ check.id }}';
+            
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            
+            try {
+                this.disabled = true;
+                this.innerHTML = '<i class="fa-solid fa-spinner fa-spin w-4 h-4 mr-2"></i>Approving...';
+                
+                const response = await fetch(`/api/checks/approve/${checkId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    showApprovedBanner(result.validated_at);
+                    showNotification('Check approved! Salesforce protocol initiated.', 'success');
+                    disableFormEditing();
+                } else {
+                    showNotification(result.message || 'Failed to approve check', 'error');
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fa-solid fa-check w-4 h-4"></i> Quick Approve';
                 }
-            });
+            } catch (error) {
+                console.error('Error approving check:', error);
+                showNotification('Error approving check', 'error');
+                this.disabled = false;
+                this.innerHTML = '<i class="fa-solid fa-check w-4 h-4"></i> Quick Approve';
+            }
+        });
 
-            document.getElementById('sendToReview')?.addEventListener('click', function() {
-                alert('Send to review functionality will be implemented next');
-            });
+        document.getElementById('sendToReview')?.addEventListener('click', function() {
+            // Redirect to review queue page 
+            window.location.href = '/checks/review';
+        });
 
-            document.getElementById('saveProgress')?.addEventListener('click', function() {
-                alert('Save progress functionality will be implemented next');
+        document.getElementById('saveProgress')?.addEventListener('click', async function() {
+            const formData = new FormData(document.getElementById('checkDetailsForm'));
+            const checkId = '{{ check.id }}';
+            
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            
+            try {
+                this.disabled = true;
+                this.innerHTML = '<i class="fa-solid fa-spinner fa-spin w-4 h-4 mr-2"></i>Saving...';
+                
+                const response = await fetch(`/api/checks/save/${checkId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    showNotification('Changes saved successfully!', 'success');
+                    updateLastSaved(result.updated_at);
+                } else {
+                    showNotification(result.message || 'Failed to save changes', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving changes:', error);
+                showNotification('Error saving changes', 'error');
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fa-solid fa-save w-4 h-4"></i> Save Progress';
+            }
+        });
+
+        // Helper functions for UI updates
+        function showApprovedBanner(validatedAt) {
+            const main = document.querySelector('main');
+            const banner = document.createElement('div');
+            banner.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-r-lg';
+            banner.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fa-solid fa-check-circle w-5 h-5 mr-3"></i>
+                    <div>
+                        <strong>✓ Check Approved!</strong> Salesforce protocol has been initiated.
+                        <div class="text-sm mt-1">Validated at: ${new Date(validatedAt).toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+            main.insertBefore(banner, main.firstChild);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function disableFormEditing() {
+            document.querySelectorAll('#checkDetailsForm input, #checkDetailsForm textarea').forEach(field => {
+                field.disabled = true;
+                field.classList.add('bg-gray-100', 'text-gray-600');
             });
+            
+            document.getElementById('saveProgress').disabled = true;
+            document.getElementById('quickApprove').disabled = true;
+            document.getElementById('sendToReview').disabled = true;
+            
+            document.getElementById('quickApprove').innerHTML = '<i class="fa-solid fa-check w-4 h-4"></i> Approved';
+            document.getElementById('quickApprove').classList.remove('bg-green-600', 'hover:bg-green-700');
+            document.getElementById('quickApprove').classList.add('bg-gray-400');
+        }
+
+        function updateLastSaved(timestamp) {
+            let lastSavedEl = document.getElementById('lastSaved');
+            if (!lastSavedEl) {
+                lastSavedEl = document.createElement('div');
+                lastSavedEl.id = 'lastSaved';
+                lastSavedEl.className = 'text-xs text-gray-500 mt-2';
+                document.querySelector('.surface').appendChild(lastSavedEl);
+            }
+            lastSavedEl.innerHTML = `<i class="fa-solid fa-clock mr-1"></i>Last saved: ${new Date(timestamp).toLocaleTimeString()}`;
+        }
+
+        function showNotification(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg text-white font-medium shadow-lg transform transition-all duration-300 ${
+                type === 'success' ? 'bg-green-600' :
+                type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+            }`;
+            
+            toast.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fa-solid fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'} w-4 h-4 mr-2"></i>
+                    ${message}
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
         });
     </script>
 </body>
