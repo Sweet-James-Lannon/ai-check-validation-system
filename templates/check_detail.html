@@ -201,6 +201,7 @@
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
                             {% if check.status == 'pending' %}bg-yellow-100 text-yellow-800
                             {% elif check.status == 'approved' %}bg-green-100 text-green-800
+                            {% elif check.status == 'needs_review' %}bg-orange-100 text-orange-800
                             {% elif check.status == 'rejected' %}bg-red-100 text-red-800
                             {% else %}bg-gray-100 text-gray-800{% endif %}">
                             {{ check.status | replace('_', ' ') | title }}
@@ -542,6 +543,25 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if this check is already approved or needs review and initialize the proper state
+            const checkStatus = '{{ check.status }}';
+            if (checkStatus === 'approved') {
+                // Show banner and disable form for already approved checks
+                const validatedAt = '{{ check.validated_at }}' || '{{ check.updated_at }}' || '';
+                const validatedByName = '{{ check.validated_by_name }}' || '{{ check.validated_by }}' || 'System';
+                
+                if (validatedAt && validatedAt !== 'None' && validatedAt !== '') {
+                    showApprovedBanner(validatedAt, validatedByName);
+                } else {
+                    // Show banner without timestamp if we don't have validation time
+                    showApprovedBanner(new Date().toISOString(), validatedByName);
+                }
+                disableFormEditing();
+            } else if (checkStatus === 'needs_review') {
+                // Just disable the needs review button since status is already needs_review
+                disableNeedsReviewButton();
+            }
+            
             const checkImage = document.getElementById('checkImage');
             const imageContainer = document.getElementById('imageContainer');
             const imageWrapper = document.getElementById('imageWrapper');
@@ -910,9 +930,46 @@
             }
         });
 
-        document.getElementById('sendToReview')?.addEventListener('click', function() {
-            // Redirect to review queue page 
-            window.location.href = '/checks/review';
+        document.getElementById('sendToReview')?.addEventListener('click', async function() {
+            if (!confirm('Send this check for manual review?')) {
+                return;
+            }
+            
+            const formData = new FormData(document.getElementById('checkDetailsForm'));
+            const checkId = '{{ check.id }}';
+            
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            
+            try {
+                this.disabled = true;
+                this.innerHTML = '<i class="fa-solid fa-spinner fa-spin w-4 h-4 mr-2"></i>Updating...';
+                
+                const response = await fetch(`/api/checks/needs-review/${checkId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    showNotification('Check status changed to needs review!', 'warning');
+                    updateStatusDisplay('needs_review');
+                    disableNeedsReviewButton();
+                } else {
+                    showNotification(result.message || 'Failed to update check status', 'error');
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fa-solid fa-magnifying-glass w-4 h-4"></i> Needs Review';
+                }
+            } catch (error) {
+                console.error('Error updating check status:', error);
+                showNotification('Error updating check status', 'error');
+                this.disabled = false;
+                this.innerHTML = '<i class="fa-solid fa-magnifying-glass w-4 h-4"></i> Needs Review';
+            }
         });
 
         document.getElementById('saveProgress')?.addEventListener('click', async function() {
@@ -951,17 +1008,58 @@
             }
         });
 
-        function showApprovedBanner(validatedAt) {
+        function showApprovedBanner(validatedAt, validatedByName) {
+            // Remove any existing banner
+            const existingBanner = document.getElementById('validationBanner');
+            if (existingBanner) {
+                existingBanner.remove();
+            }
+            
             const main = document.querySelector('main');
             const banner = document.createElement('div');
-            banner.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-r-lg';
+            banner.id = 'validationBanner';
+            banner.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-r-lg shadow-md';
             banner.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fa-solid fa-check-circle w-5 h-5 mr-3"></i>
-                    <div>
-                        <strong>✓ Check Approved!</strong> Salesforce protocol has been initiated.
-                        <div class="text-sm mt-1">Validated at: ${new Date(validatedAt).toLocaleString()}</div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fa-solid fa-check-circle w-5 h-5 mr-3"></i>
+                        <div>
+                            <strong>✓ Check Approved!</strong> Salesforce protocol has been initiated.
+                            <div class="text-sm mt-1">Validated at ${new Date(validatedAt).toLocaleString()} by ${validatedByName}</div>
+                        </div>
                     </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-green-600 hover:text-green-800 transition-colors">
+                        <i class="fa-solid fa-times w-4 h-4"></i>
+                    </button>
+                </div>
+            `;
+            main.insertBefore(banner, main.firstChild);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showNeedsReviewBanner(flaggedAt, flaggedByName) {
+            // Remove any existing banner
+            const existingBanner = document.getElementById('validationBanner');
+            if (existingBanner) {
+                existingBanner.remove();
+            }
+            
+            const main = document.querySelector('main');
+            const banner = document.createElement('div');
+            banner.id = 'validationBanner';
+            banner.className = 'bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-r-lg shadow-md';
+            banner.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fa-solid fa-exclamation-triangle w-5 h-5 mr-3"></i>
+                        <div>
+                            <strong>⚠ Check Flagged for Review!</strong> This check requires manual verification.
+                            <div class="text-sm mt-1">Flagged at ${new Date(flaggedAt).toLocaleString()} by ${flaggedByName}</div>
+                        </div>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-yellow-600 hover:text-yellow-800 transition-colors">
+                        <i class="fa-solid fa-times w-4 h-4"></i>
+                    </button>
                 </div>
             `;
             main.insertBefore(banner, main.firstChild);
@@ -974,13 +1072,57 @@
                 field.classList.add('bg-gray-100', 'text-gray-600');
             });
             
+            // Disable all action buttons
             document.getElementById('saveProgress').disabled = true;
             document.getElementById('quickApprove').disabled = true;
             document.getElementById('sendToReview').disabled = true;
             
+            // Style Quick Approve button as "Approved"
             document.getElementById('quickApprove').innerHTML = '<i class="fa-solid fa-check w-4 h-4"></i> Approved';
             document.getElementById('quickApprove').classList.remove('bg-green-600', 'hover:bg-green-700');
-            document.getElementById('quickApprove').classList.add('bg-gray-400');
+            document.getElementById('quickApprove').classList.add('bg-gray-400', 'cursor-not-allowed');
+            
+            // Grey out Save Progress button
+            document.getElementById('saveProgress').classList.remove('bg-slate-500', 'hover:bg-slate-400');
+            document.getElementById('saveProgress').classList.add('bg-gray-400', 'cursor-not-allowed');
+            
+            // Grey out Needs Review button
+            document.getElementById('sendToReview').classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+            document.getElementById('sendToReview').classList.add('bg-gray-400', 'cursor-not-allowed');
+        }
+
+        function disableNeedsReviewButton() {
+            const needsReviewBtn = document.getElementById('sendToReview');
+            if (needsReviewBtn) {
+                needsReviewBtn.disabled = true;
+                needsReviewBtn.innerHTML = '<i class="fa-solid fa-exclamation-triangle w-4 h-4"></i> Flagged for Review';
+                needsReviewBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+                needsReviewBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            }
+        }
+
+        function updateStatusDisplay(newStatus) {
+            // Find the status badge and update it
+            const statusBadge = document.querySelector('.surface .px-3.py-1.rounded-full');
+            if (statusBadge) {
+                // Remove old classes
+                statusBadge.classList.remove('bg-yellow-100', 'text-yellow-800', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-gray-100', 'text-gray-800', 'bg-orange-100', 'text-orange-800');
+                
+                // Add new classes based on status
+                if (newStatus === 'needs_review') {
+                    statusBadge.classList.add('bg-orange-100', 'text-orange-800');
+                    statusBadge.textContent = 'Needs Review';
+                } else if (newStatus === 'approved') {
+                    statusBadge.classList.add('bg-green-100', 'text-green-800');
+                    statusBadge.textContent = 'Approved';
+                } else if (newStatus === 'pending') {
+                    statusBadge.classList.add('bg-yellow-100', 'text-yellow-800');
+                    statusBadge.textContent = 'Pending';
+                } else {
+                    statusBadge.classList.add('bg-gray-100', 'text-gray-800');
+                    statusBadge.textContent = newStatus.replace('_', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                }
+            }
         }
 
         function updateLastSaved(timestamp) {
@@ -998,12 +1140,13 @@
             const toast = document.createElement('div');
             toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg text-white font-medium shadow-lg transform transition-all duration-300 ${
                 type === 'success' ? 'bg-green-600' :
-                type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+                type === 'error' ? 'bg-red-600' : 
+                type === 'warning' ? 'bg-yellow-600' : 'bg-blue-600'
             }`;
             
             toast.innerHTML = `
                 <div class="flex items-center">
-                    <i class="fa-solid fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'} w-4 h-4 mr-2"></i>
+                    <i class="fa-solid fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-triangle' : 'info'} w-4 h-4 mr-2"></i>
                     ${message}
                 </div>
             `;

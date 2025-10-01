@@ -194,6 +194,51 @@ def approve_check(check_id):
         api_logger.error(f"Error approving check {check_id}: {str(e)}")
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
 
+@api_bp.route("/api/checks/needs-review/<check_id>", methods=["POST"])
+@login_required
+def flag_needs_review(check_id):
+    """Change check status to needs_review"""
+    try:
+        user = session.get("user")
+        if not user:
+            return jsonify({"status": "error", "message": "User not authenticated"}), 401
+        
+        # Get form data from request
+        form_data = request.get_json() or {}
+        reason = form_data.get('reason', 'No reason provided')
+        api_logger.info(f"Setting check {check_id} to needs_review by {user.get('preferred_username')} - Reason: {reason}")
+        
+        # Update timestamp 
+        timestamp = datetime.utcnow().isoformat()
+        
+        # Update the check in Supabase with needs_review status
+        update_data = {
+            'status': 'needs_review',
+            'updated_at': timestamp
+        }
+        
+        # Include any form field updates (but exclude reason as it's not a database column)
+        for field, value in form_data.items():
+            if field not in ['status', 'updated_at', 'reason']:
+                update_data[field] = value
+        
+        response = supabase_service.client.table('checks').update(update_data).eq('id', check_id).execute()
+        
+        if response.data:
+            api_logger.info(f"Check {check_id} STATUS CHANGED TO NEEDS_REVIEW by {user.get('preferred_username')}")
+            return jsonify({
+                "status": "success", 
+                "message": "Check status changed to needs review",
+                "new_status": "needs_review"
+            })
+        else:
+            api_logger.error(f"No data returned when updating check {check_id} to needs_review")
+            return jsonify({"status": "error", "message": "Failed to update check status"}), 500
+            
+    except Exception as e:
+        api_logger.error(f"Error flagging check {check_id} for review: {str(e)}")
+        return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
+
 @api_bp.route("/api/checks/<check_id>", methods=["GET"])
 @login_required
 def get_check_details(check_id):
@@ -215,6 +260,8 @@ def get_check_details(check_id):
 
 @api_bp.route("/api/checks/stats", methods=["GET"])
 @login_required
+
+
 def get_check_stats():
     """Get check processing statistics"""
     try:

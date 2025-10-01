@@ -580,16 +580,7 @@
             </div>
             {% endif %}
 
-            <!-- Empty State -->
-            {% if not checks and not error_message %}
-            <div class="text-center py-12">
-                <div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                    <i class="fa-solid fa-check-double w-8 h-8 text-green-600"></i>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">All caught up!</h3>
-                <p class="text-gray-600">No checks currently require validation.</p>
-            </div>
-            {% endif %}
+
 
             <!-- Manila Folder Style Tab Navigation -->
             <div class="mb-0" style="margin-bottom: 2px; margin-left: 1px;">
@@ -598,28 +589,27 @@
                             data-tab="pending">
                         <i class="fa-solid fa-clock w-4 h-4 mr-2"></i>
                         Pending
-                        <span class="ml-2 bg-white/20 text-slate-600 text-xs px-2 py-0.5 rounded-full tab-count" id="pending-count">0</span>
+                        <span class="ml-2 bg-white/20 text-slate-600 text-xs px-2 py-0.5 rounded-full tab-count" id="pending-count">{{ (checks | selectattr('status', 'equalto', 'pending') | list | length) if checks else 0 }}</span>
                     </button>
                     
                     <button class="tab-button py-3 font-medium text-sm transition-all duration-200" 
                             data-tab="needs_review">
                         <i class="fa-solid fa-exclamation-triangle w-4 h-4 mr-2"></i>
                         Needs Review
-                        <span class="ml-2 bg-white/30 text-slate-700 text-xs px-2 py-0.5 rounded-full tab-count" id="needs_review-count">0</span>
+                        <span class="ml-2 bg-white/30 text-slate-700 text-xs px-2 py-0.5 rounded-full tab-count" id="needs_review-count">{{ (checks | selectattr('status', 'equalto', 'needs_review') | list | length) if checks else 0 }}</span>
                     </button>
                     
                     <button class="tab-button py-3 font-medium text-sm transition-all duration-200" 
                             data-tab="approved">
                         <i class="fa-solid fa-check-circle w-4 h-4 mr-2"></i>
                         Approved
-                        <span class="ml-2 bg-white/30 text-slate-700 text-xs px-2 py-0.5 rounded-full tab-count" id="approved-count">0</span>
+                        <span class="ml-2 bg-white/30 text-slate-700 text-xs px-2 py-0.5 rounded-full tab-count" id="approved-count">{{ (checks | selectattr('status', 'equalto', 'approved') | list | length) if checks else 0 }}</span>
                     </button>
                 </nav>
             </div>
 
             <!-- Tab Content for Pending -->
             <div class="tab-content active" id="pending-content">
-                {% if checks %}
                 <div class="surface rounded-b-xl overflow-hidden" style="border-top: none;">
                 <div class="px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-700">
                     <h2 class="text-lg font-semibold text-white">Intelligent Check Processing Queue</h2>
@@ -642,7 +632,9 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
+                            {% if checks %}
                             {% for check in checks %}
+                            {% if check.status in ['pending', 'pending_review'] %}
                             {% set confidence = check.confidence_percentage %}
                             <tr class="hover:bg-gray-50 cursor-pointer transition-colors" onclick="window.location.href='/checks/detail/{{ check.id }}'">
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -676,23 +668,6 @@
                                                 {% else %}bg-red-500{% endif %}" 
                                                 style="width: {{ confidence }}%"></div>
                                         </div>
-                                        <!-- AI Confidence Badge -->
-                                        {% if confidence >= 80 %}
-                                        <span class="confidence-badge confidence-high">
-                                            <i class="fa-solid fa-robot w-3 h-3"></i>
-                                            Auto-Ready
-                                        </span>
-                                        {% elif confidence >= 60 %}
-                                        <span class="confidence-badge confidence-medium">
-                                            <i class="fa-solid fa-exclamation-triangle w-3 h-3"></i>
-                                            Review
-                                        </span>
-                                        {% else %}
-                                        <span class="confidence-badge confidence-low">
-                                            <i class="fa-solid fa-user-check w-3 h-3"></i>
-                                            Manual
-                                        </span>
-                                        {% endif %}
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -762,12 +737,31 @@
                                     {% endif %}
                                 </td>
                             </tr>
+                            {% endif %}
                             {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                    <i class="fa-solid fa-clock w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+                                    <p class="text-sm">No pending checks at this time</p>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            
+                            <!-- Show empty state if no pending checks exist -->
+                            {% set pending_checks = checks | selectattr('status', 'in', ['pending', 'pending_review']) | list %}
+                            {% if checks and pending_checks | length == 0 %}
+                            <tr>
+                                <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                    <i class="fa-solid fa-clock w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+                                    <p class="text-sm">No pending checks at this time</p>
+                                </td>
+                            </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
             </div>
-            {% endif %}
             </div>
 
             <!-- Tab Content for Needs Review -->
@@ -777,9 +771,99 @@
                         <h2 class="text-lg font-semibold text-white">Checks Requiring Manual Review</h2>
                         <p class="text-sm text-white/80">Low confidence checks flagged for human validation</p>
                     </div>
-                    <div class="p-6 text-center text-gray-500">
-                        <i class="fa-solid fa-exclamation-triangle w-12 h-12 mx-auto mb-4 text-gray-300"></i>
-                        <p>No checks requiring manual review at this time</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check #</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payee</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matter</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Confidence</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% if checks %}
+                                {% for check in checks %}
+                                {% if check.status == 'needs_review' %}
+                                {% set confidence = check.confidence_percentage %}
+                                <tr class="hover:bg-gray-50 cursor-pointer transition-colors" onclick="window.location.href='/checks/detail/{{ check.id }}'">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ check.check_number }}</div>
+                                        <div class="text-xs text-gray-500">ID: {{ check.id[:8] }}...</div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.payee_name }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ check.amount }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ check.check_date }}</div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.matter_name or '-' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-sm font-medium 
+                                                {% if confidence >= 80 %}text-green-600
+                                                {% elif confidence >= 60 %}text-yellow-600
+                                                {% else %}text-red-600{% endif %}">
+                                                {{ confidence }}%
+                                            </div>
+                                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                                <div class="h-2 rounded-full 
+                                                    {% if confidence >= 80 %}bg-green-500
+                                                    {% elif confidence >= 60 %}bg-yellow-500
+                                                    {% else %}bg-red-500{% endif %}" 
+                                                    style="width: {{ confidence }}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                            Needs Review
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ check.created_at[:10] if check.created_at else '-' }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <button class="text-orange-600 hover:text-orange-800 text-xs font-medium px-3 py-1 border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors"
+                                                onclick="window.location.href='/checks/detail/{{ check.id }}'; event.stopPropagation();">
+                                            <i class="fa-solid fa-eye w-3 h-3 mr-1"></i>
+                                            Review
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                        <i class="fa-solid fa-exclamation-triangle w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+                                        <p class="text-sm">No checks requiring manual review at this time</p>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                
+                                <!-- Show empty state if no needs_review checks exist -->
+                                {% set needs_review_checks = checks | selectattr('status', 'equalto', 'needs_review') | list %}
+                                {% if checks and needs_review_checks | length == 0 %}
+                                <tr>
+                                    <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                        <i class="fa-solid fa-exclamation-triangle w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+                                        <p class="text-sm">No checks requiring manual review at this time</p>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -791,9 +875,98 @@
                         <h2 class="text-lg font-semibold text-white">Approved Checks</h2>
                         <p class="text-sm text-white/80">Successfully validated and approved checks</p>
                     </div>
-                    <div class="p-6 text-center text-gray-500">
-                        <i class="fa-solid fa-check-circle w-12 h-12 mx-auto mb-4 text-gray-300"></i>
-                        <p>No approved checks to display</p>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check #</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payee</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matter</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Confidence</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% if checks %}
+                                {% for check in checks %}
+                                {% if check.status == 'approved' %}
+                                {% set confidence = check.confidence_percentage %}
+                                <tr class="hover:bg-gray-50 cursor-pointer transition-colors" onclick="window.location.href='/checks/detail/{{ check.id }}'">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ check.check_number }}</div>
+                                        <div class="text-xs text-gray-500">ID: {{ check.id[:8] }}...</div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.payee_name }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ check.amount }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ check.check_date }}</div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.matter_name or '-' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-2">
+                                            <div class="text-sm font-medium 
+                                                {% if confidence >= 80 %}text-green-600
+                                                {% elif confidence >= 60 %}text-yellow-600
+                                                {% else %}text-red-600{% endif %}">
+                                                {{ confidence }}%
+                                            </div>
+                                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                                <div class="h-2 rounded-full 
+                                                    {% if confidence >= 80 %}bg-green-500
+                                                    {% elif confidence >= 60 %}bg-yellow-500
+                                                    {% else %}bg-red-500{% endif %}" 
+                                                    style="width: {{ confidence }}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Approved
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ check.validated_at[:10] if check.validated_at else (check.updated_at[:10] if check.updated_at else '-') }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <span class="text-xs text-green-600 font-medium">
+                                            <i class="fa-solid fa-check w-3 h-3 text-green-600 mr-1"></i>
+                                            Validated
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                        <i class="fa-solid fa-check-circle w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+                                        <p class="text-sm">No approved checks to display</p>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                
+                                <!-- Show empty state if no approved checks exist -->
+                                {% set approved_checks = checks | selectattr('status', 'equalto', 'approved') | list %}
+                                {% if checks and approved_checks | length == 0 %}
+                                <tr>
+                                    <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                        <i class="fa-solid fa-check-circle w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+                                        <p class="text-sm">No approved checks to display</p>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -847,6 +1020,21 @@
     <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <script>
+        // Helper functions for confidence-based styling
+        function getConfidenceTextColor(confidence) {
+            const confidenceNum = parseInt(confidence.replace('%', ''));
+            if (confidenceNum >= 80) return 'text-green-600';
+            if (confidenceNum >= 60) return 'text-yellow-600';
+            return 'text-red-600';
+        }
+        
+        function getConfidenceBarColor(confidence) {
+            const confidenceNum = parseInt(confidence.replace('%', ''));
+            if (confidenceNum >= 80) return 'bg-green-500';
+            if (confidenceNum >= 60) return 'bg-yellow-500';
+            return 'bg-red-500';
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             let currentCheckId = null;
             let currentCheckData = null;
@@ -902,8 +1090,37 @@
                     const payee = this.dataset.payee;
                     const confidence = this.dataset.confidence;
                     
-                    if (confirm(`Auto-approve check ${checkNumber} for ${amount} to ${payee}?\n\nAI Confidence: ${confidence}% (High confidence threshold met)`)) {
-                        await processCheck(checkId, 'approve', this, `Auto-approved with ${confidence}% confidence`);
+                    if (!confirm(`Auto-approve check ${checkNumber} for ${amount} to ${payee}?\n\nAI Confidence: ${confidence}% (High confidence threshold met)`)) {
+                        return;
+                    }
+                    
+                    try {
+                        const originalHtml = this.innerHTML;
+                        this.disabled = true;
+                        this.innerHTML = '<i class="fa-solid fa-spinner fa-spin w-3 h-3 mr-1"></i>Processing...';
+                        
+                        const response = await fetch(`/api/checks/approve/${checkId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reason: `Auto-approved with ${confidence}% confidence` })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.status === 'success') {
+                            showToast('Check approved successfully!', 'success');
+                            // Move check to approved tab
+                            moveToApprovedTable(checkId, result);
+                        } else {
+                            showToast(result.message || 'Failed to approve check', 'error');
+                            this.disabled = false;
+                            this.innerHTML = originalHtml;
+                        }
+                    } catch (error) {
+                        console.error('Error approving check:', error);
+                        showToast('Error approving check', 'error');
+                        this.disabled = false;
+                        this.innerHTML = originalHtml;
                     }
                 });
             });
@@ -975,12 +1192,41 @@
             });
             
             document.getElementById('confirmForward').addEventListener('click', async function() {
+                if (!currentCheckId) {
+                    showToast('Error: No check selected', 'error');
+                    return;
+                }
+                
                 const reason = document.getElementById('forwardReason').value.trim();
                 
-                if (currentCheckId) {
-                    await processCheck(currentCheckId, 'forward', null, reason || 'Forwarded for manual review due to low AI confidence');
-                    document.getElementById('forwardReviewModal').classList.add('hidden');
-                    resetModalState();
+                try {
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fa-solid fa-spinner fa-spin w-4 h-4 mr-2"></i>Forwarding...';
+                    
+                    const response = await fetch(`/api/checks/needs-review/${currentCheckId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: reason || 'Forwarded for manual review due to low AI confidence' })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        showToast('Check forwarded for manual review successfully!', 'success');
+                        // Move check to needs review tab
+                        moveToNeedsReviewTable(currentCheckId, result);
+                        document.getElementById('forwardReviewModal').classList.add('hidden');
+                        resetModalState();
+                    } else {
+                        showToast(result.message || 'Failed to forward check', 'error');
+                        this.disabled = false;
+                        this.innerHTML = 'Forward to Review Queue';
+                    }
+                } catch (error) {
+                    console.error('Error forwarding check:', error);
+                    showToast('Error forwarding check', 'error');
+                    this.disabled = false;
+                    this.innerHTML = 'Forward to Review Queue';
                 }
             });
             
@@ -990,22 +1236,85 @@
             });
             
             document.getElementById('forceApprove').addEventListener('click', async function() {
-                if (currentCheckId && currentCheckData) {
-                    if (confirm(`Force approve check ${currentCheckData.checkNumber}?\n\nThis will override the AI recommendation.`)) {
-                        await processCheck(currentCheckId, 'approve', null, 'Force approved - Manual override');
+                if (!currentCheckId || !currentCheckData) {
+                    showToast('Error: No check selected', 'error');
+                    return;
+                }
+                
+                if (!confirm(`Force approve check ${currentCheckData.checkNumber}?\n\nThis will override the AI recommendation.`)) {
+                    return;
+                }
+                
+                try {
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fa-solid fa-spinner fa-spin w-4 h-4 mr-2"></i>Approving...';
+                    
+                    const response = await fetch(`/api/checks/approve/${currentCheckId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: 'Force approved - Manual override' })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        showToast('Check approved successfully!', 'success');
+                        // Move check to approved tab
+                        moveToApprovedTable(currentCheckId, result);
                         document.getElementById('manualOverrideModal').classList.add('hidden');
                         resetModalState();
+                    } else {
+                        showToast(result.message || 'Failed to approve check', 'error');
+                        this.disabled = false;
+                        this.innerHTML = '<i class="fa-solid fa-check-double w-4 h-4 mr-2"></i>Quick Approval';
                     }
+                } catch (error) {
+                    console.error('Error approving check:', error);
+                    showToast('Error approving check', 'error');
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fa-solid fa-check-double w-4 h-4 mr-2"></i>Quick Approval';
                 }
             });
             
-
-            
             document.getElementById('sendToReview').addEventListener('click', async function() {
-                if (currentCheckId) {
-                    await processCheck(currentCheckId, 'forward', null, 'Sent to manual review - Manual override');
-                    document.getElementById('manualOverrideModal').classList.add('hidden');
-                    resetModalState();
+                if (!currentCheckId) {
+                    console.error('No currentCheckId available');
+                    showToast('Error: No check selected', 'error');
+                    return;
+                }
+                
+                if (!confirm(`Send check ${currentCheckData?.checkNumber || currentCheckId} for manual review?`)) {
+                    return;
+                }
+                
+                try {
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fa-solid fa-spinner fa-spin w-4 h-4 mr-2"></i>Updating...';
+                    
+                    const response = await fetch(`/api/checks/needs-review/${currentCheckId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: 'Sent to manual review - Manual override' })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        showToast('Check sent to manual review successfully!', 'success');
+                        // Move check to needs review tab
+                        moveToNeedsReviewTable(currentCheckId, result);
+                        document.getElementById('manualOverrideModal').classList.add('hidden');
+                        resetModalState();
+                    } else {
+                        showToast(result.message || 'Failed to update check status', 'error');
+                        this.disabled = false;
+                        this.innerHTML = '<i class="fa-solid fa-user-check w-4 h-4 mr-2"></i>Send to Manual Review';
+                    }
+                } catch (error) {
+                    console.error('Error updating check status:', error);
+                    showToast('Error updating check status', 'error');
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fa-solid fa-user-check w-4 h-4 mr-2"></i>Send to Manual Review';
                 }
             });
             
@@ -1060,6 +1369,12 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ reason: reason })
                         });
+                    } else if (action === 'needs_review') {
+                        response = await fetch(`/api/checks/needs-review/${checkId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reason: reason })
+                        });
                     } else if (action === 'forward') {
                         // Forward to review queue (could be a different endpoint)
                         response = await fetch(`/api/checks/forward/${checkId}`, {
@@ -1079,16 +1394,39 @@
                     }
                     
                     if (response.ok) {
-                        const actionText = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'forwarded for review';
+                        const result = await response.json();
+                        const actionText = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : action === 'needs_review' ? 'sent to manual review' : action === 'forward' ? 'forwarded for review' : 'processed';
                         showToast(`Check ${actionText} successfully!`, 'success');
-                        removeCheckRow(checkId);
+                        
+                        if (action === 'approve' && result.validated_at && result.validated_by_name) {
+                            // Move check to approved tab
+                            moveToApprovedTable(checkId, result);
+                        } else if (action === 'needs_review') {
+                            // Move check to needs review tab
+                            moveToNeedsReviewTable(checkId, result);
+                        } else {
+                            removeCheckRow(checkId);
+                        }
                     } else {
                         const error = await response.json();
-                        throw new Error(error.error || `Failed to ${action} check`);
+                        console.error(`HTTP ${response.status} error:`, error);
+                        
+                        // Check for specific database constraint error
+                        if (error.message && (error.message.includes('constraint') || error.message.includes('violates check') || error.message.includes('check constraint'))) {
+                            throw new Error(`Database constraint error: The status 'needs_review' is not allowed. Please run this SQL in Supabase Dashboard: ALTER TABLE checks DROP CONSTRAINT IF EXISTS checks_status_check; ALTER TABLE checks ADD CONSTRAINT checks_status_check CHECK (status IN ('pending', 'needs_review', 'approved', 'rejected'));`);
+                        } else {
+                            throw new Error(error.message || error.error || `Failed to ${action} check`);
+                        }
                     }
                 } catch (error) {
                     console.error(`${action} error:`, error);
-                    showToast(`Failed to ${action} check. Please try again.`, 'error');
+                    let errorMessage = `Failed to ${action} check.`;
+                    if (error.message.includes('constraint')) {
+                        errorMessage = error.message;
+                    } else {
+                        errorMessage += ' Please try again.';
+                    }
+                    showToast(errorMessage, 'error');
                     
                     // Restore button if it exists
                     if (buttonElement) {
@@ -1113,8 +1451,81 @@
                     setTimeout(() => {
                         row.remove();
                         updateStats();
+                        
+                        // Check if the table is now empty and add empty state if needed
+                        checkAndAddEmptyState();
                     }, 300);
                 }
+            }
+            
+            function checkAndAddEmptyState() {
+                // Check pending table
+                const pendingTableBody = document.querySelector('#pending-content tbody');
+                const pendingRows = pendingTableBody.querySelectorAll('tr');
+                const pendingDataRows = Array.from(pendingRows).filter(row => !row.querySelector('td[colspan]'));
+                
+                if (pendingDataRows.length === 0) {
+                    addEmptyStateToPendingTable();
+                }
+                
+                // Check needs review table
+                const needsReviewTableBody = document.querySelector('#needs_review-content tbody');
+                const needsReviewRows = needsReviewTableBody.querySelectorAll('tr');
+                const needsReviewDataRows = Array.from(needsReviewRows).filter(row => !row.querySelector('td[colspan]'));
+                
+                if (needsReviewDataRows.length === 0) {
+                    addEmptyStateToNeedsReviewTable();
+                }
+            }
+            
+            function addEmptyStateToPendingTable() {
+                const pendingTableBody = document.querySelector('#pending-content tbody');
+                
+                // Check if empty state already exists
+                const existingEmptyRow = pendingTableBody.querySelector('td[colspan]')?.closest('tr');
+                if (existingEmptyRow) return;
+                
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `
+                    <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                        <i class="fa-solid fa-clock w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+                        <p class="text-sm">No pending checks at this time</p>
+                    </td>
+                `;
+                
+                // Add with fade-in animation
+                emptyRow.style.opacity = '0';
+                pendingTableBody.appendChild(emptyRow);
+                
+                setTimeout(() => {
+                    emptyRow.style.transition = 'opacity 0.3s ease-in';
+                    emptyRow.style.opacity = '1';
+                }, 100);
+            }
+            
+            function addEmptyStateToNeedsReviewTable() {
+                const needsReviewTableBody = document.querySelector('#needs_review-content tbody');
+                
+                // Check if empty state already exists
+                const existingEmptyRow = needsReviewTableBody.querySelector('td[colspan]')?.closest('tr');
+                if (existingEmptyRow) return;
+                
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `
+                    <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                        <i class="fa-solid fa-exclamation-triangle w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+                        <p class="text-sm">No checks requiring manual review at this time</p>
+                    </td>
+                `;
+                
+                // Add with fade-in animation
+                emptyRow.style.opacity = '0';
+                needsReviewTableBody.appendChild(emptyRow);
+                
+                setTimeout(() => {
+                    emptyRow.style.transition = 'opacity 0.3s ease-in';
+                    emptyRow.style.opacity = '1';
+                }, 100);
             }
             
             function updateStats() {
@@ -1134,22 +1545,224 @@
                     totalCountElements[3].textContent = automationRate + '%';
                 }
                 
-                // Show empty state if no rows left
-                if (remainingRows === 0) {
-                    setTimeout(() => location.reload(), 1000); // Refresh to show empty state
+                // Empty state is now handled by checkAndAddEmptyState() function
+            }
+            
+            function moveToApprovedTable(checkId, approvalData) {
+                const row = document.querySelector(`[data-check-row="${checkId}"]`)?.closest('tr');
+                if (!row) return;
+                
+                // Get the row data
+                const checkNumber = row.querySelector('td:nth-child(1) .text-sm').textContent;
+                const payee = row.querySelector('td:nth-child(2) .text-sm').textContent;
+                const amount = row.querySelector('td:nth-child(3) .text-sm').textContent;
+                const checkDate = row.querySelector('td:nth-child(4) .text-sm').textContent;
+                const matter = row.querySelector('td:nth-child(5) .text-sm').textContent;
+                const confidence = row.querySelector('td:nth-child(6) .text-sm').textContent;
+                
+                // Create new row for approved table
+                const approvedTableBody = document.querySelector('#approved-content tbody');
+                
+                // Remove empty state if exists
+                const emptyRow = approvedTableBody.querySelector('td[colspan]')?.closest('tr');
+                if (emptyRow) {
+                    emptyRow.remove();
                 }
+                
+                // Format validation date
+                const validatedDate = new Date(approvalData.validated_at).toLocaleDateString();
+                
+                // Create new approved row
+                const newRow = document.createElement('tr');
+                newRow.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
+                newRow.onclick = () => window.location.href = `/checks/detail/${checkId}`;
+                newRow.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${checkNumber}</div>
+                        <div class="text-xs text-gray-500">ID: ${checkId.substring(0, 8)}...</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900 max-w-xs truncate">${payee}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${amount}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${checkDate}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900 max-w-xs truncate">${matter}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center gap-2">
+                            <div class="text-sm font-medium ${getConfidenceTextColor(confidence)}">${confidence}</div>
+                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                <div class="h-2 rounded-full ${getConfidenceBarColor(confidence)}" style="width: ${confidence.replace('%', '')}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Approved
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${validatedDate}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="text-xs text-green-600 font-medium">
+                            <i class="fa-solid fa-check w-3 h-3 text-green-600 mr-1"></i>
+                            Validated
+                        </span>
+                    </td>
+                `;
+                
+                // Add with animation
+                newRow.style.opacity = '0';
+                newRow.style.transform = 'translateY(-10px)';
+                approvedTableBody.appendChild(newRow);
+                
+                setTimeout(() => {
+                    newRow.style.transition = 'all 0.3s ease-out';
+                    newRow.style.opacity = '1';
+                    newRow.style.transform = 'translateY(0)';
+                }, 100);
+                
+                // Remove from pending table
+                row.style.opacity = '0.5';
+                row.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    row.remove();
+                    updateTabCounts();
+                    updateStats();
+                    checkAndAddEmptyState();
+                }, 300);
+            }
+            
+            function moveToNeedsReviewTable(checkId, reviewData) {
+                const row = document.querySelector(`[data-check-row="${checkId}"]`)?.closest('tr');
+                if (!row) return;
+                
+                // Get the row data
+                const checkNumber = row.querySelector('td:nth-child(1) .text-sm').textContent;
+                const payee = row.querySelector('td:nth-child(2) .text-sm').textContent;
+                const amount = row.querySelector('td:nth-child(3) .text-sm').textContent;
+                const checkDate = row.querySelector('td:nth-child(4) .text-sm').textContent;
+                const matter = row.querySelector('td:nth-child(5) .text-sm').textContent;
+                const confidence = row.querySelector('td:nth-child(6) .text-sm').textContent;
+                
+                // Create new row for needs review table
+                const needsReviewTableBody = document.querySelector('#needs_review-content tbody');
+                
+                // Remove empty state if exists
+                const emptyRow = needsReviewTableBody.querySelector('td[colspan]')?.closest('tr');
+                if (emptyRow) {
+                    emptyRow.remove();
+                }
+                
+                // Format review date
+                const reviewDate = new Date().toLocaleDateString();
+                
+                // Create new needs review row
+                const newRow = document.createElement('tr');
+                newRow.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
+                newRow.onclick = () => window.location.href = `/checks/detail/${checkId}`;
+                newRow.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${checkNumber}</div>
+                        <div class="text-xs text-gray-500">ID: ${checkId.substring(0, 8)}...</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900 max-w-xs truncate">${payee}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${amount}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${checkDate}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900 max-w-xs truncate">${matter}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center gap-2">
+                            <div class="text-sm font-medium ${getConfidenceTextColor(confidence)}">${confidence}</div>
+                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                <div class="h-2 rounded-full ${getConfidenceBarColor(confidence)}" style="width: ${confidence.replace('%', '')}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            Needs Review
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${reviewDate}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="text-xs text-orange-600 font-medium">
+                            <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-orange-600 mr-1"></i>
+                            Flagged
+                        </span>
+                    </td>
+                `;
+                
+                // Add with animation
+                newRow.style.opacity = '0';
+                newRow.style.transform = 'translateY(-10px)';
+                needsReviewTableBody.appendChild(newRow);
+                
+                setTimeout(() => {
+                    newRow.style.transition = 'all 0.3s ease-out';
+                    newRow.style.opacity = '1';
+                    newRow.style.transform = 'translateY(0)';
+                }, 100);
+                
+                // Remove from pending table
+                row.style.opacity = '0.5';
+                row.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    row.remove();
+                    updateTabCounts();
+                    updateStats();
+                    checkAndAddEmptyState();
+                }, 300);
             }
             
             function updateTabCounts() {
-                // Count checks by status from the current data
-                const pendingCount = document.querySelectorAll('tbody tr').length; // Current pending checks
-                const needsReviewCount = 0; // Would come from backend  
-                const approvedCount = 0; // Would come from backend
+                // Count actual check rows (excluding empty state rows which have colspan attribute)
+                const pendingRows = document.querySelectorAll('#pending-content tbody tr');
+                const pendingCount = Array.from(pendingRows).filter(row => !row.querySelector('td[colspan]')).length;
                 
-                // Update tab counts
-                document.getElementById('pending-count').textContent = pendingCount;
-                document.getElementById('needs_review-count').textContent = needsReviewCount;
-                document.getElementById('approved-count').textContent = approvedCount;
+                const needsReviewRows = document.querySelectorAll('#needs_review-content tbody tr');
+                const needsReviewCount = Array.from(needsReviewRows).filter(row => !row.querySelector('td[colspan]')).length;
+                
+                const approvedRows = document.querySelectorAll('#approved-content tbody tr');
+                const approvedCount = Array.from(approvedRows).filter(row => !row.querySelector('td[colspan]')).length;
+                
+                // Update tab counts with animation
+                const pendingCountEl = document.getElementById('pending-count');
+                const needsReviewCountEl = document.getElementById('needs_review-count');
+                const approvedCountEl = document.getElementById('approved-count');
+                
+                if (pendingCountEl.textContent !== pendingCount.toString()) {
+                    pendingCountEl.style.transform = 'scale(1.2)';
+                    pendingCountEl.textContent = pendingCount;
+                    setTimeout(() => pendingCountEl.style.transform = 'scale(1)', 200);
+                }
+                
+                if (needsReviewCountEl.textContent !== needsReviewCount.toString()) {
+                    needsReviewCountEl.style.transform = 'scale(1.2)';
+                    needsReviewCountEl.textContent = needsReviewCount;
+                    setTimeout(() => needsReviewCountEl.style.transform = 'scale(1)', 200);
+                }
+                
+                if (approvedCountEl.textContent !== approvedCount.toString()) {
+                    approvedCountEl.style.transform = 'scale(1.2)';
+                    approvedCountEl.textContent = approvedCount;
+                    setTimeout(() => approvedCountEl.style.transform = 'scale(1)', 200);
+                }
             }
             
             function showToast(message, type = 'info') {

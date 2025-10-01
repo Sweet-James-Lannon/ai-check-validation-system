@@ -205,6 +205,13 @@ def check_detail(check_id):
             'raw_ocr_content': check.get('raw_ocr_content', ''),
             'forward_reason': check.get('forward_reason', ''),  # RENAMED
             'created_at': check.get('created_at', ''),
+            'validated_at': check.get('validated_at', ''),
+            'validated_by': check.get('validated_by', ''),
+            'validated_by_name': check.get('validated_by_name', ''),
+            'flagged_at': check.get('flagged_at', ''),
+            'flagged_by': check.get('flagged_by', ''),
+            'flagged_by_name': check.get('flagged_by_name', ''),
+            'updated_at': check.get('updated_at', ''),
             'confidence_percentage': round((check.get('confidence_score', 0) * 100), 1) if check.get('confidence_score') else 0,
             'image_data': check.get('image_data', ''),
             'image_mime_type': check.get('image_mime_type', '')
@@ -222,13 +229,6 @@ def check_detail(check_id):
         return render_template("error.html", 
                              user=user,
                              error_message=f"Failed to load check {check_id}"), 500
-
-@dashboard_bp.route("/checks/review")
-@login_required
-def check_review():
-    """Check review queue page for manual validation"""
-    user = session.get("user")
-    return render_template("check_review.html", user=user)
 
 # =============================================================================
 # DOCUMENT MANAGEMENT ROUTES
