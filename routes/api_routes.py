@@ -44,13 +44,14 @@ def save_check(check_id):
         # Prepare update data - only include fields that exist in schema
         update_data = {}
         
-        # Map form fields to database fields
+        # Map form fields to database fields - Updated for new schema
         field_mapping = {
             'payee_name': 'payee_name',
             'pay_to': 'pay_to', 
             'amount': 'amount',
             'check_date': 'check_date',
             'check_number': 'check_number',
+            'check_type': 'check_type',
             'routing_number': 'routing_number',
             'account_number': 'account_number',
             'micr_line': 'micr_line',
@@ -62,7 +63,8 @@ def save_check(check_id):
             'claim_number': 'claim_number',
             'insurance_company_name': 'insurance_company_name',
             'matter_id': 'matter_id',
-            'check_issue_date': 'check_issue_date'
+            'check_issue_date': 'check_issue_date',
+            'insurance_record_id': 'insurance_record_id'
         }
         
         # Process each field from the form
@@ -125,13 +127,14 @@ def approve_check(check_id):
         # Prepare update data with all current form values
         update_data = {}
         
-        # Map form fields to database fields (same as save)
+        # Map form fields to database fields (same as save) - Updated for new schema
         field_mapping = {
             'payee_name': 'payee_name',
             'pay_to': 'pay_to', 
             'amount': 'amount',
             'check_date': 'check_date',
             'check_number': 'check_number',
+            'check_type': 'check_type',
             'routing_number': 'routing_number',
             'account_number': 'account_number',
             'micr_line': 'micr_line',
@@ -143,7 +146,8 @@ def approve_check(check_id):
             'claim_number': 'claim_number',
             'insurance_company_name': 'insurance_company_name',
             'matter_id': 'matter_id',
-            'check_issue_date': 'check_issue_date'
+            'check_issue_date': 'check_issue_date',
+            'insurance_record_id': 'insurance_record_id'
         }
         
         # Process form fields
