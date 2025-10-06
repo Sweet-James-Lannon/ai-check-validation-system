@@ -312,56 +312,50 @@ def get_check_stats():
 
 @api_bp.route("/api/batch/split-analysis", methods=["POST"])
 def analyze_batch_splits():
-    """
-    Analyzes PDF for separator pages by detecting specific text
-    """
     try:
         api_logger.info("=== Split analysis endpoint called ===")
         
         if 'pdf_file' not in request.files:
-            api_logger.error("No pdf_file in request.files")
-            api_logger.error(f"Request.files keys: {list(request.files.keys())}")
-            api_logger.error(f"Request.form keys: {list(request.form.keys())}")
             return jsonify({'error': 'No PDF file provided'}), 400
         
-        api_logger.info("PDF file found in request")
         pdf_file = request.files['pdf_file']
-        api_logger.info(f"Reading PDF: {pdf_file.filename}")
-        
         pdf_bytes = pdf_file.read()
-        api_logger.info(f"Read {len(pdf_bytes)} bytes")
         
         import fitz
-        api_logger.info("Opening PDF with PyMuPDF")
-        
         pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
         total_pages = len(pdf_document)
-        api_logger.info(f"PDF has {total_pages} pages")
         
-        # Detect separator pages by text
         separator_page_indices = []
+        page_text_samples = {}  # NEW: Store text samples for debugging
         
         for page_num in range(total_pages):
             page = pdf_document[page_num]
             text = page.get_text().upper()
             
-            # Check if page contains separator text
-            if "AUTOMATICALLY SEPARATED" in text and "SORTED" in text and "INDEXED" in text:
+            # Store first 100 chars of each page for debugging
+            page_text_samples[page_num] = text[:100] if text else "(empty)"
+            
+            # More flexible detection - check for key words
+            has_automatically = "AUTOMATICALLY" in text
+            has_separated = "SEPARATED" in text
+            has_sorted = "SORTED" in text
+            has_indexed = "INDEXED" in text
+            
+            # Consider it a separator if it has at least 3 of the 4 keywords
+            keyword_count = sum([has_automatically, has_separated, has_sorted, has_indexed])
+            
+            if keyword_count >= 3:
                 separator_page_indices.append(page_num)
-                api_logger.info(f"Found separator at page {page_num}")
+                api_logger.info(f"Page {page_num}: Separator detected (keywords: {keyword_count}/4)")
         
-        api_logger.info(f"Total separators found: {len(separator_page_indices)}")
-        
-        # Generate split points
+        # Generate splits (pages AFTER separators start new batches)
         splits = [0]
         for sep_page in separator_page_indices:
             if sep_page + 1 < total_pages:
                 splits.append(sep_page + 1)
         
-        # Generate sub-batch labels
         sub_batches = [chr(65 + i) for i in range(len(splits))]
         
-        # Calculate page counts
         page_counts = []
         for i in range(len(splits)):
             start = splits[i]
@@ -380,21 +374,17 @@ def analyze_batch_splits():
             'separator_pages': separator_page_indices,
             'splits': splits,
             'sub_batches': sub_batches,
-            'page_counts': page_counts
+            'page_counts': page_counts,
+            'debug_text_samples': page_text_samples  # NEW: Include for debugging
         }
         
-        api_logger.info(f"Returning result: {result}")
         return jsonify(result)
         
     except Exception as e:
-        api_logger.error(f"ERROR in split analysis: {str(e)}")
-        api_logger.error(f"Error type: {type(e).__name__}")
+        api_logger.error(f"ERROR: {str(e)}")
         import traceback
         api_logger.error(traceback.format_exc())
-        return jsonify({
-            'error': str(e),
-            'error_type': type(e).__name__
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 @api_bp.route("/api/test-imports", methods=["GET"])
 def test_imports():
