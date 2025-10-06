@@ -32,7 +32,7 @@ api_bp = Blueprint("api", __name__)
 def save_check(check_id):
     """
     Save check modifications without triggering validation
-    Updates Supabase record but does NOT set validated_at timestamp
+    Updates Supabase record but does NOT set validated_at timestam p
     """
     try:
         user = session.get("user")
@@ -265,7 +265,6 @@ def get_check_details(check_id):
 @api_bp.route("/api/checks/stats", methods=["GET"])
 @login_required
 
-
 def get_check_stats():
     """Get check processing statistics"""
     try:
@@ -306,6 +305,80 @@ def get_check_stats():
     except Exception as e:
         api_logger.error(f"Error getting check stats: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+# =============================================================================
+# n8n for pink page detection API ENDPOINTS
+# =============================================================================
+
+@api_bp.route("/api/batch/split-analysis", methods=["POST"])
+def analyze_batch_splits():
+    """
+    Analyzes PDF for separator pages by detecting specific text
+    """
+    try:
+        if 'pdf_file' not in request.files:
+            return jsonify({'error': 'No PDF file provided'}), 400
+        
+        pdf_file = request.files['pdf_file']
+        pdf_bytes = pdf_file.read()
+        
+        import fitz  # PyMuPDF
+        
+        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+        total_pages = len(pdf_document)
+        
+        # Detect separator pages by text
+        separator_page_indices = []
+        
+        for page_num in range(total_pages):
+            page = pdf_document[page_num]
+            text = page.get_text().upper()  # Convert to uppercase for case-insensitive search
+            
+            # Check if page contains separator text
+            if "AUTOMATICALLY SEPARATED" in text and "SORTED" in text and "INDEXED" in text:
+                separator_page_indices.append(page_num)
+        
+        # Generate split points
+        # Splits occur AFTER each separator page
+        splits = [0]  # Always start at page 0
+        
+        for sep_page in separator_page_indices:
+            # The next page after the separator starts a new sub-batch
+            if sep_page + 1 < total_pages:
+                splits.append(sep_page + 1)
+        
+        # Generate sub-batch labels (A, B, C, etc.)
+        sub_batches = [chr(65 + i) for i in range(len(splits))]
+        
+        # Calculate page counts for each sub-batch
+        page_counts = []
+        for i in range(len(splits)):
+            start = splits[i]
+            end = splits[i + 1] if i + 1 < len(splits) else total_pages
+            
+            # Count pages but exclude separator pages
+            count = end - start
+            # Check if there's a separator page in this range
+            for sep in separator_page_indices:
+                if start <= sep < end:
+                    count -= 1  # Don't count the separator itself
+            
+            page_counts.append(count)
+        
+        pdf_document.close()
+        
+        return jsonify({
+            'success': True,
+            'total_pages': total_pages,
+            'separator_pages': separator_page_indices,
+            'splits': splits,
+            'sub_batches': sub_batches,
+            'page_counts': page_counts
+        })
+        
+    except Exception as e:
+        api_logger.error(f"Error analyzing batch splits: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 # =============================================================================
 # SYSTEM HEALTH API ENDPOINTS
