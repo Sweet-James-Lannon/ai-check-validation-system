@@ -540,7 +540,7 @@ def split_and_save_batches():
                 }
                 
                 upload_response = requests.put(
-                    f"https://graph.microsoft.com/v1.0/drives/{drive_id}/items/{batch_folder_id}/children"
+                    f"https://graph.microsoft.com/v1.0/drives/{drive_id}/items/{sub_folder_id}:/{file_name}:/content"
                     headers=upload_headers,
                     data=pdf_bytes_output
                 )
@@ -567,6 +567,7 @@ def split_and_save_batches():
         import traceback
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
+
 
 
 # =============================================================================
