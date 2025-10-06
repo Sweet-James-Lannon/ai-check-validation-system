@@ -445,6 +445,7 @@ def split_and_save_batches():
         batch_folder_id = request.form.get('batch_folder_id')  # The Batch-156 folder ID from Node 3
         batch_number = request.form.get('batch_number')  # "156"
         batches_json = request.form.get('batches')  # JSON array from Node 6
+        drive_id = request.form.get('drive_id')  # ADD THIS LINE
         
         if not all([batch_folder_id, batch_number, batches_json]):
             return jsonify({'error': 'Missing required parameters'}), 400
@@ -504,7 +505,7 @@ def split_and_save_batches():
             }
             
             folder_response = requests.post(
-                f"https://graph.microsoft.com/v1.0/me/drive/items/{batch_folder_id}/children",
+                f"https://graph.microsoft.com/v1.0/drives/{drive_id}/items/{batch_folder_id}/children"
                 headers=headers,
                 json=folder_payload
             )
@@ -540,7 +541,7 @@ def split_and_save_batches():
                 }
                 
                 upload_response = requests.put(
-                    f"https://graph.microsoft.com/v1.0/me/drive/items/{batch_folder_id}/children",
+                    f"https://graph.microsoft.com/v1.0/drives/{drive_id}/items/{sub_folder_id}:/{file_name}:/content",
                     headers=upload_headers,
                     data=pdf_bytes_output
                 ) 
