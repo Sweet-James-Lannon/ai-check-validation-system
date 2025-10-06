@@ -313,8 +313,6 @@ def get_check_stats():
 @api_bp.route("/api/batch/split-analysis", methods=["POST"])
 def analyze_batch_splits():
     try:
-        api_logger.info("=== Split analysis endpoint called ===")
-        
         if 'pdf_file' not in request.files:
             return jsonify({'error': 'No PDF file provided'}), 400
         
@@ -326,33 +324,41 @@ def analyze_batch_splits():
         total_pages = len(pdf_document)
         
         separator_page_indices = []
-        page_text_samples = {}  # NEW: Store text samples for debugging
         
         for page_num in range(total_pages):
             page = pdf_document[page_num]
             text = page.get_text().upper()
             
-            # Store first 100 chars of each page for debugging
-            page_text_samples[page_num] = text[:100] if text else "(empty)"
-            
-            # More flexible detection - check for key words
-            has_automatically = "AUTOMATICALLY" in text
-            has_separated = "SEPARATED" in text
+            # Flexible matching - look for key patterns with OCR tolerance
+            # Check for variations of AUTOMATICALLY/AUTOMATICATLY/AUTOMATICALTY
+            has_auto = ("AUTOMATIC" in text and "SEPARATED" in text)
+            has_foundation = ("FOUNDATION" in text or "FIUNDATION" in text)
+            has_extract = "EXTRACT" in text
             has_sorted = "SORTED" in text
             has_indexed = "INDEXED" in text
             
-            # Consider it a separator if it has at least 3 of the 4 keywords
-            keyword_count = sum([has_automatically, has_separated, has_sorted, has_indexed])
-            
-            if keyword_count >= 3:
+            # Pink page pattern: Must have AUTOMATIC+SEPARATED and at least 2 other keywords
+            if has_auto and (has_sorted or has_indexed) and has_foundation:
                 separator_page_indices.append(page_num)
-                api_logger.info(f"Page {page_num}: Separator detected (keywords: {keyword_count}/4)")
+                api_logger.info(f"Page {page_num}: Separator detected")
         
-        # Generate splits (pages AFTER separators start new batches)
+        # Generate splits - content starts AFTER separator pairs
+        # Since separators come in pairs, group them
         splits = [0]
-        for sep_page in separator_page_indices:
-            if sep_page + 1 < total_pages:
-                splits.append(sep_page + 1)
+        i = 0
+        while i < len(separator_page_indices):
+            sep_page = separator_page_indices[i]
+            # Check if next page is also a separator (pair detection)
+            if i + 1 < len(separator_page_indices) and separator_page_indices[i + 1] == sep_page + 1:
+                # It's a pair - split after the second page
+                if sep_page + 2 < total_pages:
+                    splits.append(sep_page + 2)
+                i += 2  # Skip both pages
+            else:
+                # Single separator
+                if sep_page + 1 < total_pages:
+                    splits.append(sep_page + 1)
+                i += 1
         
         sub_batches = [chr(65 + i) for i in range(len(splits))]
         
@@ -361,6 +367,7 @@ def analyze_batch_splits():
             start = splits[i]
             end = splits[i + 1] if i + 1 < len(splits) else total_pages
             count = end - start
+            # Subtract separator pages in this range
             for sep in separator_page_indices:
                 if start <= sep < end:
                     count -= 1
@@ -368,42 +375,20 @@ def analyze_batch_splits():
         
         pdf_document.close()
         
-        result = {
+        return jsonify({
             'success': True,
             'total_pages': total_pages,
             'separator_pages': separator_page_indices,
             'splits': splits,
             'sub_batches': sub_batches,
-            'page_counts': page_counts,
-            'debug_text_samples': page_text_samples  # NEW: Include for debugging
-        }
-        
-        return jsonify(result)
+            'page_counts': page_counts
+        })
         
     except Exception as e:
         api_logger.error(f"ERROR: {str(e)}")
         import traceback
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
-
-@api_bp.route("/api/test-imports", methods=["GET"])
-def test_imports():
-    try:
-        import fitz
-        from PIL import Image
-        import numpy as np
-        return jsonify({
-            'status': 'success',
-            'pymupdf_version': fitz.VersionBind,
-            'fitz_file': fitz.__file__,
-            'imports_working': True
-        })
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'error': str(e),
-            'error_type': type(e).__name__
-        }), 500
 
 # =============================================================================
 # SYSTEM HEALTH API ENDPOINTS
