@@ -316,69 +316,85 @@ def analyze_batch_splits():
     Analyzes PDF for separator pages by detecting specific text
     """
     try:
+        api_logger.info("=== Split analysis endpoint called ===")
+        
         if 'pdf_file' not in request.files:
+            api_logger.error("No pdf_file in request.files")
+            api_logger.error(f"Request.files keys: {list(request.files.keys())}")
+            api_logger.error(f"Request.form keys: {list(request.form.keys())}")
             return jsonify({'error': 'No PDF file provided'}), 400
         
+        api_logger.info("PDF file found in request")
         pdf_file = request.files['pdf_file']
-        pdf_bytes = pdf_file.read()
+        api_logger.info(f"Reading PDF: {pdf_file.filename}")
         
-        import fitz  # PyMuPDF
+        pdf_bytes = pdf_file.read()
+        api_logger.info(f"Read {len(pdf_bytes)} bytes")
+        
+        import fitz
+        api_logger.info("Opening PDF with PyMuPDF")
         
         pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
         total_pages = len(pdf_document)
+        api_logger.info(f"PDF has {total_pages} pages")
         
         # Detect separator pages by text
         separator_page_indices = []
         
         for page_num in range(total_pages):
             page = pdf_document[page_num]
-            text = page.get_text().upper()  # Convert to uppercase for case-insensitive search
+            text = page.get_text().upper()
             
             # Check if page contains separator text
             if "AUTOMATICALLY SEPARATED" in text and "SORTED" in text and "INDEXED" in text:
                 separator_page_indices.append(page_num)
+                api_logger.info(f"Found separator at page {page_num}")
+        
+        api_logger.info(f"Total separators found: {len(separator_page_indices)}")
         
         # Generate split points
-        # Splits occur AFTER each separator page
-        splits = [0]  # Always start at page 0
-        
+        splits = [0]
         for sep_page in separator_page_indices:
-            # The next page after the separator starts a new sub-batch
             if sep_page + 1 < total_pages:
                 splits.append(sep_page + 1)
         
-        # Generate sub-batch labels (A, B, C, etc.)
+        # Generate sub-batch labels
         sub_batches = [chr(65 + i) for i in range(len(splits))]
         
-        # Calculate page counts for each sub-batch
+        # Calculate page counts
         page_counts = []
         for i in range(len(splits)):
             start = splits[i]
             end = splits[i + 1] if i + 1 < len(splits) else total_pages
-            
-            # Count pages but exclude separator pages
             count = end - start
-            # Check if there's a separator page in this range
             for sep in separator_page_indices:
                 if start <= sep < end:
-                    count -= 1  # Don't count the separator itself
-            
+                    count -= 1
             page_counts.append(count)
         
         pdf_document.close()
         
-        return jsonify({
+        result = {
             'success': True,
             'total_pages': total_pages,
             'separator_pages': separator_page_indices,
             'splits': splits,
             'sub_batches': sub_batches,
             'page_counts': page_counts
-        })
+        }
+        
+        api_logger.info(f"Returning result: {result}")
+        return jsonify(result)
         
     except Exception as e:
-        api_logger.error(f"Error analyzing batch splits: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        api_logger.error(f"ERROR in split analysis: {str(e)}")
+        api_logger.error(f"Error type: {type(e).__name__}")
+        import traceback
+        api_logger.error(traceback.format_exc())
+        return jsonify({
+            'error': str(e),
+            'error_type': type(e).__name__
+        }), 500
 
 @api_bp.route("/api/test-imports", methods=["GET"])
 def test_imports():
