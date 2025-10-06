@@ -428,13 +428,15 @@ def analyze_batch_splits():
 
 @api_bp.route("/api/batch/split-and-save", methods=["POST"])
 def split_and_save_batches():
+
     """
     Splits PDF into batches and saves to OneDrive
     Expects: pdf_file, batch_folder_id, batch_number, batches (JSON)
     """
     try:
-        api_logger.info("=== Split and Save endpoint called ===")
-        
+        import os 
+        import requests
+        api_logger.info("=== Split and Save endpoint called ===")        
         # Get inputs
         if 'pdf_file' not in request.files:
             return jsonify({'error': 'No PDF file provided'}), 400
@@ -565,8 +567,6 @@ def split_and_save_batches():
         import traceback
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
-
-
 
 
 # =============================================================================
