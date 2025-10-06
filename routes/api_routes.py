@@ -540,17 +540,17 @@ def split_and_save_batches():
                 }
                 
                 upload_response = requests.put(
-                    f"https://graph.microsoft.com/v1.0/drives/{drive_id}/items/{sub_folder_id}:/{file_name}:/content"
+                    f"https://graph.microsoft.com/v1.0/me/drive/items/{batch_folder_id}/children",
                     headers=upload_headers,
                     data=pdf_bytes_output
-                )
-                
+                ) 
+                 
                 if upload_response.status_code in [200, 201]:
                     created_files.append(file_name)
                     api_logger.info(f"✓ Uploaded: {file_name}")
                 else:
                     api_logger.error(f"Failed to upload {file_name}: {upload_response.text}")
-        
+                            
         pdf_document.close()
         
         return jsonify({
