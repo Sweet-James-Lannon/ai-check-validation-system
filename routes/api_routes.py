@@ -505,7 +505,7 @@ def split_and_save_batches():
             }
             
             folder_response = requests.post(
-                f"https://graph.microsoft.com/v1.0/drives/{drive_id}/items/{batch_folder_id}/children"
+                f"https://graph.microsoft.com/v1.0/drives/{drive_id}/items/{batch_folder_id}/children",
                 headers=headers,
                 json=folder_payload
             )
