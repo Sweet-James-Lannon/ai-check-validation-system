@@ -425,6 +425,150 @@ def analyze_batch_splits():
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
+
+@api_bp.route("/api/batch/split-and-save", methods=["POST"])
+def split_and_save_batches():
+    """
+    Splits PDF into batches and saves to OneDrive
+    Expects: pdf_file, batch_folder_id, batch_number, batches (JSON)
+    """
+    try:
+        api_logger.info("=== Split and Save endpoint called ===")
+        
+        # Get inputs
+        if 'pdf_file' not in request.files:
+            return jsonify({'error': 'No PDF file provided'}), 400
+        
+        pdf_file = request.files['pdf_file']
+        batch_folder_id = request.form.get('batch_folder_id')  # The Batch-156 folder ID from Node 3
+        batch_number = request.form.get('batch_number')  # "156"
+        batches_json = request.form.get('batches')  # JSON array from Node 6
+        
+        if not all([batch_folder_id, batch_number, batches_json]):
+            return jsonify({'error': 'Missing required parameters'}), 400
+        
+        import json
+        batches = json.loads(batches_json)
+        
+        api_logger.info(f"Processing {len(batches)} batches for Batch-{batch_number}")
+        
+        # Read PDF
+        pdf_bytes = pdf_file.read()
+        import fitz
+        pdf_document = fitz.open(stream=pdf_bytes, filetype="pdf")
+        
+        # Get access token for Microsoft Graph API
+        import msal
+        from datetime import datetime
+        import io
+        
+        # Azure AD token acquisition
+        authority = f"https://login.microsoftonline.com/{os.getenv('AZURE_TENANT_ID')}"
+        app = msal.ConfidentialClientApplication(
+            os.getenv('AZURE_CLIENT_ID'),
+            authority=authority,
+            client_credential=os.getenv('AZURE_CLIENT_SECRET')
+        )
+        
+        result = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
+        
+        if "access_token" not in result:
+            raise Exception(f"Failed to acquire token: {result.get('error_description')}")
+        
+        access_token = result['access_token']
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        created_folders = []
+        created_files = []
+        
+        # Process each batch
+        for batch_info in batches:
+            batch_letter = batch_info['batch']
+            start_page = batch_info['start_page'] - 1  # Convert to 0-based
+            end_page = batch_info['end_page'] - 1      # Convert to 0-based
+            
+            # Create sub-batch folder name: "Batch 156-A"
+            sub_batch_folder_name = f"Batch {batch_number}-{batch_letter}"
+            api_logger.info(f"Creating folder: {sub_batch_folder_name}")
+            
+            # Create folder in OneDrive
+            folder_payload = {
+                "name": sub_batch_folder_name,
+                "folder": {},
+                "@microsoft.graph.conflictBehavior": "rename"
+            }
+            
+            folder_response = requests.post(
+                f"https://graph.microsoft.com/v1.0/me/drive/items/{batch_folder_id}/children",
+                headers=headers,
+                json=folder_payload
+            )
+            
+            if folder_response.status_code not in [200, 201]:
+                api_logger.error(f"Failed to create folder: {folder_response.text}")
+                continue
+            
+            sub_folder_id = folder_response.json()['id']
+            created_folders.append(sub_batch_folder_name)
+            api_logger.info(f"Created folder ID: {sub_folder_id}")
+            
+            # Extract and save individual pages
+            for page_num in range(start_page, end_page + 1):
+                # Create new PDF with single page
+                single_page_pdf = fitz.open()
+                single_page_pdf.insert_pdf(pdf_document, from_page=page_num, to_page=page_num)
+                
+                # Convert to bytes
+                pdf_bytes_output = single_page_pdf.tobytes()
+                single_page_pdf.close()
+                
+                # File name: "156-A-1.pdf"
+                page_number_in_batch = (page_num - start_page) + 1
+                file_name = f"{batch_number}-{batch_letter}-{page_number_in_batch}.pdf"
+                
+                api_logger.info(f"Uploading: {file_name}")
+                
+                # Upload to OneDrive
+                upload_headers = {
+                    'Authorization': f'Bearer {access_token}',
+                    'Content-Type': 'application/pdf'
+                }
+                
+                upload_response = requests.put(
+                    f"https://graph.microsoft.com/v1.0/me/drive/items/{sub_folder_id}:/{file_name}:/content",
+                    headers=upload_headers,
+                    data=pdf_bytes_output
+                )
+                
+                if upload_response.status_code in [200, 201]:
+                    created_files.append(file_name)
+                    api_logger.info(f"✓ Uploaded: {file_name}")
+                else:
+                    api_logger.error(f"Failed to upload {file_name}: {upload_response.text}")
+        
+        pdf_document.close()
+        
+        return jsonify({
+            'success': True,
+            'batch_number': batch_number,
+            'folders_created': len(created_folders),
+            'folder_names': created_folders,
+            'files_created': len(created_files),
+            'total_batches': len(batches)
+        })
+        
+    except Exception as e:
+        api_logger.error(f"ERROR in split-and-save: {str(e)}")
+        import traceback
+        api_logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
+
+
 # =============================================================================
 # SYSTEM HEALTH API ENDPOINTS
 # =============================================================================
