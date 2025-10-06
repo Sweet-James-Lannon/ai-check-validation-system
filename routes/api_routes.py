@@ -329,59 +329,94 @@ def analyze_batch_splits():
             page = pdf_document[page_num]
             text = page.get_text().upper()
             
-            # Flexible matching - look for key patterns with OCR tolerance
-            # Check for variations of AUTOMATICALLY/AUTOMATICATLY/AUTOMATICALTY
-            has_auto = ("AUTOMATIC" in text and "SEPARATED" in text)
-            has_foundation = ("FOUNDATION" in text or "FIUNDATION" in text)
-            has_extract = "EXTRACT" in text
-            has_sorted = "SORTED" in text
-            has_indexed = "INDEXED" in text
+            # Count how many separator keywords exist (with OCR tolerance)
+            keyword_score = 0
             
-            # Pink page pattern: Must have AUTOMATIC+SEPARATED and at least 2 other keywords
-            if has_auto and (has_sorted or has_indexed) and has_foundation:
+            # "AUTOMATICALLY" or variants
+            if any(variant in text for variant in ["AUTOMATIC", "AUTOMATICA"]):
+                keyword_score += 1
+            
+            # "SEPARATED" or variants  
+            if any(variant in text for variant in ["SEPARAT", "SEPERAT"]):
+                keyword_score += 1
+            
+            # "SORTED"
+            if "SORT" in text:
+                keyword_score += 1
+            
+            # "INDEXED" or variants
+            if any(variant in text for variant in ["INDEX", "!NDEX", "1NDEX"]):
+                keyword_score += 1
+            
+            # "FOUNDATION" or variants
+            if any(variant in text for variant in ["FOUNDATION", "FIUNDATION", "FUUNDATION"]):
+                keyword_score += 1
+            
+            # "EXTRACT"
+            if "EXTRACT" in text:
+                keyword_score += 1
+            
+            # If page has at least 4 of the 6 keywords, it's a separator
+            if keyword_score >= 4:
                 separator_page_indices.append(page_num)
-                api_logger.info(f"Page {page_num}: Separator detected")
         
-        # Generate splits - content starts AFTER separator pairs
-        # Since separators come in pairs, group them
-        splits = [0]
+        # Build sub-batches: content between separator pairs
+        # Pairs: (3,4), (8,9), (13,14), etc.
+        splits = []
+        current_pos = 0
+        
         i = 0
         while i < len(separator_page_indices):
-            sep_page = separator_page_indices[i]
-            # Check if next page is also a separator (pair detection)
-            if i + 1 < len(separator_page_indices) and separator_page_indices[i + 1] == sep_page + 1:
-                # It's a pair - split after the second page
-                if sep_page + 2 < total_pages:
-                    splits.append(sep_page + 2)
-                i += 2  # Skip both pages
+            sep_start = separator_page_indices[i]
+            
+            # Content from current position to separator start
+            if current_pos < sep_start:
+                splits.append({
+                    'start': current_pos,
+                    'end': sep_start - 1,
+                    'page_count': sep_start - current_pos
+                })
+            
+            # Skip separator pair (assume consecutive pages are pairs)
+            if i + 1 < len(separator_page_indices) and separator_page_indices[i + 1] == sep_start + 1:
+                current_pos = sep_start + 2  # Skip both separator pages
+                i += 2
             else:
-                # Single separator
-                if sep_page + 1 < total_pages:
-                    splits.append(sep_page + 1)
+                current_pos = sep_start + 1  # Skip single separator
                 i += 1
         
+        # Add final batch if there's content after last separator
+        if current_pos < total_pages:
+            splits.append({
+                'start': current_pos,
+                'end': total_pages - 1,
+                'page_count': total_pages - current_pos
+            })
+        
+        # Generate sub-batch labels
         sub_batches = [chr(65 + i) for i in range(len(splits))]
         
-        page_counts = []
-        for i in range(len(splits)):
-            start = splits[i]
-            end = splits[i + 1] if i + 1 < len(splits) else total_pages
-            count = end - start
-            # Subtract separator pages in this range
-            for sep in separator_page_indices:
-                if start <= sep < end:
-                    count -= 1
-            page_counts.append(count)
+        # Add 1 to all page numbers for human-readable 1-based indexing
+        separator_pages_display = [p + 1 for p in separator_page_indices]
+        splits_display = [
+            {
+                'batch': sub_batches[i],
+                'start_page': s['start'] + 1,  # Convert to 1-based
+                'end_page': s['end'] + 1,      # Convert to 1-based
+                'page_count': s['page_count']
+            }
+            for i, s in enumerate(splits)
+        ]
         
         pdf_document.close()
         
         return jsonify({
             'success': True,
             'total_pages': total_pages,
-            'separator_pages': separator_page_indices,
-            'splits': splits,
-            'sub_batches': sub_batches,
-            'page_counts': page_counts
+            'separator_pages_0based': separator_page_indices,
+            'separator_pages_display': separator_pages_display,
+            'batches': splits_display,
+            'batch_count': len(splits)
         })
         
     except Exception as e:
