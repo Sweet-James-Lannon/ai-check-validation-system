@@ -5,6 +5,6 @@ requests==2.32.3
 supabase==2.7.4
 openai==1.51.2
 gunicorn==23.0.0
-PyMuPDF
-Pillow
-numpy
+PyMuPDF==1.26.4
+Pillow==11.3.0
+numpy==2.3.3
