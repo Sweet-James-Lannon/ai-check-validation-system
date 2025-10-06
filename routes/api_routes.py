@@ -540,7 +540,7 @@ def split_and_save_batches():
                 }
                 
                 upload_response = requests.put(
-                    f"https://graph.microsoft.com/v1.0/me/drive/items/{sub_folder_id}:/{file_name}:/content",
+                    f"https://graph.microsoft.com/v1.0/drives/{drive_id}/items/{batch_folder_id}/children"
                     headers=upload_headers,
                     data=pdf_bytes_output
                 )
