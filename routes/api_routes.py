@@ -380,6 +380,25 @@ def analyze_batch_splits():
         api_logger.error(f"Error analyzing batch splits: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@api_bp.route("/api/test-imports", methods=["GET"])
+def test_imports():
+    try:
+        import fitz
+        from PIL import Image
+        import numpy as np
+        return jsonify({
+            'status': 'success',
+            'pymupdf_version': fitz.VersionBind,
+            'fitz_file': fitz.__file__,
+            'imports_working': True
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'error_type': type(e).__name__
+        }), 500
+
 # =============================================================================
 # SYSTEM HEALTH API ENDPOINTS
 # =============================================================================
