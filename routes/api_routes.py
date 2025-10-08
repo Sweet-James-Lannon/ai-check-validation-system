@@ -425,7 +425,6 @@ def analyze_batch_splits():
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
-
 @api_bp.route("/api/batch/split-pages", methods=["POST"])
 def split_pages():
     """
@@ -458,7 +457,7 @@ def split_pages():
         
         # Process each batch
         for batch_info in batches:
-            batch_letter = batch_info['batch']
+            batch_letter = batch_info['batch'] 
             start_page = batch_info['start_page'] - 1
             end_page = batch_info['end_page'] - 1
             
@@ -496,6 +495,112 @@ def split_pages():
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
+@api_bp.route("/api/batch/ingest", methods=["POST"])
+def ingest_batch():
+    """
+    Receives batch metadata from n8n and stores in Supabase
+    
+    Expected JSON payload:
+    {
+      "batch_number": "156",
+      "batch_date": "2025-10-01",
+      "folder_name": "2025_10_01-BATCH-156",
+      "onedrive_folder_id": "xyz123",
+      "checks": [
+        {
+          "letter": "A",
+          "subfolder_name": "Batch 156-A",
+          "onedrive_folder_id": "abc456",
+          "pages": [
+            {"page_number": 1, "file_name": "156-A-1.pdf", "onedrive_file_id": "file1"},
+            {"page_number": 2, "file_name": "156-A-2.pdf", "onedrive_file_id": "file2"}
+          ]
+        }
+      ]
+    }
+    """
+    try:
+        data = request.get_json()
+        api_logger.info(f"=== Ingesting batch: {data.get('batch_number')} ===")
+        
+        # 1. Check if batch already exists
+        existing_batch = supabase_service.supabase.table('batches')\
+            .select('id')\
+            .eq('folder_name', data['folder_name'])\
+            .execute()
+        
+        if existing_batch.data:
+            api_logger.info(f"Batch {data['folder_name']} already exists, skipping")
+            return jsonify({
+                'success': True,
+                'message': 'Batch already exists',
+                'batch_id': existing_batch.data[0]['id']
+            }), 200
+        
+        # 2. Create batch record
+        batch_result = supabase_service.supabase.table('batches').insert({
+            'batch_number': data['batch_number'],
+            'batch_date': data['batch_date'],
+            'folder_name': data['folder_name'],
+            'onedrive_folder_id': data['onedrive_folder_id'],
+            'total_checks': len(data['checks'])
+        }).execute()
+        
+        batch_id = batch_result.data[0]['id']
+        api_logger.info(f"Created batch record: {batch_id}")
+        
+        # 3. Create check records
+        checks_created = 0
+        pages_created = 0
+        
+        for check_data in data['checks']:
+            check_identifier = f"{data['batch_number']}-{check_data['letter']}"
+            
+            # Insert check
+            check_result = supabase_service.supabase.table('checks').insert({
+                'batch_id_fk': batch_id,
+                'check_letter': check_data['letter'],
+                'check_identifier': check_identifier,
+                'subfolder_name': check_data['subfolder_name'],
+                'onedrive_folder_id': check_data['onedrive_folder_id'],
+                'page_count': len(check_data['pages']),
+                'status': 'pending',
+                'check_view_status': 'pending'
+            }).execute()
+            
+            check_id = check_result.data[0]['id']
+            checks_created += 1
+            api_logger.info(f"Created check: {check_identifier}")
+            
+            # 4. Create check_pages records
+            pages_to_insert = [
+                {
+                    'check_id': check_id,
+                    'page_number': page['page_number'],
+                    'file_name': page['file_name'],
+                    'onedrive_file_id': page['onedrive_file_id']
+                }
+                for page in check_data['pages']
+            ]
+            
+            if pages_to_insert:
+                supabase_service.supabase.table('check_pages').insert(pages_to_insert).execute()
+                pages_created += len(pages_to_insert)
+        
+        api_logger.info(f"✅ Batch ingestion complete: {checks_created} checks, {pages_created} pages")
+        
+        return jsonify({
+            'success': True,
+            'batch_id': batch_id,
+            'checks_created': checks_created,
+            'pages_created': pages_created
+        }), 201
+        
+    except Exception as e:
+        api_logger.error(f"ERROR in batch ingestion: {str(e)}")
+        import traceback
+        api_logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
 
 # =============================================================================
 # SYSTEM HEALTH API ENDPOINTS
