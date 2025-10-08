@@ -305,7 +305,7 @@ def get_check_stats():
     except Exception as e:
         api_logger.error(f"Error getting check stats: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
-
+  
 # =============================================================================
 # n8n for pink page detection API ENDPOINTS
 # =============================================================================
@@ -524,7 +524,7 @@ def ingest_batch():
         api_logger.info(f"=== Ingesting batch: {data.get('batch_number')} ===")
         
         # 1. Check if batch already exists
-        existing_batch = supabase_service.supabase.table('batches')\
+        existing_batch = supabase_service.client.table('batches')\
             .select('id')\
             .eq('folder_name', data['folder_name'])\
             .execute()
@@ -538,7 +538,7 @@ def ingest_batch():
             }), 200
         
         # 2. Create batch record
-        batch_result = supabase_service.supabase.table('batches').insert({
+        batch_result = supabase_service.client.table('batches').insert({
             'batch_number': data['batch_number'],
             'batch_date': data['batch_date'],
             'folder_name': data['folder_name'],
@@ -557,7 +557,7 @@ def ingest_batch():
             check_identifier = f"{data['batch_number']}-{check_data['letter']}"
             
             # Insert check
-            check_result = supabase_service.supabase.table('checks').insert({
+            check_result = supabase_service.client.table('checks').insert({
                 'batch_id_fk': batch_id,
                 'check_letter': check_data['letter'],
                 'check_identifier': check_identifier,
@@ -581,10 +581,10 @@ def ingest_batch():
                     'onedrive_file_id': page['onedrive_file_id']
                 }
                 for page in check_data['pages']
-            ]
+            ] 
             
             if pages_to_insert:
-                supabase_service.supabase.table('check_pages').insert(pages_to_insert).execute()
+                supabase_service.client.table('check_pages').insert(pages_to_insert).execute()
                 pages_created += len(pages_to_insert)
         
         api_logger.info(f"✅ Batch ingestion complete: {checks_created} checks, {pages_created} pages")
@@ -601,6 +601,8 @@ def ingest_batch():
         import traceback
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
+
+
 
 # =============================================================================
 # SYSTEM HEALTH API ENDPOINTS

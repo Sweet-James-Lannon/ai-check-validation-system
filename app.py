@@ -127,4 +127,4 @@ def debug_routes():
 
 if __name__ == "__main__":
     print(f"🚀 Starting Flask app in {'production' if is_production else 'development'} mode")
-    app.run(host='localhost', port=5002, debug=True)
+    app.run(host='localhost', port=5000, debug=True)
