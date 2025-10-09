@@ -106,6 +106,27 @@ else:
     print("⚠️ Chat routes NOT registered - check services/ai_service.py")
 
 # =============================================================================
+# CUSTOM TEMPLATE FILTERS
+# =============================================================================
+
+from datetime import datetime
+
+@app.template_filter('datetimeformat')
+def datetimeformat(value, format='%Y-%m-%d %H:%M'):
+    """Format a datetime string or object for template display."""
+    if isinstance(value, str):
+        try:
+            # Try to parse ISO format datetime string
+            dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+            return dt.strftime(format)
+        except (ValueError, AttributeError):
+            return value
+    elif isinstance(value, datetime):
+        return value.strftime(format)
+    else:
+        return value
+
+# =============================================================================
 # SYSTEM DIAGNOSTICS & DEBUGGING
 # =============================================================================
 
@@ -120,6 +141,8 @@ def debug_routes():
             'rule': rule.rule
         })
     return {"routes": routes}
+
+
 
 # =============================================================================
 # APPLICATION STARTUP & DEVELOPMENT SERVER

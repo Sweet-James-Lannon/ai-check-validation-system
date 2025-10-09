@@ -10,7 +10,7 @@ Last Updated: September 2025
 =============================================================================
 """
 
-from flask import Blueprint, render_template, session, redirect, url_for, jsonify, Response
+from flask import Blueprint, render_template, session, redirect, url_for, jsonify, Response, request
 from utils.decorators import (
     login_required,
 )
@@ -39,9 +39,14 @@ def dashboard_home():
     
     # Get system-wide metrics across all document types
     try:
-        # Get checks metrics
-        checks_response = supabase_service.client.table('checks').select('*').execute()
-        total_checks = len(checks_response.data) if checks_response.data else 0
+        # Get all checks (regardless of batch selection)
+        checks_response = supabase_service.client.table('checks')\
+            .select('*')\
+            .order('created_at', desc=True)\
+            .execute()
+        
+        # Calculate basic counts
+        total_count = len(checks_response.data) if checks_response.data else 0
         
         # TODO: Add other document type metrics when tables are created
         # contracts_response = supabase_service.client.table('contracts').select('*').execute()
@@ -49,7 +54,7 @@ def dashboard_home():
         
         document_metrics = {
             'checks': {
-                'total': total_checks,
+                'total': total_count,
                 'processed_today': 23,  # TODO: Calculate from database
                 'pending': 8,           # TODO: Calculate from database
                 'success_rate': 94.2    # TODO: Calculate from database
@@ -102,84 +107,58 @@ def checks_dashboard():
 @dashboard_bp.route("/checks/queue")
 @login_required
 def check_queue():
-    """Check queue page showing all pending checks from Supabase"""
+    """Check queue page showing batches and checks"""
     try:
         user = session.get("user")
         
-        # Get pending checks from Supabase - using your actual table name
-        response = supabase_service.client.table('checks').select('*').order('created_at', desc=True).execute()
-
-        # Format data for frontend
+        # Get batch_id from query string (if provided)
+        batch_id = request.args.get('batch_id')
+        
+        # Get all batches for the batch selector
+        batches_response = supabase_service.client.table('batches')\
+            .select('*')\
+            .order('created_at', desc=True)\
+            .execute()
+        
+        # Get all checks from the checks table
+        checks_response = supabase_service.client.table('checks')\
+            .select('*')\
+            .order('created_at', desc=True)\
+            .execute()
+        
+        # Calculate basic counts
+        total_count = len(checks_response.data) if checks_response.data else 0
+        
+        # Format checks for display with confidence percentage
         formatted_checks = []
-        for check in response.data:
-            formatted_check = {
-                'id': check.get('id'),
-                'check_number': check.get('check_number', ''),
-                'check_type': check.get('check_type', ''),
-                'payee_name': check.get('payee_name', ''),
-                'pay_to': check.get('pay_to', ''),
-                'amount': check.get('amount', ''),
-                'check_date': check.get('check_date', ''),
-                'check_issue_date': check.get('check_issue_date', ''),
-                'memo': check.get('memo', ''),
-                'routing_number': check.get('routing_number', ''),
-                'account_number': check.get('account_number', ''),
-                'micr_line': check.get('micr_line', ''),
-                'matter_name': check.get('matter_name', ''),
-                'matter_id': check.get('matter_id', ''),
-                'case_type': check.get('case_type', ''),
-                'delivery_service': check.get('delivery_service', ''),
-                'insurance_company_name': check.get('insurance_company_name', ''),
-                'claim_number': check.get('claim_number', ''),
-                'policy_number': check.get('policy_number', ''),
-                'confidence_score': check.get('confidence_score', 0),
-                'status': check.get('status', 'pending'),
-                'check_view_status': check.get('check_view_status', 'pending'),
-                'flags': check.get('flags', []),
-                'file_name': check.get('file_name', ''),
-                'file_id': check.get('file_id', ''),
-                'raw_ocr_content': check.get('raw_ocr_content', ''),
-                'raw_ocr_data': check.get('raw_ocr_data', {}),
-                'forward_reason': check.get('forward_reason', ''),
-                'source_system': check.get('source_system', ''),
-                'created_at': check.get('created_at', ''),
-                'updated_at': check.get('updated_at', ''),
-                'reviewed_at': check.get('reviewed_at', ''),
-                'reviewed_by': check.get('reviewed_by', ''),
-                'validated_at': check.get('validated_at', ''),
-                'validated_by': check.get('validated_by', ''),
-                'confidence_percentage': round((check.get('confidence_score', 0) * 100), 1) if check.get('confidence_score') else 0,
-                'image_data': check.get('image_data', ''),
-                'image_mime_type': check.get('image_mime_type', ''),
-                'image_url_link': check.get('image_url_link', ''),
-                'image_download_url': check.get('image_download_url', ''),
-                'folder_name': check.get('folder_name', ''),
-                'batch_id': check.get('batch_id', ''),
-                'file_count': check.get('file_count', 1),
-                'batch_images': check.get('batch_images', []),
-                'insurance_record_id': check.get('insurance_record_id', ''),
-                'salesforce_response': check.get('salesforce_response', {}),
-                'salesforce_validated': check.get('salesforce_validated', False),
-                'validation_score': check.get('validation_score', None)
-            }
+        for check in checks_response.data:
+            formatted_check = check.copy()
+            # Add confidence percentage for template display
+            confidence_score = check.get('confidence_score', 0)
+            formatted_check['confidence_percentage'] = round(confidence_score * 100, 1) if confidence_score else 0
             formatted_checks.append(formatted_check)
         
-        api_logger.info(f"Retrieved {len(formatted_checks)} pending checks for queue view")
-        
-        return render_template("check_queue.html", 
-                             user=user, 
+        return render_template('check_queue.html',
+                             user=user,
+                             batches=batches_response.data,
                              checks=formatted_checks,
-                             total_count=len(formatted_checks))
+                             total_count=total_count)
         
     except Exception as e:
         api_logger.error(f"Error loading check queue: {str(e)}")
+        import traceback
+        api_logger.error(traceback.format_exc())
         user = session.get("user")
         return render_template("check_queue.html", 
-                             user=user, 
+                             user=user,
+                             batches=[],
+                             selected_batch=None,
                              checks=[], 
                              total_count=0,
+                             status_counts={'pending': 0, 'needs_review': 0, 'approved': 0},
+                             current_status='pending',
                              error_message="Failed to load checks from database")
-    
+
 @dashboard_bp.route("/checks/detail/<check_id>")
 @login_required
 def check_detail(check_id):

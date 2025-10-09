@@ -602,8 +602,6 @@ def ingest_batch():
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
-
-
 # =============================================================================
 # SYSTEM HEALTH API ENDPOINTS
 # =============================================================================
