@@ -105,44 +105,59 @@ def checks_dashboard():
     return render_template("checks_dashboard.html", user=user)
 
 @dashboard_bp.route("/checks/queue")
+@dashboard_bp.route("/checks/queue/<batch_id>")
 @login_required
-def check_queue():
-    """Check queue page showing batches and checks"""
+def check_queue(batch_id=None):
+    """Check queue page - shows batch summary or specific batch checks"""
     try:
         user = session.get("user")
         
-        # Get batch_id from query string (if provided)
-        batch_id = request.args.get('batch_id')
-        
-        # Get all batches for the batch selector
-        batches_response = supabase_service.client.table('batches')\
-            .select('*')\
-            .order('created_at', desc=True)\
-            .execute()
-        
-        # Get all checks from the checks table
-        checks_response = supabase_service.client.table('checks')\
-            .select('*')\
-            .order('created_at', desc=True)\
-            .execute()
-        
-        # Calculate basic counts
-        total_count = len(checks_response.data) if checks_response.data else 0
-        
-        # Format checks for display with confidence percentage
-        formatted_checks = []
-        for check in checks_response.data:
-            formatted_check = check.copy()
-            # Add confidence percentage for template display
-            confidence_score = check.get('confidence_score', 0)
-            formatted_check['confidence_percentage'] = round(confidence_score * 100, 1) if confidence_score else 0
-            formatted_checks.append(formatted_check)
-        
-        return render_template('check_queue.html',
-                             user=user,
-                             batches=batches_response.data,
-                             checks=formatted_checks,
-                             total_count=total_count)
+        if batch_id:
+            # Level 2: Show checks for specific batch
+            api_logger.info(f"Loading checks for batch: {batch_id}")
+            
+            checks_response = supabase_service.client.table('checks')\
+                .select('*')\
+                .eq('batch_id', batch_id)\
+                .order('created_at', desc=True)\
+                .execute()
+            
+            # Get the batch name for display
+            batch_name = batch_id.replace('BATCH_', '')
+            
+            # Format checks for display with confidence percentage
+            formatted_checks = []
+            for check in checks_response.data:
+                formatted_check = check.copy()
+                confidence_score = check.get('confidence_score', 0)
+                formatted_check['confidence_percentage'] = round(confidence_score * 100, 1) if confidence_score else 0
+                formatted_checks.append(formatted_check)
+            
+            total_count = len(formatted_checks)
+            
+            api_logger.info(f"Loaded {total_count} checks for batch {batch_id}")
+            
+            return render_template('check_queue.html',
+                                 user=user,
+                                 checks=formatted_checks,
+                                 total_count=total_count,
+                                 current_batch_id=batch_id,
+                                 current_batch_name=f"Batch {batch_name}",
+                                 view_mode="batch_detail")
+        else:
+            # Level 1: Show batch summary using our new Supabase function
+            api_logger.info("Loading batch summary")
+            
+            batches_response = supabase_service.client.rpc('get_batches_summary').execute()
+            
+            api_logger.info(f"Loaded {len(batches_response.data) if batches_response.data else 0} batches")
+            
+            return render_template('check_queue.html',
+                                 user=user,
+                                 batches=batches_response.data,
+                                 checks=[],  # Empty list for batch view
+                                 total_count=0,  # No checks loaded yet
+                                 view_mode="batch_list")
         
     except Exception as e:
         api_logger.error(f"Error loading check queue: {str(e)}")

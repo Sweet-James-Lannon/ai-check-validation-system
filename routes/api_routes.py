@@ -305,6 +305,66 @@ def get_check_stats():
     except Exception as e:
         api_logger.error(f"Error getting check stats: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route("/api/batches/<batch_id>/checks", methods=["GET"])
+@login_required
+def get_batch_checks(batch_id):
+    """Get all checks for a specific batch - AJAX endpoint"""
+    try:
+        api_logger.info(f"API: Loading checks for batch {batch_id}")
+        
+        response = supabase_service.client.table('checks')\
+            .select('*')\
+            .eq('batch_id', batch_id)\
+            .order('created_at', desc=True)\
+            .execute()
+        
+        # Format checks for display
+        formatted_checks = []
+        for check in response.data:
+            formatted_check = check.copy()
+            confidence_score = check.get('confidence_score', 0)
+            formatted_check['confidence_percentage'] = round(confidence_score * 100, 1) if confidence_score else 0
+            formatted_checks.append(formatted_check)
+        
+        api_logger.info(f"API: Returning {len(formatted_checks)} checks for batch {batch_id}")
+        
+        return jsonify({
+            "status": "success",
+            "checks": formatted_checks,
+            "total": len(formatted_checks),
+            "batch_id": batch_id
+        })
+        
+    except Exception as e:
+        api_logger.error(f"Error getting batch checks: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route("/api/checks/<check_id>/pages", methods=["GET"])
+@login_required
+def get_check_pages(check_id):
+    """Get all pages for a specific check - AJAX endpoint"""
+    try:
+        api_logger.info(f"API: Loading pages for check {check_id}")
+        
+        response = supabase_service.client.table('check_pages')\
+            .select('*')\
+            .eq('check_id', check_id)\
+            .order('page_number')\
+            .execute()
+        
+        api_logger.info(f"API: Returning {len(response.data) if response.data else 0} pages for check {check_id}")
+        
+        return jsonify({
+            "status": "success",
+            "pages": response.data,
+            "total": len(response.data) if response.data else 0,
+            "check_id": check_id
+        })
+        
+    except Exception as e:
+        api_logger.error(f"Error getting check pages: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
   
 # =============================================================================
 # n8n for pink page detection API ENDPOINTS
@@ -425,7 +485,7 @@ def analyze_batch_splits():
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
-@api_bp.route("/api/batch/split-pages", methods=["POST"])
+@api_bp.route("/api/batch/split-pages", methods=["POST"]) 
 def split_pages():
     """
     Splits PDF into individual pages and returns as base64

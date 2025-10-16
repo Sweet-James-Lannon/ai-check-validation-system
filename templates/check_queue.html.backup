@@ -2244,3 +2244,463 @@
     </script>
 </body>
 </html>
+                    const originalHtml = buttonElement.innerHTML;
+                    buttonElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin w-3 h-3 mr-1"></i>Processing...';
+                    buttonElement.disabled = true;
+                }
+                
+                // Show processing overlay
+                const rowContainer = document.querySelector(`[data-check-row="${checkId}"]`);
+                if (rowContainer) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'processing-overlay';
+                    overlay.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-600"></i>';
+                    rowContainer.style.position = 'relative';
+                    rowContainer.appendChild(overlay);
+                }
+                
+                try {
+                    let response;
+                    
+                    if (action === 'approve') {
+                        response = await fetch(`/api/checks/approve/${checkId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reason: reason })
+                        });
+                    } else if (action === 'reject') {
+                        response = await fetch(`/api/checks/reject/${checkId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reason: reason })
+                        });
+                    } else if (action === 'needs_review') {
+                        response = await fetch(`/api/checks/needs-review/${checkId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reason: reason })
+                        });
+                    } else if (action === 'forward') {
+                        // Forward to review queue (could be a different endpoint)
+                        response = await fetch(`/api/checks/forward/${checkId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ reason: reason })
+                        });
+                        
+                        // If forward endpoint doesn't exist, fall back to reject
+                        if (response.status === 404) {
+                            response = await fetch(`/api/checks/reject/${checkId}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ reason: reason || 'Forwarded for manual review' })
+                            });
+                        }
+                    }
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        const actionText = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : action === 'needs_review' ? 'sent to manual review' : action === 'forward' ? 'forwarded for review' : 'processed';
+                        showToast(`Check ${actionText} successfully!`, 'success');
+                        
+                        if (action === 'approve' && result.validated_at && result.validated_by_name) {
+                            // Move check to approved tab
+                            moveToApprovedTable(checkId, result);
+                        } else if (action === 'needs_review') {
+                            // Move check to needs review tab
+                            moveToNeedsReviewTable(checkId, result);
+                        } else {
+                            removeCheckRow(checkId);
+                        }
+                    } else {
+                        const error = await response.json();
+                        console.error(`HTTP ${response.status} error:`, error);
+                        
+                        // Check for specific database constraint error
+                        if (error.message && (error.message.includes('constraint') || error.message.includes('violates check') || error.message.includes('check constraint'))) {
+                            throw new Error(`Database constraint error: The status 'needs_review' is not allowed. Please run this SQL in Supabase Dashboard: ALTER TABLE checks DROP CONSTRAINT IF EXISTS checks_status_check; ALTER TABLE checks ADD CONSTRAINT checks_status_check CHECK (status IN ('pending', 'needs_review', 'approved', 'rejected'));`);
+                        } else {
+                            throw new Error(error.message || error.error || `Failed to ${action} check`);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`${action} error:`, error);
+                    let errorMessage = `Failed to ${action} check.`;
+                    if (error.message.includes('constraint')) {
+                        errorMessage = error.message;
+                    } else {
+                        errorMessage += ' Please try again.';
+                    }
+                    showToast(errorMessage, 'error');
+                    
+                    // Restore button if it exists
+                    if (buttonElement) {
+                        buttonElement.innerHTML = originalHtml;
+                        buttonElement.disabled = false;
+                    }
+                    
+                    // Remove overlay
+                    if (rowContainer) {
+                        const overlay = rowContainer.querySelector('.processing-overlay');
+                        if (overlay) overlay.remove();
+                    }
+                }
+            }
+            
+            function removeCheckRow(checkId) {
+                const row = document.querySelector(`[data-check-row="${checkId}"]`)?.closest('tr');
+                if (row) {
+                    row.style.opacity = '0.5';
+                    row.style.transform = 'scale(0.95)';
+                    
+                    setTimeout(() => {
+                        row.remove();
+                        updateStats();
+                        
+                        // Check if the table is now empty and add empty state if needed
+                        checkAndAddEmptyState();
+                    }, 300);
+                }
+            }
+            
+            function checkAndAddEmptyState() {
+                // Check pending table
+                const pendingTableBody = document.querySelector('#pending-content tbody');
+                const pendingRows = pendingTableBody.querySelectorAll('tr');
+                const pendingDataRows = Array.from(pendingRows).filter(row => !row.querySelector('td[colspan]'));
+                
+                if (pendingDataRows.length === 0) {
+                    addEmptyStateToPendingTable();
+                }
+                
+                // Check needs review table
+                const needsReviewTableBody = document.querySelector('#needs_review-content tbody');
+                const needsReviewRows = needsReviewTableBody.querySelectorAll('tr');
+                const needsReviewDataRows = Array.from(needsReviewRows).filter(row => !row.querySelector('td[colspan]'));
+                
+                if (needsReviewDataRows.length === 0) {
+                    addEmptyStateToNeedsReviewTable();
+                }
+            }
+            
+            function addEmptyStateToPendingTable() {
+                const pendingTableBody = document.querySelector('#pending-content tbody');
+                
+                // Check if empty state already exists
+                const existingEmptyRow = pendingTableBody.querySelector('td[colspan]')?.closest('tr');
+                if (existingEmptyRow) return;
+                
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `
+                    <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                        <i class="fa-solid fa-clock w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+                        <p class="text-sm">No pending checks at this time</p>
+                    </td>
+                `;
+                
+                // Add with fade-in animation
+                emptyRow.style.opacity = '0';
+                pendingTableBody.appendChild(emptyRow);
+                
+                setTimeout(() => {
+                    emptyRow.style.transition = 'opacity 0.3s ease-in';
+                    emptyRow.style.opacity = '1';
+                }, 100);
+            }
+            
+            function addEmptyStateToNeedsReviewTable() {
+                const needsReviewTableBody = document.querySelector('#needs_review-content tbody');
+                
+                // Check if empty state already exists
+                const existingEmptyRow = needsReviewTableBody.querySelector('td[colspan]')?.closest('tr');
+                if (existingEmptyRow) return;
+                
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `
+                    <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                        <i class="fa-solid fa-exclamation-triangle w-8 h-8 mx-auto mb-2 text-gray-300"></i>
+                        <p class="text-sm">No checks requiring manual review at this time</p>
+                    </td>
+                `;
+                
+                // Add with fade-in animation
+                emptyRow.style.opacity = '0';
+                needsReviewTableBody.appendChild(emptyRow);
+                
+                setTimeout(() => {
+                    emptyRow.style.transition = 'opacity 0.3s ease-in';
+                    emptyRow.style.opacity = '1';
+                }, 100);
+            }
+            
+            function updateStats() {
+                // Update the total count and automation rate
+                const remainingRows = document.querySelectorAll('tbody tr').length;
+                const totalCountElements = document.querySelectorAll('.metric-card .text-2xl');
+                
+                // Update total pending count
+                if (totalCountElements[2]) {
+                    totalCountElements[2].textContent = remainingRows;
+                }
+                
+                // Recalculate automation rate
+                const autoApproveButtons = document.querySelectorAll('.auto-approve-btn').length;
+                const automationRate = remainingRows > 0 ? Math.round((autoApproveButtons / remainingRows) * 100) : 0;
+                if (totalCountElements[3]) {
+                    totalCountElements[3].textContent = automationRate + '%';
+                }
+                
+                // Empty state is now handled by checkAndAddEmptyState() function
+            }
+            
+            function moveToApprovedTable(checkId, approvalData) {
+                const row = document.querySelector(`[data-check-row="${checkId}"]`)?.closest('tr');
+                if (!row) return;
+                
+                // Get the row data
+                const checkNumber = row.querySelector('td:nth-child(1) .text-sm').textContent;
+                const payee = row.querySelector('td:nth-child(2) .text-sm').textContent;
+                const amount = row.querySelector('td:nth-child(3) .text-sm').textContent;
+                const checkDate = row.querySelector('td:nth-child(4) .text-sm').textContent;
+                const matter = row.querySelector('td:nth-child(5) .text-sm').textContent;
+                const confidence = row.querySelector('td:nth-child(6) .text-sm').textContent;
+                
+                // Create new row for approved table
+                const approvedTableBody = document.querySelector('#approved-content tbody');
+                
+                // Remove empty state if exists
+                const emptyRow = approvedTableBody.querySelector('td[colspan]')?.closest('tr');
+                if (emptyRow) {
+                    emptyRow.remove();
+                }
+                
+                // Format validation date
+                const validatedDate = new Date(approvalData.validated_at).toLocaleDateString();
+                
+                // Create new approved row
+                const newRow = document.createElement('tr');
+                newRow.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
+                newRow.onclick = () => window.location.href = `/checks/detail/${checkId}`;
+                newRow.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${checkNumber}</div>
+                        <div class="text-xs text-gray-500">ID: ${checkId.substring(0, 8)}...</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900 max-w-xs truncate">${payee}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${amount}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${checkDate}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900 max-w-xs truncate">${matter}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center gap-2">
+                            <div class="text-sm font-medium ${getConfidenceTextColor(confidence)}">${confidence}</div>
+                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                <div class="h-2 rounded-full ${getConfidenceBarColor(confidence)}" style="width: ${confidence.replace('%', '')}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Approved
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${validatedDate}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="text-xs text-green-600 font-medium">
+                            <i class="fa-solid fa-check w-3 h-3 text-green-600 mr-1"></i>
+                            Validated
+                        </span>
+                    </td>
+                `;
+                
+                // Add with animation
+                newRow.style.opacity = '0';
+                newRow.style.transform = 'translateY(-10px)';
+                approvedTableBody.appendChild(newRow);
+                
+                setTimeout(() => {
+                    newRow.style.transition = 'all 0.3s ease-out';
+                    newRow.style.opacity = '1';
+                    newRow.style.transform = 'translateY(0)';
+                }, 100);
+                
+                // Remove from pending table
+                row.style.opacity = '0.5';
+                row.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    row.remove();
+                    updateTabCounts();
+                    updateStats();
+                    checkAndAddEmptyState();
+                }, 300);
+            }
+            
+            function moveToNeedsReviewTable(checkId, reviewData) {
+                const row = document.querySelector(`[data-check-row="${checkId}"]`)?.closest('tr');
+                if (!row) return;
+                
+                // Get the row data
+                const checkNumber = row.querySelector('td:nth-child(1) .text-sm').textContent;
+                const payee = row.querySelector('td:nth-child(2) .text-sm').textContent;
+                const amount = row.querySelector('td:nth-child(3) .text-sm').textContent;
+                const checkDate = row.querySelector('td:nth-child(4) .text-sm').textContent;
+                const matter = row.querySelector('td:nth-child(5) .text-sm').textContent;
+                const confidence = row.querySelector('td:nth-child(6) .text-sm').textContent;
+                
+                // Create new row for needs review table
+                const needsReviewTableBody = document.querySelector('#needs_review-content tbody');
+                
+                // Remove empty state if exists
+                const emptyRow = needsReviewTableBody.querySelector('td[colspan]')?.closest('tr');
+                if (emptyRow) {
+                    emptyRow.remove();
+                }
+                
+                // Format review date
+                const reviewDate = new Date().toLocaleDateString();
+                
+                // Create new needs review row
+                const newRow = document.createElement('tr');
+                newRow.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
+                newRow.onclick = () => window.location.href = `/checks/detail/${checkId}`;
+                newRow.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${checkNumber}</div>
+                        <div class="text-xs text-gray-500">ID: ${checkId.substring(0, 8)}...</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900 max-w-xs truncate">${payee}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${amount}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${checkDate}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900 max-w-xs truncate">${matter}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center gap-2">
+                            <div class="text-sm font-medium ${getConfidenceTextColor(confidence)}">${confidence}</div>
+                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                <div class="h-2 rounded-full ${getConfidenceBarColor(confidence)}" style="width: ${confidence.replace('%', '')}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            Needs Review
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${reviewDate}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="text-xs text-orange-600 font-medium">
+                            <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-orange-600 mr-1"></i>
+                            Flagged
+                        </span>
+                    </td>
+                `;
+                
+                // Add with animation
+                newRow.style.opacity = '0';
+                newRow.style.transform = 'translateY(-10px)';
+                needsReviewTableBody.appendChild(newRow);
+                
+                setTimeout(() => {
+                    newRow.style.transition = 'all 0.3s ease-out';
+                    newRow.style.opacity = '1';
+                    newRow.style.transform = 'translateY(0)';
+                }, 100);
+                
+                // Remove from pending table
+                row.style.opacity = '0.5';
+                row.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    row.remove();
+                    updateTabCounts();
+                    updateStats();
+                    checkAndAddEmptyState();
+                }, 300);
+            }
+            
+            function updateTabCounts() {
+                // Count actual check rows (excluding empty state rows which have colspan attribute)
+                const pendingRows = document.querySelectorAll('#pending-content tbody tr');
+                const pendingCount = Array.from(pendingRows).filter(row => !row.querySelector('td[colspan]')).length;
+                
+                const needsReviewRows = document.querySelectorAll('#needs_review-content tbody tr');
+                const needsReviewCount = Array.from(needsReviewRows).filter(row => !row.querySelector('td[colspan]')).length;
+                
+                const approvedRows = document.querySelectorAll('#approved-content tbody tr');
+                const approvedCount = Array.from(approvedRows).filter(row => !row.querySelector('td[colspan]')).length;
+                
+                // Update tab counts with animation
+                const pendingCountEl = document.getElementById('pending-count');
+                const needsReviewCountEl = document.getElementById('needs_review-count');
+                const approvedCountEl = document.getElementById('approved-count');
+                
+                if (pendingCountEl.textContent !== pendingCount.toString()) {
+                    pendingCountEl.style.transform = 'scale(1.2)';
+                    pendingCountEl.textContent = pendingCount;
+                    setTimeout(() => pendingCountEl.style.transform = 'scale(1)', 200);
+                }
+                
+                if (needsReviewCountEl.textContent !== needsReviewCount.toString()) {
+                    needsReviewCountEl.style.transform = 'scale(1.2)';
+                    needsReviewCountEl.textContent = needsReviewCount;
+                    setTimeout(() => needsReviewCountEl.style.transform = 'scale(1)', 200);
+                }
+                
+                if (approvedCountEl.textContent !== approvedCount.toString()) {
+                    approvedCountEl.style.transform = 'scale(1.2)';
+                    approvedCountEl.textContent = approvedCount;
+                    setTimeout(() => approvedCountEl.style.transform = 'scale(1)', 200);
+                }
+            }
+            
+            function showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden transform transition-all duration-300 translate-x-full opacity-0`;
+                
+                const bgColor = type === 'success' ? 'bg-green-50' : type === 'error' ? 'bg-red-50' : 'bg-blue-50';
+                const textColor = type === 'success' ? 'text-green-800' : type === 'error' ? 'text-red-800' : 'text-blue-800';
+                const iconClass = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+                
+                toast.innerHTML = `
+                    <div class="p-4 ${bgColor}">
+                        <div class="flex items-center">
+                            <i class="fa-solid ${iconClass} w-5 h-5 ${textColor} mr-3"></i>
+                            <p class="text-sm font-medium ${textColor}">${message}</p>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('toastContainer').appendChild(toast);
+                
+                // Animate in
+                setTimeout(() => {
+                    toast.classList.remove('translate-x-full', 'opacity-0');
+                }, 100);
+                
+                // Animate out and remove
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            }
+        });
+    </script>
+</body>
+</html>
