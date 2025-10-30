@@ -254,9 +254,13 @@ def flag_needs_review(check_id):
 def get_check_details(check_id):
     """Get detailed information for a specific check"""
     try:
-        response = supabase_service.client.table('checks').select('*').eq('id', check_id).single().execute()
+        response = supabase_service.client.table('checks').select('*, provider_name, pay_to, claimant').eq('id', check_id).single().execute()
         
         if response.data:
+            # Ensure provider_name is available (fallback to pay_to or claimant)
+            if not response.data.get('provider_name'):
+                response.data['provider_name'] = response.data.get('pay_to') or response.data.get('claimant')
+            
             return jsonify({
                 "status": "success",
                 "check": response.data

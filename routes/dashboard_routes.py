@@ -41,12 +41,21 @@ def dashboard_home():
     try:
         # Get all checks (regardless of batch selection)
         checks_response = supabase_service.client.table('checks')\
-            .select('*')\
+            .select('*, provider_name, pay_to, claimant')\
             .order('created_at', desc=True)\
             .execute()
         
+        checks = checks_response.data
+        
+        # Ensure provider_name is available (fallback to pay_to or claimant)
+        if checks:
+            for check in checks:
+                if not check.get('provider_name'):
+                    check['provider_name'] = check.get('pay_to') or check.get('claimant')
+        
         # Calculate basic counts
-        total_count = len(checks_response.data) if checks_response.data else 0
+        total_count = len(checks) if checks else 0
+        validated_count = len([c for c in checks if c.get('status') == 'approved' and c.get('validated_at')]) if checks else 0
         
         # TODO: Add other document type metrics when tables are created
         # contracts_response = supabase_service.client.table('contracts').select('*').execute()
@@ -57,7 +66,7 @@ def dashboard_home():
                 'total': total_count,
                 'processed_today': 23,  # TODO: Calculate from database
                 'pending': 8,           # TODO: Calculate from database
-                'success_rate': 94.2    # TODO: Calculate from database
+                'validated': validated_count
             },
             'contracts': {
                 'total': 156,          # TODO: Get from database
@@ -86,7 +95,7 @@ def dashboard_home():
         api_logger.error(f"Error loading main dashboard: {str(e)}")
         # Fallback metrics if database fails
         document_metrics = {
-            'checks': {'total': 0, 'processed_today': 0, 'pending': 0, 'success_rate': 0},
+            'checks': {'total': 0, 'processed_today': 0, 'pending': 0, 'validated': 0},
             'contracts': {'total': 0, 'processed_today': 0, 'pending': 0, 'success_rate': 0},
             'legal_documents': {'total': 0, 'processed_today': 0, 'pending': 0, 'success_rate': 0},
             'general_documents': {'total': 0, 'processed_today': 0, 'pending': 0, 'success_rate': 0}
@@ -122,15 +131,18 @@ def check_queue(batch_id=None):
                 .order('created_at', desc=True)\
                 .execute()
             
-            # Get the batch name for display
-            batch_name = batch_id.replace('BATCH_', '')
-            
+            checks = checks_response.data
+        
             # Format checks for display with confidence percentage
             formatted_checks = []
-            for check in checks_response.data:
+            for check in checks:
                 formatted_check = check.copy()
                 confidence_score = check.get('confidence_score', 0)
                 formatted_check['confidence_percentage'] = round(confidence_score * 100, 1) if confidence_score else 0
+                
+                # Debug logging - show what we're getting from DB
+                api_logger.info(f"Check ID: {check.get('id')}, provider_name: '{check.get('provider_name')}'")
+                
                 formatted_checks.append(formatted_check)
             
             total_count = len(formatted_checks)
@@ -142,7 +154,7 @@ def check_queue(batch_id=None):
                                  checks=formatted_checks,
                                  total_count=total_count,
                                  current_batch_id=batch_id,
-                                 current_batch_name=f"Batch {batch_name}",
+                                 current_batch_name=f"Batch {batch_id.replace('BATCH_', '')}",
                                  view_mode="batch_detail")
         else:
             # Level 1: Show batch summary using our new Supabase function
@@ -182,7 +194,7 @@ def check_detail(check_id):
         user = session.get("user")
         
         # Get specific check from Supabase
-        response = supabase_service.client.table('checks').select('*').eq('id', check_id).single().execute()
+        response = supabase_service.client.table('checks').select('*, provider_name, pay_to, claimant').eq('id', check_id).single().execute()
         
         if not response.data:
             api_logger.warning(f"Check {check_id} not found")

@@ -542,9 +542,15 @@
                         <i class="fa-solid fa-robot w-4 h-4 text-green-500"></i>
                     </div>
                     <div class="text-2xl font-bold text-green-600 mb-1">
-                        {{ checks | selectattr('confidence_score', '>', 0.8) | list | length }}
+                        {% if checks %}
+                            {{ (checks | selectattr('status', 'in', ['pending', 'pending_review']) | list | length) }}
+                        {% elif batches %}
+                            {{ batches | sum(attribute='pending_count') }}
+                        {% else %}
+                            0
+                        {% endif %}
                     </div>
-                    <div class="text-xs text-secondary">≥80% confidence</div>
+                    <div class="text-xs text-secondary">Matter ID found</div>
                 </div>
                 
                 <div class="metric-card">
@@ -553,9 +559,15 @@
                         <i class="fa-solid fa-user-check w-4 h-4 text-orange-500"></i>
                     </div>
                     <div class="text-2xl font-bold text-orange-600 mb-1">
-                        {{ checks | selectattr('confidence_score', '<', 0.8) | list | length }}
+                        {% if checks %}
+                            {{ (checks | selectattr('status', 'equalto', 'needs_review') | list | length) }}
+                        {% elif batches %}
+                            {{ batches | sum(attribute='needs_review_count') }}
+                        {% else %}
+                            0
+                        {% endif %}
                     </div>
-                    <div class="text-xs text-secondary">&lt;80% confidence</div>
+                    <div class="text-xs text-secondary">Requires manual review</div>
                 </div>
 
                 <div class="metric-card">
@@ -563,18 +575,32 @@
                         <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">TOTAL PENDING</span>
                         <i class="fa-solid fa-clock w-4 h-4 text-purple-500"></i>
                     </div>
-                    <div class="text-2xl font-bold text-primary mb-1">{{ total_count }}</div>
+                    <div class="text-2xl font-bold text-primary mb-1">
+                        {% if checks %}
+                            {{ (checks | selectattr('status', 'in', ['pending', 'pending_review', 'needs_review']) | list | length) }}
+                        {% elif batches %}
+                            {{ (batches | sum(attribute='pending_count')) + (batches | sum(attribute='needs_review_count')) }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </div>
                     <div class="text-xs text-secondary">Awaiting processing</div>
                 </div>
                 
                 <div class="metric-card">
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">AUTOMATION RATE</span>
-                        <i class="fa-solid fa-chart-line w-4 h-4 text-blue-500"></i>
+                        <span class="text-xs font-semibold text-tertiary uppercase tracking-wide">VALIDATED CHECKS</span>
+                        <i class="fa-solid fa-check-circle w-4 h-4 text-blue-500"></i>
                     </div>
-                    {% set automation_rate = ((checks | selectattr('confidence_score', '>', 0.8) | list | length) / (total_count if total_count > 0 else 1) * 100) | round(1) %}
-                    <div class="text-2xl font-bold text-blue-600 mb-1">{{ automation_rate }}%</div>
-                    <div class="text-xs text-secondary">Can auto-process</div>
+                    {% if checks %}
+                        {% set validated_count = (checks | selectattr('status', 'equalto', 'approved') | selectattr('validated_at') | list | length) %}
+                    {% elif batches %}
+                        {% set validated_count = batches | sum(attribute='approved_count') %}
+                    {% else %}
+                        {% set validated_count = 0 %}
+                    {% endif %}
+                    <div class="text-2xl font-bold text-blue-600 mb-1">{{ validated_count }}</div>
+                    <div class="text-xs text-secondary">Successfully validated</div>
                 </div>
             </div>
 
@@ -613,6 +639,7 @@
                     <table class="w-full">
                         <thead class="bg-slate-50 border-b border-slate-200">
                             <tr>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">#</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Batch Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Created</th>
                                 <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider"># of Checks</th>
@@ -625,6 +652,9 @@
                             {% for batch in batches %}
                             <tr class="hover:bg-slate-50 transition-colors duration-150 cursor-pointer" 
                                 onclick="viewBatch('{{ batch.batch_id }}')">
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <span class="text-sm font-medium text-slate-500">{{ loop.index }}</span>
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center mr-3">
@@ -744,8 +774,8 @@
                     <table class="w-full">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check #</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payee</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matter</th>
@@ -757,19 +787,18 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             {% if checks %}
-                            {% for check in checks %}
+                            {% for check in checks %} 
                             {% if check.status in ['pending', 'pending_review'] %}
                             {% set confidence = check.confidence_percentage %}
                             <tr class="hover:bg-gray-50 cursor-pointer transition-colors" onclick="window.location.href='/checks/detail/{{ check.id }}'">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">{{ check.check_number }}</div>
-                                    <div class="text-xs text-gray-500">ID: {{ check.id[:8] }}...</div>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <span class="text-sm font-medium text-slate-500">{{ loop.index }}</span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.pay_to or check.claimant }}</div>
+                                    <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.provider_name or '-' }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">{{ check.amount }}</div>
+                                    <div class="text-sm font-semibold text-green-600">${{ "{:,.2f}".format(check.amount | float) if check.amount else "0.00" }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ check.check_issue_date }}</div>
@@ -865,7 +894,7 @@
                             {% endfor %}
                             {% else %}
                             <tr>
-                                <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                                     <i class="fa-solid fa-clock w-8 h-8 mx-auto mb-2 text-gray-300"></i>
                                     <p class="text-sm">No pending checks at this time</p>
                                 </td>
@@ -876,7 +905,7 @@
                             {% set pending_checks = checks | selectattr('status', 'in', ['pending', 'pending_review']) | list %}
                             {% if checks and pending_checks | length == 0 %}
                             <tr>
-                                <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                                     <i class="fa-solid fa-clock w-8 h-8 mx-auto mb-2 text-gray-300"></i>
                                     <p class="text-sm">No pending checks at this time</p>
                                 </td>
@@ -899,8 +928,8 @@
                         <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check #</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payee</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider Name</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matter</th>
@@ -916,6 +945,9 @@
                                 {% if check.status == 'needs_review' %}
                                 {% set confidence = check.confidence_percentage %}
                                 <tr class="hover:bg-gray-50 cursor-pointer transition-colors" onclick="window.location.href='/checks/detail/{{ check.id }}'">
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <span class="text-sm font-medium text-slate-500">{{ loop.index }}</span>
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900">{{ check.check_number }}</div>
                                         <div class="text-xs text-gray-500">ID: {{ check.id[:8] }}...</div>
@@ -924,7 +956,7 @@
                                         <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.pay_to or check.claimant }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ check.amount }}</div>
+                                        <div class="text-sm font-semibold text-green-600">${{ "{:,.2f}".format(check.amount | float) if check.amount else "0.00" }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-gray-900">{{ check.check_issue_date }}</div>
@@ -969,7 +1001,7 @@
                                 {% endfor %}
                                 {% else %}
                                 <tr>
-                                    <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                    <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                                         <i class="fa-solid fa-exclamation-triangle w-8 h-8 mx-auto mb-2 text-gray-300"></i>
                                         <p class="text-sm">No checks requiring manual review at this time</p>
                                     </td>
@@ -980,7 +1012,7 @@
                                 {% set needs_review_checks = checks | selectattr('status', 'equalto', 'needs_review') | list %}
                                 {% if checks and needs_review_checks | length == 0 %}
                                 <tr>
-                                    <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                    <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                                         <i class="fa-solid fa-exclamation-triangle w-8 h-8 mx-auto mb-2 text-gray-300"></i>
                                         <p class="text-sm">No checks requiring manual review at this time</p>
                                     </td>
@@ -1003,8 +1035,8 @@
                         <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check #</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payee</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider Name</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matter</th>
@@ -1020,6 +1052,9 @@
                                 {% if check.status == 'approved' %}
                                 {% set confidence = check.confidence_percentage %}
                                 <tr class="hover:bg-gray-50 cursor-pointer transition-colors" onclick="window.location.href='/checks/detail/{{ check.id }}'">
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <span class="text-sm font-medium text-slate-500">{{ loop.index }}</span>
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900">{{ check.check_number }}</div>
                                         <div class="text-xs text-gray-500">ID: {{ check.id[:8] }}...</div>
@@ -1028,7 +1063,7 @@
                                         <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.pay_to or check.claimant }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ check.amount }}</div>
+                                        <div class="text-sm font-semibold text-green-600">${{ "{:,.2f}".format(check.amount | float) if check.amount else "0.00" }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-gray-900">{{ check.check_issue_date }}</div>
@@ -1072,7 +1107,7 @@
                                 {% endfor %}
                                 {% else %}
                                 <tr>
-                                    <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                    <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                                         <i class="fa-solid fa-check-circle w-8 h-8 mx-auto mb-2 text-gray-300"></i>
                                         <p class="text-sm">No approved checks to display</p>
                                     </td>
@@ -1083,7 +1118,7 @@
                                 {% set approved_checks = checks | selectattr('status', 'equalto', 'approved') | list %}
                                 {% if checks and approved_checks | length == 0 %}
                                 <tr>
-                                    <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                                    <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                                         <i class="fa-solid fa-check-circle w-8 h-8 mx-auto mb-2 text-gray-300"></i>
                                         <p class="text-sm">No approved checks to display</p>
                                     </td>
@@ -1362,19 +1397,21 @@
             const pendingTableBody = document.querySelector('#pending-content tbody');
             const confidence = check.confidence_percentage || 0;
             
+            // Get current row count for row number
+            const rowCount = pendingTableBody.querySelectorAll('tr').length + 1;
+            
             const row = document.createElement('tr');
             row.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
             row.onclick = () => window.location.href = `/checks/detail/${check.id}`;
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${check.check_number || 'N/A'}</div>
-                    <div class="text-xs text-gray-500">ID: ${check.id.substring(0, 8)}...</div>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <span class="text-sm font-medium text-slate-500">${rowCount}</span>
                 </td>
                 <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 max-w-xs truncate">${check.pay_to || check.claimant || 'N/A'}</div>
+                    <div class="text-sm text-gray-900 max-w-xs truncate">${check.provider_name || '-'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${check.amount || 'N/A'}</div>
+                    <div class="text-sm font-semibold text-green-600">$${check.amount ? parseFloat(check.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${check.check_issue_date || 'N/A'}</div>
@@ -1442,19 +1479,21 @@
             const needsReviewTableBody = document.querySelector('#needs_review-content tbody');
             const confidence = check.confidence_percentage || 0;
             
+            // Get current row count for row number
+            const rowCount = needsReviewTableBody.querySelectorAll('tr').length + 1;
+            
             const row = document.createElement('tr');
             row.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
             row.onclick = () => window.location.href = `/checks/detail/${check.id}`;
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${check.check_number || 'N/A'}</div>
-                    <div class="text-xs text-gray-500">ID: ${check.id.substring(0, 8)}...</div>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <span class="text-sm font-medium text-slate-500">${rowCount}</span>
                 </td>
                 <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 max-w-xs truncate">${check.pay_to || check.claimant || 'N/A'}</div>
+                    <div class="text-sm text-gray-900 max-w-xs truncate">${check.provider_name || '-'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${check.amount || 'N/A'}</div>
+                    <div class="text-sm font-semibold text-green-600">$${check.amount ? parseFloat(check.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${check.check_issue_date || 'N/A'}</div>
@@ -1494,19 +1533,21 @@
             const approvedTableBody = document.querySelector('#approved-content tbody');
             const confidence = check.confidence_percentage || 0;
             
+            // Get current row count for row number
+            const rowCount = approvedTableBody.querySelectorAll('tr').length + 1;
+            
             const row = document.createElement('tr');
             row.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
             row.onclick = () => window.location.href = `/checks/detail/${check.id}`;
             row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${check.check_number || 'N/A'}</div>
-                    <div class="text-xs text-gray-500">ID: ${check.id.substring(0, 8)}...</div>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <span class="text-sm font-medium text-slate-500">${rowCount}</span>
                 </td>
                 <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 max-w-xs truncate">${check.pay_to || check.claimant || 'N/A'}</div>
+                    <div class="text-sm text-gray-900 max-w-xs truncate">${check.provider_name || '-'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${check.amount || 'N/A'}</div>
+                    <div class="text-sm font-semibold text-green-600">$${check.amount ? parseFloat(check.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${check.check_issue_date || 'N/A'}</div>
@@ -1688,12 +1729,11 @@
             const row = document.querySelector(`[data-check-row="${checkId}"]`)?.closest('tr');
             if (!row) return;
             
-            const checkNumber = row.querySelector('td:nth-child(1) .text-sm').textContent;
-            const payee = row.querySelector('td:nth-child(2) .text-sm').textContent;
-            const amount = row.querySelector('td:nth-child(3) .text-sm').textContent;
-            const checkDate = row.querySelector('td:nth-child(4) .text-sm').textContent;
-            const matter = row.querySelector('td:nth-child(5) .text-sm').textContent;
-            const confidence = row.querySelector('td:nth-child(6) .text-sm').textContent;
+            const payee = row.querySelector('td:nth-child(1) .text-sm').textContent;
+            const amount = row.querySelector('td:nth-child(2) .text-sm').textContent;
+            const checkDate = row.querySelector('td:nth-child(3) .text-sm').textContent;
+            const matter = row.querySelector('td:nth-child(4) .text-sm').textContent;
+            const confidence = row.querySelector('td:nth-child(5) .text-sm').textContent;
             
             const approvedTableBody = document.querySelector('#approved-content tbody');
             const emptyRow = approvedTableBody.querySelector('td[colspan]')?.closest('tr');
@@ -1705,15 +1745,11 @@
             newRow.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
             newRow.onclick = () => window.location.href = `/checks/detail/${checkId}`;
             newRow.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${checkNumber}</div>
-                    <div class="text-xs text-gray-500">ID: ${checkId.substring(0, 8)}...</div>
-                </td>
                 <td class="px-6 py-4">
                     <div class="text-sm text-gray-900 max-w-xs truncate">${payee}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${amount}</div>
+                    <div class="text-sm font-semibold text-green-600">${amount}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${checkDate}</div>
@@ -1771,12 +1807,11 @@
             const row = document.querySelector(`[data-check-row="${checkId}"]`)?.closest('tr');
             if (!row) return;
             
-            const checkNumber = row.querySelector('td:nth-child(1) .text-sm').textContent;
-            const payee = row.querySelector('td:nth-child(2) .text-sm').textContent;
-            const amount = row.querySelector('td:nth-child(3) .text-sm').textContent;
-            const checkDate = row.querySelector('td:nth-child(4) .text-sm').textContent;
-            const matter = row.querySelector('td:nth-child(5) .text-sm').textContent;
-            const confidence = row.querySelector('td:nth-child(6) .text-sm').textContent;
+            const payee = row.querySelector('td:nth-child(1) .text-sm').textContent;
+            const amount = row.querySelector('td:nth-child(2) .text-sm').textContent;
+            const checkDate = row.querySelector('td:nth-child(3) .text-sm').textContent;
+            const matter = row.querySelector('td:nth-child(4) .text-sm').textContent;
+            const confidence = row.querySelector('td:nth-child(5) .text-sm').textContent;
             
             const needsReviewTableBody = document.querySelector('#needs_review-content tbody');
             const emptyRow = needsReviewTableBody.querySelector('td[colspan]')?.closest('tr');
@@ -1788,15 +1823,11 @@
             newRow.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
             newRow.onclick = () => window.location.href = `/checks/detail/${checkId}`;
             newRow.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${checkNumber}</div>
-                    <div class="text-xs text-gray-500">ID: ${checkId.substring(0, 8)}...</div>
-                </td>
                 <td class="px-6 py-4">
                     <div class="text-sm text-gray-900 max-w-xs truncate">${payee}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${amount}</div>
+                    <div class="text-sm font-semibold text-green-600">${amount}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">${checkDate}</div>
@@ -1917,9 +1948,8 @@
             const btn = e.currentTarget;
             const checkId = btn.dataset.checkId;
             const row = btn.closest('tr');
-            const checkNumber = row.querySelector('td:first-child .text-sm').textContent;
-            const amount = row.querySelector('td:nth-child(3) .text-sm').textContent;
-            const payee = row.querySelector('td:nth-child(2) .text-sm').textContent;
+            const payee = row.querySelector('td:nth-child(1) .text-sm').textContent;
+            const amount = row.querySelector('td:nth-child(2) .text-sm').textContent;
             
             currentCheckId = checkId;
             currentCheckData = { checkNumber, amount, payee };
