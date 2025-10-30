@@ -44,27 +44,30 @@ def save_check(check_id):
         # Prepare update data - only include fields that exist in schema
         update_data = {}
         
-        # Map form fields to database fields - Updated for new schema
+        # Map form fields to database fields - Aligned with actual schema
         field_mapping = {
-            'payee_name': 'payee_name',
             'pay_to': 'pay_to', 
             'amount': 'amount',
-            'check_date': 'check_date',
             'check_number': 'check_number',
             'check_type': 'check_type',
             'routing_number': 'routing_number',
             'account_number': 'account_number',
-            'micr_line': 'micr_line',
             'matter_name': 'matter_name',
             'case_type': 'case_type',
             'delivery_service': 'delivery_service',
             'memo': 'memo',
             'policy_number': 'policy_number',
             'claim_number': 'claim_number',
-            'insurance_company_name': 'insurance_company_name',
+            'insurance_company': 'insurance_company',
             'matter_id': 'matter_id',
             'check_issue_date': 'check_issue_date',
-            'insurance_record_id': 'insurance_record_id'
+            'provider_name': 'provider_name',
+            'claimant': 'claimant',
+            'insured_name': 'insured_name',
+            'reference_number': 'reference_number',
+            'date_of_loss': 'date_of_loss',
+            'bank_name': 'bank_name',
+            'extraction_notes': 'extraction_notes'
         }
         
         # Process each field from the form
@@ -127,27 +130,30 @@ def approve_check(check_id):
         # Prepare update data with all current form values
         update_data = {}
         
-        # Map form fields to database fields (same as save) - Updated for new schema
+        # Map form fields to database fields - Aligned with actual schema
         field_mapping = {
-            'payee_name': 'payee_name',
             'pay_to': 'pay_to', 
             'amount': 'amount',
-            'check_date': 'check_date',
             'check_number': 'check_number',
             'check_type': 'check_type',
             'routing_number': 'routing_number',
             'account_number': 'account_number',
-            'micr_line': 'micr_line',
             'matter_name': 'matter_name',
             'case_type': 'case_type',
             'delivery_service': 'delivery_service',
             'memo': 'memo',
             'policy_number': 'policy_number',
             'claim_number': 'claim_number',
-            'insurance_company_name': 'insurance_company_name',
+            'insurance_company': 'insurance_company',
             'matter_id': 'matter_id',
             'check_issue_date': 'check_issue_date',
-            'insurance_record_id': 'insurance_record_id'
+            'provider_name': 'provider_name',
+            'claimant': 'claimant',
+            'insured_name': 'insured_name',
+            'reference_number': 'reference_number',
+            'date_of_loss': 'date_of_loss',
+            'bank_name': 'bank_name',
+            'extraction_notes': 'extraction_notes'
         }
         
         # Process form fields

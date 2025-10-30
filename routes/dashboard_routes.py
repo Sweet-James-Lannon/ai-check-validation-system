@@ -228,59 +228,70 @@ def check_detail(check_id):
         
         # Use extracted data from PDFs if available, otherwise fall back to database fields
         formatted_check = {
+            # Core fields from schema
             'id': check.get('id'),
             'check_number': extracted_data.get('check_number') or check.get('check_number', ''),
             'check_type': check.get('check_type', ''),
-            'payee_name': extracted_data.get('payee_name') or check.get('payee_name', ''),
+            'amount': check.get('amount', ''),
             'pay_to': extracted_data.get('pay_to') or check.get('pay_to', ''),
-            'amount': extracted_data.get('amount') or check.get('amount', ''),
-            'check_date': extracted_data.get('check_date') or check.get('check_date', ''),
-            'check_issue_date': extracted_data.get('check_issue_date') or check.get('check_issue_date', ''),
-            'memo': extracted_data.get('memo') or check.get('memo', ''),
-            'routing_number': extracted_data.get('routing_number') or check.get('routing_number', ''),
-            'account_number': extracted_data.get('account_number') or check.get('account_number', ''),
-            'micr_line': check.get('micr_line', ''),
             'matter_name': check.get('matter_name', ''),
             'matter_id': check.get('matter_id', ''),
             'case_type': check.get('case_type', ''),
             'delivery_service': check.get('delivery_service', ''),
-            'insurance_company_name': extracted_data.get('insurance_company') or check.get('insurance_company_name', ''),
+            'memo': extracted_data.get('memo') or check.get('memo', ''),
+            'routing_number': extracted_data.get('routing_number') or check.get('routing_number', ''),
+            'account_number': extracted_data.get('account_number') or check.get('account_number', ''),
+            
+            # Date fields
+            'check_issue_date': extracted_data.get('check_issue_date') or check.get('check_issue_date', ''),
+            
+            # Status and validation
+            'confidence_score': check.get('confidence_score', 0),
+            'confidence_percentage': round((check.get('confidence_score', 0) * 100), 1) if check.get('confidence_score') else 0,
+            'status': check.get('status', 'pending'),
+            'flags': check.get('flags', []),
+            
+            # Insurance fields (NEW SCHEMA)
+            'insurance_company': extracted_data.get('insurance_company') or check.get('insurance_company', ''),
             'claim_number': extracted_data.get('claim_number') or check.get('claim_number', ''),
             'policy_number': extracted_data.get('policy_number') or check.get('policy_number', ''),
-            'confidence_score': check.get('confidence_score', 0),
-            'status': check.get('status', 'pending'),
-            'check_view_status': check.get('check_view_status', 'pending'),
-            'flags': check.get('flags', []),
+            'provider_name': check.get('provider_name', ''),
+            'claimant': check.get('claimant', ''),
+            'insured_name': check.get('insured_name', ''),
+            'reference_number': check.get('reference_number', ''),
+            'date_of_loss': check.get('date_of_loss', ''),
+            'bank_name': check.get('bank_name', ''),
+            'extraction_notes': check.get('extraction_notes', ''),
+            
+            # File and batch management
             'file_name': check.get('file_name', ''),
             'file_id': check.get('file_id', ''),
+            'batch_id': check.get('batch_id', ''),
+            'batch_id_fk': check.get('batch_id_fk', ''),
+            'batch_images': processed_batch_images,
+            'page_count': check.get('page_count', 0),
+            
+            # Image data
+            'image_data': check.get('image_data', ''),
+            'image_mime_type': check.get('image_mime_type', ''),
+            'image_url_link': check.get('image_url_link', ''),
+            
+            # OCR and processing
             'raw_ocr_content': check.get('raw_ocr_content', ''),
-            'raw_ocr_data': check.get('raw_ocr_data', {}),
-            'forward_reason': check.get('forward_reason', ''),
-            'source_system': check.get('source_system', ''),
+            
+            # Review and validation timestamps
             'created_at': check.get('created_at', ''),
             'updated_at': check.get('updated_at', ''),
             'reviewed_at': check.get('reviewed_at', ''),
             'reviewed_by': check.get('reviewed_by', ''),
             'validated_at': check.get('validated_at', ''),
             'validated_by': check.get('validated_by', ''),
-            'confidence_percentage': round((check.get('confidence_score', 0) * 100), 1) if check.get('confidence_score') else 0,
-            'image_data': check.get('image_data', ''),
-            'image_mime_type': check.get('image_mime_type', ''),
-            'image_url_link': check.get('image_url_link', ''),
-            'image_download_url': check.get('image_download_url', ''),
-            'folder_name': check.get('folder_name', ''),
-            'batch_id': check.get('batch_id', ''),
-            'file_count': check.get('file_count', 1),
-            'batch_images': processed_batch_images,
-            'insurance_record_id': check.get('insurance_record_id', ''),
+            'forward_reason': check.get('forward_reason', ''),
+            
+            # Salesforce integration
             'salesforce_response': check.get('salesforce_response', {}),
             'salesforce_validated': check.get('salesforce_validated', False),
-            'validation_score': check.get('validation_score', None),
-            # Legacy field mappings for backward compatibility
-            'validated_by_name': check.get('validated_by', ''),
-            'flagged_at': check.get('reviewed_at', ''),
-            'flagged_by': check.get('reviewed_by', ''),
-            'flagged_by_name': check.get('reviewed_by', '')
+            'validation_score': check.get('validation_score', None)
         }
                 
         api_logger.info(f"Loading check detail for {check_id}")
@@ -303,8 +314,8 @@ def check_batch_images(check_id):
     try:
         user = session.get("user")
         
-        # Get specific check from Supabase
-        response = supabase_service.client.table('checks').select('batch_images, batch_id, folder_name, file_count').eq('id', check_id).single().execute()
+        # Get specific check from Supabase - only select fields that exist in schema
+        response = supabase_service.client.table('checks').select('batch_images, batch_id, page_count').eq('id', check_id).single().execute()
         
         if not response.data:
             api_logger.warning(f"Check {check_id} not found for batch images")
@@ -331,8 +342,8 @@ def check_batch_images(check_id):
         
         return jsonify({
             "batch_id": check.get('batch_id', ''),
-            "folder_name": check.get('folder_name', ''),
-            "file_count": check.get('file_count', 1),
+            "image_count": len(processed_images),
+            "page_count": check.get('page_count', 0),
             "images": processed_images
         })
         
