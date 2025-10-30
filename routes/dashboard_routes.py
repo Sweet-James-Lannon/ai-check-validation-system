@@ -31,6 +31,31 @@ dashboard_bp = Blueprint("dashboard", __name__)
 # MAIN DASHBOARD ROUTES
 # =============================================================================
 
+@dashboard_bp.route("/debug_check/<check_id>")
+@login_required
+def debug_check_data(check_id):
+    """Debug endpoint to see raw check data and date formatting"""
+    from datetime import date, datetime
+    
+    # Get raw check data
+    response = supabase_service.client.table('checks')\
+        .select('*')\
+        .eq('id', check_id)\
+        .single()\
+        .execute()
+    
+    check = response.data
+    
+    debug_info = {
+        'raw_check_issue_date': str(check.get('check_issue_date')),
+        'raw_check_issue_date_type': str(type(check.get('check_issue_date'))),
+        'raw_date_of_loss': str(check.get('date_of_loss')),
+        'raw_date_of_loss_type': str(type(check.get('date_of_loss'))),
+        'all_fields': {k: str(v) for k, v in check.items() if 'date' in k.lower()}
+    }
+    
+    return jsonify(debug_info)
+
 @dashboard_bp.route("/")
 @login_required
 def dashboard_home():
@@ -254,8 +279,9 @@ def check_detail(check_id):
             'routing_number': extracted_data.get('routing_number') or check.get('routing_number', ''),
             'account_number': extracted_data.get('account_number') or check.get('account_number', ''),
             
-            # Date fields
-            'check_issue_date': extracted_data.get('check_issue_date') or check.get('check_issue_date', ''),
+            # Date fields - just pass through raw values from Supabase
+            'check_issue_date': extracted_data.get('check_issue_date') or check.get('check_issue_date'),
+            'date_of_loss': check.get('date_of_loss'),
             
             # Status and validation
             'confidence_score': check.get('confidence_score', 0),
@@ -264,14 +290,13 @@ def check_detail(check_id):
             'flags': check.get('flags', []),
             
             # Insurance fields (NEW SCHEMA)
-            'insurance_company': extracted_data.get('insurance_company') or check.get('insurance_company', ''),
+            'insurance_company': check.get('insurance_company', ''),
             'claim_number': extracted_data.get('claim_number') or check.get('claim_number', ''),
             'policy_number': extracted_data.get('policy_number') or check.get('policy_number', ''),
-            'provider_name': check.get('provider_name', ''),
+            'provider_name': check.get('provider_name') or check.get('pay_to') or check.get('claimant', ''),
             'claimant': check.get('claimant', ''),
             'insured_name': check.get('insured_name', ''),
             'reference_number': check.get('reference_number', ''),
-            'date_of_loss': check.get('date_of_loss', ''),
             'bank_name': check.get('bank_name', ''),
             'extraction_notes': check.get('extraction_notes', ''),
             
