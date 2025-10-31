@@ -391,18 +391,21 @@ def check_batch_images(check_id):
 @dashboard_bp.route("/checks/image-proxy/<check_id>/<int:image_index>")
 @login_required
 def proxy_check_image(check_id, image_index):
-    """Proxy SharePoint images through Flask to handle authentication and CORS"""
+    """Serve check images from Supabase Storage"""
     try:
         user = session.get("user")
         
+        api_logger.info(f"=== Image proxy request: check_id={check_id}, image_index={image_index} ===")
+        
         # Get specific check from Supabase
-        response = supabase_service.client.table('checks').select('batch_images, image_data, image_mime_type').eq('id', check_id).single().execute()
+        response = supabase_service.client.table('checks').select('batch_images, image_data, image_mime_type, file_name, batch_id').eq('id', check_id).single().execute()
         
         if not response.data:
             api_logger.warning(f"Check {check_id} not found for image proxy")
             return "Image not found", 404
         
         check = response.data
+        api_logger.info(f"Check found. batch_id: {check.get('batch_id')}, has batch_images: {bool(check.get('batch_images'))}")
         
         # If it's a single image with base64 data, serve that
         if image_index == 0 and check.get('image_data'):
@@ -415,7 +418,7 @@ def proxy_check_image(check_id, image_index):
                 api_logger.error(f"Error serving base64 image: {str(e)}")
                 return "Image decode error", 500
         
-        # Handle batch images
+        # Handle batch images from Supabase Storage
         batch_images = check.get('batch_images', [])
         if not batch_images or image_index >= len(batch_images):
             return "Image not found", 404
@@ -423,22 +426,73 @@ def proxy_check_image(check_id, image_index):
         image_info = batch_images[image_index]
         if not isinstance(image_info, dict):
             return "Invalid image data", 400
+        
+        # Get the storage path
+        storage_path = None
+        file_name = image_info.get('filename') or image_info.get('file_name')
+        
+        if not file_name:
+            api_logger.error(f"No filename found in image_info: {image_info}")
+            return "No filename available", 404
+        
+        api_logger.info(f"Looking for file: {file_name}")
+        
+        # The database URLs are outdated - they reference "Batch 157-C" but files are in "batch-{timestamp}" folders
+        # We need to search for the file across all batch folders
+        bucket_name = 'check-documents'
+        
+        try:
+            # List all folders in the bucket
+            folders = supabase_service.client.storage.from_(bucket_name).list()
+            api_logger.info(f"Found {len(folders)} folders in bucket")
             
-        # Get the download URL
-        download_url = image_info.get('download_url') or image_info.get('primary_url')
-        if not download_url:
-            return "No image URL available", 404
+            # Search for the file in each batch folder
+            for folder_info in folders:
+                folder_name = folder_info.get('name')
+                if not folder_name or not folder_name.startswith('batch-'):
+                    continue
+                
+                try:
+                    # List files in this folder
+                    files = supabase_service.client.storage.from_(bucket_name).list(folder_name)
+                    
+                    # Check if our file is in this folder
+                    for file_info in files:
+                        if file_info.get('name') == file_name:
+                            storage_path = f"{folder_name}/{file_name}"
+                            api_logger.info(f"Found file in folder: {storage_path}")
+                            break
+                    
+                    if storage_path:
+                        break
+                except Exception as e:
+                    api_logger.warning(f"Error listing files in folder {folder_name}: {e}")
+                    continue
+        except Exception as e:
+            api_logger.error(f"Error listing folders in bucket: {e}")
+        
+        if not storage_path:
+            api_logger.error(f"No storage path found for check {check_id}, image {image_index}. batch_id: {check.get('batch_id')}, image_info: {image_info}")
+            return "No storage path available", 404
+        
+        api_logger.info(f"Fetching image from Supabase Storage: {storage_path}")
         
         # Check if this is a PDF file
-        file_type = image_info.get('file_type', '').lower()
+        file_type = image_info.get('file_type', '').lower() or storage_path.lower().split('.')[-1]
+        mime_type = image_info.get('mime_type', 'image/jpeg')
         
-        # Fetch the file from SharePoint
+        # Fetch the file from Supabase Storage
         try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-            file_response = requests.get(download_url, headers=headers, timeout=30)
-            file_response.raise_for_status()
+            # Get signed URL or public URL from Supabase Storage
+            bucket_name = 'check-documents'  # Correct bucket name
+            api_logger.info(f"Attempting to download from bucket '{bucket_name}' path: {storage_path}")
+            
+            file_data = supabase_service.client.storage.from_(bucket_name).download(storage_path)
+            
+            if not file_data:
+                error_msg = f"No data returned from Supabase Storage for bucket '{bucket_name}', path: {storage_path}"
+                api_logger.error(error_msg)
+                return error_msg, 404
             
             # If it's a PDF, try to convert first page to image
             if file_type == 'pdf':
@@ -446,7 +500,7 @@ def proxy_check_image(check_id, image_index):
                     import fitz  # PyMuPDF
                     
                     # Create PDF document from bytes
-                    pdf_doc = fitz.open(stream=file_response.content, filetype="pdf")
+                    pdf_doc = fitz.open(stream=file_data, filetype="pdf")
                     
                     # Get first page
                     page = pdf_doc[0]
@@ -464,7 +518,7 @@ def proxy_check_image(check_id, image_index):
                         img_data,
                         mimetype='image/png',
                         headers={
-                            'Cache-Control': 'public, max-age=3600',  # Cache for 1 hour
+                            'Cache-Control': 'public, max-age=86400',  # Cache for 24 hours
                             'Access-Control-Allow-Origin': '*'
                         }
                     )
@@ -472,39 +526,41 @@ def proxy_check_image(check_id, image_index):
                 except ImportError:
                     # PyMuPDF not available, fallback to showing PDF icon
                     api_logger.warning("PyMuPDF not installed, cannot convert PDF to image")
-                    # Create a simple placeholder image indicating it's a PDF
                     return Response(
                         "PDF conversion not available",
                         status=404
                     )
                 except Exception as e:
                     api_logger.error(f"Error converting PDF to image: {str(e)}")
-                    # Fallback to showing PDF icon
                     return Response(
                         f"PDF conversion error: {str(e)}",
                         status=500
                     )
             else:
                 # Not a PDF, serve as regular image
-                content_type = file_response.headers.get('content-type', 'image/jpeg')
-                
-                # Return the image
+                # Return the image directly from Supabase Storage
                 return Response(
-                    file_response.content,
-                    mimetype=content_type,
+                    file_data,
+                    mimetype=mime_type,
                     headers={
-                        'Cache-Control': 'public, max-age=3600',  # Cache for 1 hour
+                        'Cache-Control': 'public, max-age=86400',  # Cache for 24 hours
                         'Access-Control-Allow-Origin': '*'
                     }
                 )
             
-        except requests.exceptions.RequestException as e:
-            api_logger.error(f"Error fetching image from SharePoint: {str(e)}")
-            return "Image fetch error", 500
+        except Exception as e:
+            api_logger.error(f"Error fetching image from Supabase Storage: {str(e)}")
+            api_logger.error(f"Error type: {type(e).__name__}")
+            import traceback
+            api_logger.error(f"Full traceback:\n{traceback.format_exc()}")
+            return f"Storage error: {str(e)}", 500
             
     except Exception as e:
         api_logger.error(f"Error proxying image for check {check_id}, index {image_index}: {str(e)}")
-        return "Server error", 500
+        api_logger.error(f"Error type: {type(e).__name__}")
+        import traceback
+        api_logger.error(f"Full traceback:\n{traceback.format_exc()}")
+        return f"Server error: {str(e)}", 500
 
 # =============================================================================
 # DOCUMENT MANAGEMENT ROUTES
