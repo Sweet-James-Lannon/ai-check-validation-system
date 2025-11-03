@@ -15,6 +15,9 @@ from utils.decorators import login_required
 from utils.logger import get_api_logger
 from services.supabase_service import supabase_service
 from datetime import datetime
+from pypdf import PdfMerger
+import io 
+import requests
 
 # =============================================================================
 # CONFIGURATION & SETUP
@@ -498,7 +501,7 @@ def analyze_batch_splits():
 @api_bp.route("/api/batch/split-pages", methods=["POST"]) 
 def split_pages():
     """
-    Splits PDF into individual pages and returns as base64
+    Splits PDF into individual pages AND creates COMPLETE PDFs for each batch
     n8n will handle the folder creation and uploads
     """
     try:
@@ -531,7 +534,25 @@ def split_pages():
             start_page = batch_info['start_page'] - 1
             end_page = batch_info['end_page'] - 1
             
-            # Extract each page in this batch
+            # Create COMPLETE PDF first (all pages in this check combined)
+            complete_pdf = fitz.open()
+            for page_num in range(start_page, end_page + 1):
+                complete_pdf.insert_pdf(pdf_document, from_page=page_num, to_page=page_num)
+            
+            complete_pdf_bytes = complete_pdf.tobytes()
+            complete_pdf.close()
+            
+            complete_file_name = f"{batch_number}-{batch_letter}-COMPLETE.pdf"
+            
+            pages_data.append({
+                'batch': batch_letter,
+                'batch_folder': f"Batch {batch_number}-{batch_letter}",
+                'file_name': complete_file_name,
+                'page_number': 'COMPLETE',
+                'data': base64.b64encode(complete_pdf_bytes).decode('utf-8')
+            })
+            
+            # Extract each individual page in this batch        
             for page_num in range(start_page, end_page + 1):
                 # Create single-page PDF
                 single_page_pdf = fitz.open()
@@ -671,6 +692,8 @@ def ingest_batch():
         import traceback
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
+
+
 
 # =============================================================================
 # SYSTEM HEALTH API ENDPOINTS
