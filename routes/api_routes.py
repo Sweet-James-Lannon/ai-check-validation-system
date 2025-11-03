@@ -15,9 +15,6 @@ from utils.decorators import login_required
 from utils.logger import get_api_logger
 from services.supabase_service import supabase_service
 from datetime import datetime
-from pypdf import PdfMerger
-import io 
-import requests
 
 # =============================================================================
 # CONFIGURATION & SETUP

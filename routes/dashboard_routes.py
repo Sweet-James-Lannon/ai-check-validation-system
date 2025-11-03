@@ -226,7 +226,7 @@ def check_detail(check_id):
             return render_template("error.html", 
                                  user=user,
                                  error_message=f"Check {check_id} not found"), 404
-        
+               
         check = response.data
         
         # Process batch images if they exist
