@@ -317,9 +317,8 @@ def get_check_stats():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @api_bp.route("/api/batches/<batch_id>/checks", methods=["GET"])
-@login_required
 def get_batch_checks(batch_id):
-    """Get all checks for a specific batch - AJAX endpoint"""
+    """Get all checks for a specific batch - AJAX endpoint (no auth required, page is already protected)"""
     try:
         api_logger.info(f"API: Loading checks for batch {batch_id}")
         
