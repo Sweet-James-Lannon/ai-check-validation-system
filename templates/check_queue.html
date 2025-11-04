@@ -625,7 +625,7 @@
             {% endif %}
 
             <!-- Batches Table -->
-            {% if batches %}
+            {% if batches and batches | length > 0 %}
             <div id="batchListTable" class="bg-white rounded-lg shadow-sm border border-slate-200 mb-8">
                 <div class="px-6 py-4 border-b border-slate-200">
                     <div class="flex items-center justify-between">
@@ -715,8 +715,57 @@
                 </div>
             </div>
             
+            <!-- Empty State for No Batches -->
+            {% else %}
+            <div id="batchListTable" class="bg-white rounded-lg shadow-sm border border-slate-200 mb-8">
+                <div class="px-6 py-4 border-b border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fa-solid fa-layer-group text-blue-600"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-slate-900">Check Batches</h2>
+                                <p class="text-sm text-slate-600">Click on any batch to view its checks</p>
+                            </div>
+                        </div>
+                        <div class="text-sm text-slate-500">0 batches</div>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Batch Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Created</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider"># of Checks</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Total Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status Summary</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white">
+                            <tr>
+                                <td colspan="7" class="px-6 py-12 text-center">
+                                    <div class="flex flex-col items-center justify-center">
+                                        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                                            <i class="fa-solid fa-inbox text-slate-400 text-2xl"></i>
+                                        </div>
+                                        <h3 class="text-lg font-medium text-slate-900 mb-2">No batches found</h3>
+                                        <p class="text-sm text-slate-600">Check batches will appear here once they are uploaded</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+            
             <!-- Level 2: Batch Detail View -->
-            {% elif view_mode == "batch_detail" %}
+            {% if view_mode == "batch_detail" %}
             <div class="mb-6">
                 <!-- Breadcrumb Navigation -->
                 <nav class="flex items-center space-x-2 text-sm text-slate-600 mb-4">

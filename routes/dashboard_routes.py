@@ -192,14 +192,20 @@ def check_queue(batch_id=None):
             api_logger.info("Loading batch summary")
             
             batches_response = supabase_service.client.rpc('get_batches_summary').execute()
+            batches = batches_response.data if batches_response.data else []
             
-            api_logger.info(f"Loaded {len(batches_response.data) if batches_response.data else 0} batches")
+            # Calculate total pending + needs_review across all batches
+            total_pending_and_review = 0
+            for batch in batches:
+                total_pending_and_review += batch.get('pending_count', 0) + batch.get('needs_review_count', 0)
+            
+            api_logger.info(f"Loaded {len(batches)} batches with {total_pending_and_review} total pending + needs_review checks")
             
             return render_template('check_queue.html',
                                  user=user,
-                                 batches=batches_response.data,
+                                 batches=batches,
                                  checks=[],  # Empty list for batch view
-                                 total_count=0,  # No checks loaded yet
+                                 total_count=total_pending_and_review,  # Total pending + needs_review
                                  view_mode="batch_list")
         
     except Exception as e:
