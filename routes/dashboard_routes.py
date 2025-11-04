@@ -186,6 +186,7 @@ def check_queue(batch_id=None):
                                  total_count=total_count,
                                  current_batch_id=batch_id,
                                  current_batch_name=f"Batch {batch_id.replace('BATCH_', '')}",
+                                 archived_batches=[],  # No archived batches in batch detail view
                                  view_mode="batch_detail")
         else:
             # Level 1: Show batch summary using our new Supabase function

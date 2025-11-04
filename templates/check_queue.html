@@ -658,7 +658,7 @@
                         <tbody class="bg-white divide-y divide-slate-200">
                             {% for batch in batches %}
                             <tr class="hover:bg-slate-50 transition-colors duration-150 cursor-pointer" 
-                                onclick="viewBatch('{{ batch.batch_id }}')">
+                                onclick="viewBatch('{{ batch.batch_id }}', false)">
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <span class="text-sm font-medium text-slate-500">{{ loop.index }}</span>
                                 </td>
@@ -703,7 +703,7 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button onclick="event.stopPropagation(); viewBatch('{{ batch.batch_id }}')" 
+                                    <button onclick="event.stopPropagation(); viewBatch('{{ batch.batch_id }}', false)" 
                                             class="text-blue-600 hover:text-blue-900">
                                         View Checks →
                                     </button>
@@ -764,8 +764,8 @@
             </div>
             {% endif %}
             
-            <!-- Archived Checks Table -->
-            {% if archived_batches and archived_batches | length > 0 %}
+            <!-- Archived Checks Table - ONLY show in batch_list view -->
+            {% if archived_batches and archived_batches | length > 0 and view_mode == "batch_list" %}
             <div id="archivedBatchesTable" class="bg-white rounded-lg shadow-sm border border-slate-200 mb-8">
                 <div class="px-6 py-4 border-b border-slate-200">
                     <div class="flex items-center justify-between">
@@ -798,7 +798,7 @@
                         <tbody class="bg-white divide-y divide-slate-200">
                             {% for batch in archived_batches %}
                             <tr class="hover:bg-slate-50 transition-colors duration-150 cursor-pointer" 
-                                onclick="viewBatch('{{ batch.batch_id }}')">
+                                onclick="viewBatch('{{ batch.batch_id }}', true)">
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <span class="text-sm font-medium text-slate-500">{{ loop.index }}</span>
                                 </td>
@@ -832,7 +832,7 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button onclick="event.stopPropagation(); viewBatch('{{ batch.batch_id }}')" 
+                                    <button onclick="event.stopPropagation(); viewBatch('{{ batch.batch_id }}', true)" 
                                             class="text-green-600 hover:text-green-900">
                                         View Checks →
                                     </button>
@@ -1375,6 +1375,13 @@
                 console.log('Batch table shown');
             }
             
+            // Show archived batches table
+            const archivedTable = document.getElementById('archivedBatchesTable');
+            if (archivedTable) {
+                archivedTable.style.display = 'block';
+                console.log('Archived batch table shown');
+            }
+            
             // Hide back button
             const backBtn = document.getElementById('backToBatchesBtn');
             if (backBtn) {
@@ -1397,9 +1404,9 @@
             console.log('All tab contents hidden');
         }
         
-        async function viewBatch(batchId) {
+        async function viewBatch(batchId, isArchived = false) {
             try {
-                console.log('viewBatch called with batch_id:', batchId);
+                console.log('viewBatch called with batch_id:', batchId, 'isArchived:', isArchived);
                 
                 // Show loading state
                 showToast('Loading batch checks...', 'info');
@@ -1430,6 +1437,13 @@
                         batchTable.style.display = 'none';
                     }
                     
+                    // Hide archived batches table too
+                    const archivedTable = document.getElementById('archivedBatchesTable');
+                    if (archivedTable) {
+                        console.log('Hiding archived batch table');
+                        archivedTable.style.display = 'none';
+                    }
+                    
                     // Show back button
                     const backBtn = document.getElementById('backToBatchesBtn');
                     if (backBtn) {
@@ -1443,19 +1457,34 @@
                         checkTabsContainer.style.display = 'block';
                     }
                     
-                    // Show all tab content containers
+                    // Determine which tab to show based on batch type
+                    const defaultTab = isArchived ? 'approved' : 'pending';
+                    console.log('Setting default tab to:', defaultTab);
+                    
+                    // Remove active class from all tab buttons and contents
+                    const tabButtons = document.querySelectorAll('.tab-button');
                     const tabContents = document.querySelectorAll('.tab-content');
-                    console.log('Found tab content containers:', tabContents.length);
-                    tabContents.forEach((content, index) => {
-                        // Show the active tab, hide others
-                        if (content.classList.contains('active')) {
-                            content.style.display = 'block';
-                            console.log(`Tab content ${index} (${content.id}) is active and visible`);
-                        } else {
-                            content.style.display = 'none';
-                            console.log(`Tab content ${index} (${content.id}) is hidden`);
-                        }
+                    
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        content.style.display = 'none';
                     });
+                    
+                    // Activate the appropriate tab button
+                    const defaultTabButton = document.querySelector(`[data-tab="${defaultTab}"]`);
+                    if (defaultTabButton) {
+                        defaultTabButton.classList.add('active');
+                        console.log('Activated tab button:', defaultTab);
+                    }
+                    
+                    // Show the appropriate tab content
+                    const defaultTabContent = document.getElementById(defaultTab + '-content');
+                    if (defaultTabContent) {
+                        defaultTabContent.classList.add('active');
+                        defaultTabContent.style.display = 'block';
+                        console.log('Showing tab content:', defaultTab + '-content');
+                    }
                     
                     showToast(`Loaded ${data.total} checks from batch`, 'success');
                 } else {
