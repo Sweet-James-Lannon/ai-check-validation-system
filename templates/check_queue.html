@@ -727,7 +727,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button onclick="event.stopPropagation(); viewBatch('{{ batch.batch_id }}', false)" 
-                                            class="text-blue-600 hover:text-blue-900">
+                                            class="text-slate-900 hover:text-slate-600 font-semibold transition-colors">
                                         View Checks →
                                     </button>
                                 </td>
@@ -856,7 +856,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button onclick="event.stopPropagation(); viewBatch('{{ batch.batch_id }}', true)" 
-                                            class="text-green-600 hover:text-green-900">
+                                            class="text-slate-900 hover:text-slate-600 font-semibold transition-colors">
                                         View Checks →
                                     </button>
                                 </td>
@@ -1516,9 +1516,6 @@
             try {
                 console.log('viewBatch called with batch_id:', batchId, 'isArchived:', isArchived);
                 
-                // Show loading state
-                showToast('Loading batch checks...', 'info');
-                
                 // Fetch checks for this batch
                 console.log('Fetching from:', `/api/batches/${batchId}/checks`);
                 const response = await fetch(`/api/batches/${batchId}/checks`);
@@ -1596,8 +1593,6 @@
                         defaultTabContent.style.display = 'block';
                         console.log('Showing tab content:', defaultTab + '-content');
                     }
-                    
-                    showToast(`Loaded ${data.total} checks from batch`, 'success');
                 } else {
                     console.error('API returned error:', data);
                     showToast('Failed to load batch checks', 'error');
