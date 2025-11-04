@@ -59,6 +59,12 @@ def debug_check_data(check_id):
 @dashboard_bp.route("/")
 @login_required
 def dashboard_home():
+    """Redirect to check queue as default landing page"""
+    return redirect(url_for('dashboard.check_queue'))
+
+@dashboard_bp.route("/dashboard")
+@login_required
+def main_dashboard():
     """Universal Document Ingestion RAG System - Main Dashboard"""
     user = session.get("user")
     
