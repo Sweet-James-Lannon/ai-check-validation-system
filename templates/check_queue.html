@@ -1727,11 +1727,13 @@
             const row = document.querySelector(`[data-check-row="${checkId}"]`)?.closest('tr');
             if (!row) return;
             
-            const payee = row.querySelector('td:nth-child(1) .text-sm').textContent;
-            const amount = row.querySelector('td:nth-child(2) .text-sm').textContent;
-            const checkDate = row.querySelector('td:nth-child(3) .text-sm').textContent;
-            const matter = row.querySelector('td:nth-child(4) .text-sm').textContent;
-            const confidence = row.querySelector('td:nth-child(5) .text-sm').textContent;
+            // Extract data from pending table columns (accounting for # column at position 1)
+            const rowNumber = row.querySelector('td:nth-child(1) .text-sm')?.textContent || '';
+            const providerName = row.querySelector('td:nth-child(2) .text-sm')?.textContent || '-';
+            const amount = row.querySelector('td:nth-child(3) .text-sm')?.textContent || '$0.00';
+            const checkDate = row.querySelector('td:nth-child(4) .text-sm')?.textContent || 'N/A';
+            const matter = row.querySelector('td:nth-child(5) .text-sm')?.textContent || '-';
+            const confidence = row.querySelector('td:nth-child(6) .text-sm')?.textContent || '0%';
             
             const approvedTableBody = document.querySelector('#approved-content tbody');
             const emptyRow = approvedTableBody.querySelector('td[colspan]')?.closest('tr');
@@ -1739,12 +1741,18 @@
             
             const validatedDate = new Date(approvalData.validated_at).toLocaleDateString();
             
+            // Get current row count for the approved table
+            const approvedRowCount = approvedTableBody.querySelectorAll('tr').length + 1;
+            
             const newRow = document.createElement('tr');
             newRow.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
             newRow.onclick = () => window.location.href = `/checks/detail/${checkId}`;
             newRow.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <span class="text-sm font-medium text-slate-500">${approvedRowCount}</span>
+                </td>
                 <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 max-w-xs truncate">${payee}</div>
+                    <div class="text-sm text-gray-900 max-w-xs truncate">${providerName}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-green-600">${amount}</div>
