@@ -192,18 +192,37 @@ def check_queue(batch_id=None):
             api_logger.info("Loading batch summary")
             
             batches_response = supabase_service.client.rpc('get_batches_summary').execute()
-            batches = batches_response.data if batches_response.data else []
+            all_batches = batches_response.data if batches_response.data else []
             
-            # Calculate total pending + needs_review across all batches
+            # Separate active vs archived batches
+            # A batch is "archived" when ALL checks are approved (no pending or needs_review)
+            active_batches = []
+            archived_batches = []
+            
+            for batch in all_batches:
+                pending = batch.get('pending_count', 0)
+                needs_review = batch.get('needs_review_count', 0)
+                approved = batch.get('approved_count', 0)
+                total_checks = batch.get('check_count', 0)
+                
+                # Archived = all checks approved AND no pending/needs_review
+                if pending == 0 and needs_review == 0 and approved == total_checks and total_checks > 0:
+                    archived_batches.append(batch)
+                else:
+                    active_batches.append(batch)
+            
+            # Calculate total pending + needs_review across active batches only
             total_pending_and_review = 0
-            for batch in batches:
+            for batch in active_batches:
                 total_pending_and_review += batch.get('pending_count', 0) + batch.get('needs_review_count', 0)
             
-            api_logger.info(f"Loaded {len(batches)} batches with {total_pending_and_review} total pending + needs_review checks")
+            api_logger.info(f"Loaded {len(active_batches)} active batches and {len(archived_batches)} archived batches")
+            api_logger.info(f"Total pending + needs_review: {total_pending_and_review}")
             
             return render_template('check_queue.html',
                                  user=user,
-                                 batches=batches,
+                                 batches=active_batches,  # Active batches only
+                                 archived_batches=archived_batches,  # Archived batches
                                  checks=[],  # Empty list for batch view
                                  total_count=total_pending_and_review,  # Total pending + needs_review
                                  view_mode="batch_list")
@@ -216,6 +235,7 @@ def check_queue(batch_id=None):
         return render_template("check_queue.html", 
                              user=user,
                              batches=[],
+                             archived_batches=[],  # Add archived batches to error handler
                              selected_batch=None,
                              checks=[], 
                              total_count=0,

@@ -764,6 +764,87 @@
             </div>
             {% endif %}
             
+            <!-- Archived Checks Table -->
+            {% if archived_batches and archived_batches | length > 0 %}
+            <div id="archivedBatchesTable" class="bg-white rounded-lg shadow-sm border border-slate-200 mb-8">
+                <div class="px-6 py-4 border-b border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fa-solid fa-archive text-green-600"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-slate-900">Archived Checks</h2>
+                                <p class="text-sm text-slate-600">Fully completed batches - all checks approved</p>
+                            </div>
+                        </div>
+                        <div class="text-sm text-slate-500">{{ archived_batches | length }} batch{{ 'es' if archived_batches | length != 1 else '' }}</div>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">#</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Batch Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Created</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider"># of Checks</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Total Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status Summary</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200">
+                            {% for batch in archived_batches %}
+                            <tr class="hover:bg-slate-50 transition-colors duration-150 cursor-pointer" 
+                                onclick="viewBatch('{{ batch.batch_id }}')">
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <span class="text-sm font-medium text-slate-500">{{ loop.index }}</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fa-solid fa-folder-open text-green-600 text-sm"></i>
+                                        </div>
+                                        <div class="text-sm font-medium text-slate-900">{{ batch.batch_name }}</div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-slate-900">
+                                        {{ batch.created_at | datetimeformat if batch.created_at else 'N/A' }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <span class="text-sm font-medium text-slate-900">{{ batch.check_count }}</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    <span class="text-sm font-medium text-green-600">
+                                        ${{ "{:,.2f}".format(batch.total_amount) if batch.total_amount else "0.00" }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex space-x-1">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                            <i class="fa-solid fa-check-circle mr-1"></i>
+                                            All Approved
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button onclick="event.stopPropagation(); viewBatch('{{ batch.batch_id }}')" 
+                                            class="text-green-600 hover:text-green-900">
+                                        View Checks →
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+            
             <!-- Level 2: Batch Detail View -->
             {% if view_mode == "batch_detail" %}
             <div class="mb-6">
