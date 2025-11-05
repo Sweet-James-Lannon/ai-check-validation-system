@@ -681,7 +681,7 @@
             const imageWithCorners = document.querySelector('.image-with-corners');
             
             // Enhanced pan and zoom state
-            let currentZoom = 0.8;
+            let currentZoom = 1.04;  // Default to zoomed-in view (one + click worth)
             let panX = 0;
             let panY = 0;
             let isDragging = false;
@@ -765,7 +765,7 @@
             
             if (resetZoomBtn) {
                 resetZoomBtn.addEventListener('click', () => {
-                    currentZoom = 0.8;
+                    currentZoom = 1.04;
                     centerImage();
                     updateZoomLevel();
                 });
@@ -946,7 +946,7 @@
                     case 'r':
                     case 'R':
                         e.preventDefault();
-                        currentZoom = 0.8;
+                        currentZoom = 1.04;
                         centerImage();
                         updateZoomLevel();
                         break;
