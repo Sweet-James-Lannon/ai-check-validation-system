@@ -771,6 +771,23 @@
                 });
             }
 
+            // Scroll wheel zoom functionality - zoom in/out with mouse wheel
+            if (imageContainer) {
+                imageContainer.addEventListener('wheel', (e) => {
+                    e.preventDefault(); // Prevent default scrolling
+                    
+                    // Determine zoom direction (scroll up = zoom in, scroll down = zoom out)
+                    const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1; // Smooth zoom increments
+                    const newZoom = Math.min(Math.max(currentZoom * zoomDelta, 0.1), 5);
+                    
+                    if (newZoom !== currentZoom) {
+                        currentZoom = newZoom;
+                        updateTransform();
+                        updateZoomLevel();
+                    }
+                }, { passive: false });
+            }
+
             // Grid toggle functionality
             if (toggleGridBtn && imageContainer) {
                 // Set initial state - grid visible by default
@@ -996,10 +1013,6 @@
             }
 
         document.getElementById('quickApprove')?.addEventListener('click', async function() {
-            if (!confirm('Are you sure you want to approve this check? This will trigger the Salesforce protocol.')) {
-                return;
-            }
-            
             const formData = new FormData(document.getElementById('checkDetailsForm'));
             const checkId = '{{ check.id }}';
             
