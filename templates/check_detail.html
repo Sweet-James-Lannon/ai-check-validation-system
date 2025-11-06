@@ -664,6 +664,70 @@
             applyFieldHighlights();
             
             // ============================================================================
+            // QUICK APPROVE VALIDATION - Require Salesforce fields 🔒
+            // ============================================================================
+            function validateQuickApprove() {
+                // Helper function to check if field has real data (same as highlights)
+                function hasRealData(value) {
+                    if (!value) return false;
+                    const trimmed = value.trim();
+                    if (trimmed === '') return false;
+                    if (trimmed.toLowerCase() === 'none') return false;
+                    if (trimmed.toLowerCase() === 'null') return false;
+                    if (trimmed === '0' || trimmed === '0.00' || trimmed === '$0.00') return false;
+                    return true;
+                }
+                
+                // Get the three required Salesforce fields
+                const matterNameField = document.querySelector('[name="matter_name"]');
+                const matterIdField = document.querySelector('[name="matter_id"]');
+                const claimantField = document.querySelector('[name="claimant"]');
+                const quickApproveBtn = document.getElementById('quickApprove');
+                
+                if (!quickApproveBtn) return;
+                
+                // Check if all three have real data
+                const matterNameValid = matterNameField && hasRealData(matterNameField.value);
+                const matterIdValid = matterIdField && hasRealData(matterIdField.value);
+                const claimantValid = claimantField && hasRealData(claimantField.value);
+                
+                const allFieldsValid = matterNameValid && matterIdValid && claimantValid;
+                
+                if (allFieldsValid) {
+                    // Enable Quick Approve - all Salesforce fields populated
+                    quickApproveBtn.disabled = false;
+                    quickApproveBtn.classList.remove('bg-gray-400', 'cursor-not-allowed', 'opacity-50');
+                    quickApproveBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                    quickApproveBtn.title = 'All required Salesforce fields populated - ready to approve';
+                } else {
+                    // Disable Quick Approve - missing Salesforce data
+                    quickApproveBtn.disabled = true;
+                    quickApproveBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    quickApproveBtn.classList.add('bg-gray-400', 'cursor-not-allowed', 'opacity-50');
+                    
+                    // Build helpful tooltip message
+                    const missingFields = [];
+                    if (!matterNameValid) missingFields.push('Matter Name');
+                    if (!matterIdValid) missingFields.push('Matter ID');
+                    if (!claimantValid) missingFields.push('Claimant');
+                    
+                    quickApproveBtn.title = `Cannot approve: Missing Salesforce data (${missingFields.join(', ')})`;
+                }
+            }
+            
+            // Run validation on page load
+            validateQuickApprove();
+            
+            // Re-validate when any of the required fields change
+            ['matter_name', 'matter_id', 'claimant'].forEach(fieldName => {
+                const field = document.querySelector(`[name="${fieldName}"]`);
+                if (field) {
+                    field.addEventListener('input', validateQuickApprove);
+                    field.addEventListener('change', validateQuickApprove);
+                }
+            });
+            
+            // ============================================================================
             // PDF.js RENDERING SYSTEM - BLAZING FAST! 🔥
             // ============================================================================
             const pdfCanvas = document.getElementById('pdfCanvas');
@@ -1318,6 +1382,12 @@
             }
 
         document.getElementById('quickApprove')?.addEventListener('click', async function() {
+            // SAFETY CHECK: Don't proceed if button is disabled
+            if (this.disabled) {
+                showNotification('Cannot approve: Please fill in all required Salesforce fields (Matter Name, Matter ID, Claimant)', 'warning');
+                return;
+            }
+            
             const formData = new FormData(document.getElementById('checkDetailsForm'));
             const checkId = '{{ check.id }}';
             
