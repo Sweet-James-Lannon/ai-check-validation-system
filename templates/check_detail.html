@@ -56,6 +56,37 @@
         }
 
         /* ===================================================================== */
+        /* FIELD HIGHLIGHTS - Subtle & Professional */
+        /* ===================================================================== */
+        
+        /* Green highlight for extracted data - clean and subtle */
+        .field-extracted {
+            background: linear-gradient(to right, #ecfdf5 0%, #f0fdf4 100%);
+            border-color: #86efac;
+            box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.1);
+        }
+        
+        /* Blue highlight for Salesforce-pulled data - professional and distinct */
+        .field-salesforce {
+            background: linear-gradient(to right, #eff6ff 0%, #f0f9ff 100%);
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Focus states maintain the highlight colors */
+        .field-extracted:focus {
+            background: #f0fdf4;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+        
+        .field-salesforce:focus {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* ===================================================================== */
         /* L-SHAPED CORNER MARKERS - Precisely Aligned to Document Edges */
         /* ===================================================================== */
         
@@ -584,6 +615,42 @@
             // Batch Images Setup
             const batchImages = {{ check.batch_images|tojson if check.batch_images else '[]' }};
             let currentImageIndex = 0;
+            
+            // ============================================================================
+            // FIELD HIGHLIGHTING - Clean & Professional 🎨
+            // ============================================================================
+            function applyFieldHighlights() {
+                // Salesforce-pulled fields (blue highlight) - top 3 fields
+                const salesforceFields = ['matter_name', 'matter_id', 'claimant'];
+                
+                // All other extracted fields (green highlight)
+                const extractedFields = [
+                    'pay_to', 'amount', 'check_issue_date', 'date_of_loss',
+                    'check_number', 'routing_number', 'account_number', 'memo',
+                    'provider_name', 'claim_number', 'policy_number', 'check_type',
+                    'case_type', 'delivery_service', 'insurance_company',
+                    'reference_number', 'bank_name', 'insured_name', 'extraction_notes'
+                ];
+                
+                // Apply blue highlights to Salesforce fields if they have data
+                salesforceFields.forEach(fieldName => {
+                    const field = document.querySelector(`[name="${fieldName}"]`);
+                    if (field && field.value && field.value.trim() !== '') {
+                        field.classList.add('field-salesforce');
+                    }
+                });
+                
+                // Apply green highlights to extracted fields if they have data
+                extractedFields.forEach(fieldName => {
+                    const field = document.querySelector(`[name="${fieldName}"]`);
+                    if (field && field.value && field.value.trim() !== '') {
+                        field.classList.add('field-extracted');
+                    }
+                });
+            }
+            
+            // Apply highlights on page load
+            applyFieldHighlights();
             
             // ============================================================================
             // PDF.js RENDERING SYSTEM - BLAZING FAST! 🔥
