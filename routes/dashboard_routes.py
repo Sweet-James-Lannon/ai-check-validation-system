@@ -18,6 +18,33 @@ from utils.logger import get_api_logger
 from services.supabase_service import supabase_service
 import requests
 import io
+import time
+
+# =============================================================================
+# PDF CACHE - SPEED UP REPEATED DOWNLOADS! 🚀
+# =============================================================================
+# In-memory cache for PDFs (5 minute TTL)
+pdf_cache = {}
+PDF_CACHE_TTL = 300  # 5 minutes
+
+def get_cached_pdf(cache_key):
+    """Get PDF from cache if available and not expired"""
+    if cache_key in pdf_cache:
+        cached_data, timestamp = pdf_cache[cache_key]
+        if time.time() - timestamp < PDF_CACHE_TTL:
+            api_logger.info(f"💨 PDF cache HIT: {cache_key}")
+            return cached_data
+        else:
+            # Expired - remove it
+            del pdf_cache[cache_key]
+            api_logger.info(f"⏰ PDF cache EXPIRED: {cache_key}")
+    return None
+
+def cache_pdf(cache_key, pdf_data):
+    """Cache PDF data with timestamp"""
+    pdf_cache[cache_key] = (pdf_data, time.time())
+    api_logger.info(f"💾 PDF cached: {cache_key} ({len(pdf_data)} bytes)")
+
 
 # =============================================================================
 # CONFIGURATION & SETUP
@@ -591,6 +618,141 @@ def proxy_check_image(check_id, image_index):
     except Exception as e:
         api_logger.error(f"Error proxying image for check {check_id}, index {image_index}: {str(e)}")
         api_logger.error(f"Error type: {type(e).__name__}")
+        import traceback
+        api_logger.error(f"Full traceback:\n{traceback.format_exc()}")
+        return f"Server error: {str(e)}", 500
+
+# =============================================================================
+# PDF DIRECT SERVING - BLAZING FAST! 🔥
+# =============================================================================
+
+@dashboard_bp.route("/checks/pdf/<check_id>/<int:page_index>")
+@login_required
+def serve_check_pdf(check_id, page_index):
+    """
+    Serve PDF files directly without image conversion - MUCH FASTER!
+    PDF.js on the client side handles rendering
+    WITH CACHING FOR BLAZING SPEED! 🚀
+    """
+    try:
+        api_logger.info(f"=== PDF request: check_id={check_id}, page_index={page_index} ===")
+        
+        # CHECK CACHE FIRST! 💨
+        cache_key = f"{check_id}_{page_index}"
+        cached_pdf = get_cached_pdf(cache_key)
+        if cached_pdf:
+            return Response(
+                cached_pdf,
+                mimetype='application/pdf',
+                headers={
+                    'Cache-Control': 'public, max-age=86400',
+                    'Access-Control-Allow-Origin': '*',
+                    'Content-Type': 'application/pdf',
+                    'X-Cache': 'HIT'  # Debug header
+                }
+            )
+        
+        # Get check from Supabase
+        response = supabase_service.client.table('checks').select('batch_images, batch_id').eq('id', check_id).single().execute()
+        
+        if not response.data:
+            api_logger.warning(f"Check {check_id} not found for PDF serving")
+            return "PDF not found", 404
+        
+        check = response.data
+        batch_images = check.get('batch_images', [])
+        
+        if not batch_images or page_index >= len(batch_images):
+            api_logger.warning(f"No batch images or invalid index for check {check_id}")
+            return "PDF page not found", 404
+        
+        image_info = batch_images[page_index]
+        if not isinstance(image_info, dict):
+            return "Invalid PDF data", 400
+        
+        # Get filename
+        file_name = image_info.get('filename') or image_info.get('file_name')
+        if not file_name:
+            api_logger.error(f"No filename found in image_info: {image_info}")
+            return "No filename available", 404
+        
+        # Only serve PDFs through this endpoint
+        file_type = image_info.get('file_type', '').lower() or file_name.lower().split('.')[-1]
+        if file_type != 'pdf':
+            return "This endpoint only serves PDF files", 400
+        
+        api_logger.info(f"Looking for PDF file: {file_name}")
+        
+        # Search for the PDF in Supabase Storage
+        bucket_name = 'check-documents'
+        storage_path = None
+        
+        try:
+            # List all folders in the bucket
+            folders = supabase_service.client.storage.from_(bucket_name).list()
+            
+            # Search through folders for the file
+            for folder_item in folders:
+                folder_name = folder_item.get('name')
+                if not folder_name or folder_name.startswith('.'):
+                    continue
+                
+                try:
+                    files_in_folder = supabase_service.client.storage.from_(bucket_name).list(folder_name)
+                    
+                    for file_item in files_in_folder:
+                        if file_item.get('name') == file_name:
+                            storage_path = f"{folder_name}/{file_name}"
+                            api_logger.info(f"Found PDF at: {storage_path}")
+                            break
+                    
+                    if storage_path:
+                        break
+                except Exception as e:
+                    api_logger.warning(f"Error listing files in folder {folder_name}: {e}")
+                    continue
+        except Exception as e:
+            api_logger.error(f"Error listing folders in bucket: {e}")
+        
+        if not storage_path:
+            api_logger.error(f"No storage path found for check {check_id}, page {page_index}")
+            return "PDF file not found in storage", 404
+        
+        api_logger.info(f"Fetching PDF from Supabase Storage: {storage_path}")
+        
+        # Download the PDF file
+        try:
+            pdf_data = supabase_service.client.storage.from_(bucket_name).download(storage_path)
+            
+            if not pdf_data:
+                api_logger.error(f"No data returned from Supabase Storage for: {storage_path}")
+                return "PDF file is empty", 404
+            
+            # CACHE IT! 💾
+            cache_pdf(cache_key, pdf_data)
+            
+            # Return PDF with aggressive caching and streaming headers
+            return Response(
+                pdf_data,
+                mimetype='application/pdf',
+                headers={
+                    'Cache-Control': 'public, max-age=86400',  # Cache for 24 hours
+                    'Access-Control-Allow-Origin': '*',
+                    'Content-Type': 'application/pdf',
+                    'Content-Length': str(len(pdf_data)),  # Help browser estimate download time
+                    'Accept-Ranges': 'bytes',  # Enable range requests for faster streaming
+                    'X-Cache': 'MISS'  # Debug header
+                }
+            )
+            
+        except Exception as e:
+            api_logger.error(f"Error fetching PDF from Supabase Storage: {str(e)}")
+            import traceback
+            api_logger.error(f"Full traceback:\n{traceback.format_exc()}")
+            return f"Storage error: {str(e)}", 500
+            
+    except Exception as e:
+        api_logger.error(f"Error serving PDF for check {check_id}, page {page_index}: {str(e)}")
         import traceback
         api_logger.error(f"Full traceback:\n{traceback.format_exc()}")
         return f"Server error: {str(e)}", 500

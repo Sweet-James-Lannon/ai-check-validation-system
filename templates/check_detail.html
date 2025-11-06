@@ -7,6 +7,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    
+    <!-- PDF.js for fast PDF rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <style>
         /* Grid background pattern */
         .grid-background {
@@ -261,7 +267,7 @@
                 <div class="lg:w-1/2 bg-gray-50 border-r border-gray-200 flex flex-col">
                     <!-- Image Container -->
                     <div class="flex-1 relative">
-                        {% if check.image_data or check.batch_images %}
+                        {% if check.image_data or check.batch_images %}     
                             <!-- Batch Navigation Bar (if multiple images) -->
                             {% if check.batch_images and check.batch_images|length > 1 %}
                             <div class="bg-gray-100 border-b border-gray-200 px-4 py-2">
@@ -287,14 +293,21 @@
                             <div id="imageContainer" class="h-full overflow-auto bg-gray-50 grid-background-hidden" style="cursor: grab;">
                                 <div id="imageWrapper" class="p-4 h-full flex items-center justify-center relative">
                                     <div class="image-with-corners">
-                                        <img id="checkImage" 
-                                            src="{% if check.image_data %}data:{{ check.image_mime_type }};base64,{{ check.image_data }}{% elif check.batch_images and check.batch_images|length > 0 %}/checks/image-proxy/{{ check.id }}/0{% endif %}" 
-                                            alt="Check Image - {{ check.check_number }}" 
-                                            class="border shadow-lg bg-white max-w-full max-h-full object-contain"
+                                        <!-- PDF Canvas - Renders PDFs with vector quality -->
+                                        <canvas id="pdfCanvas" 
+                                            class="border shadow-lg bg-white max-w-full max-h-full"
                                             style="transition: transform 0.1s ease-out;"
-                                            draggable="false"
-                                            onload="console.log('Image loaded successfully:', this.src)"
-                                            onerror="console.error('Image failed to load:', this.src); this.style.display='none'; document.getElementById('imageError').style.display='flex';">
+                                            data-check-id="{{ check.id }}"
+                                            data-current-index="0">
+                                        </canvas>
+                                        
+                                        <!-- Loading indicator -->
+                                        <div id="pdfLoading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90">
+                                            <div class="text-center">
+                                                <i class="fa-solid fa-spinner fa-spin text-4xl text-blue-600 mb-2"></i>
+                                                <p class="text-sm text-gray-600">Loading PDF...</p>
+                                            </div>
+                                        </div>
                                         
                                         <!-- L-shaped Corner Markers - Follow Image Transform -->
                                         <div class="corner-marker corner-top-left"></div>
@@ -309,8 +322,8 @@
                             <div id="imageError" style="display: none;" class="h-full bg-red-50 border-2 border-dashed border-red-300 flex items-center justify-center">
                                 <div class="text-center">
                                     <i class="fa-solid fa-exclamation-triangle w-16 h-16 text-red-400 mb-4"></i>
-                                    <h3 class="text-lg font-medium text-red-600 mb-2">Image Load Error</h3>
-                                    <p class="text-sm text-red-500">Unable to display check image</p>
+                                    <h3 class="text-lg font-medium text-red-600 mb-2">PDF Load Error</h3>
+                                    <p class="text-sm text-red-500">Unable to display check PDF</p>
                                 </div>
                             </div>
                         {% else %}
@@ -571,59 +584,242 @@
             const batchImages = {{ check.batch_images|tojson if check.batch_images else '[]' }};
             let currentImageIndex = 0;
             
+            // ============================================================================
+            // PDF.js RENDERING SYSTEM - BLAZING FAST! 🔥
+            // ============================================================================
+            const pdfCanvas = document.getElementById('pdfCanvas');
+            const pdfLoading = document.getElementById('pdfLoading');
+            const pdfError = document.getElementById('imageError');
+            let currentPdfDoc = null;
+            let currentPdfPage = null;
+            
+            // PRELOADING CACHE - Load next/prev PDFs in background! 🚀
+            const pdfCache = new Map();
+            let preloadAbortController = null;
+            
+            // Update form fields with extracted data - GLOBAL FUNCTION
+            function updateFormWithExtractedData(extractedData) {
+                const fieldMappings = {
+                    'claimant': extractedData.claimant,
+                    'pay_to': extractedData.pay_to,
+                    'amount': extractedData.amount,
+                    'check_issue_date': extractedData.check_issue_date,
+                    'date_of_loss': extractedData.date_of_loss,
+                    'check_number': extractedData.check_number,
+                    'routing_number': extractedData.routing_number,
+                    'account_number': extractedData.account_number,
+                    'memo': extractedData.memo,
+                    'provider_name': extractedData.provider_name || extractedData.insurance_company,
+                    'claim_number': extractedData.claim_number,
+                    'policy_number': extractedData.policy_number
+                };
+                
+                Object.entries(fieldMappings).forEach(([fieldName, value]) => {
+                    const field = document.querySelector(`[name="${fieldName}"]`);
+                    if (field && value) {
+                        field.value = value;
+                    }
+                });
+            }
+            
+            // PRELOAD PDFs in background - NO MORE WAITING! 🔥
+            async function preloadPDF(pageIndex) {
+                if (!batchImages || pageIndex < 0 || pageIndex >= batchImages.length) return;
+                
+                const checkId = '{{ check.id }}';
+                const pdfUrl = `/checks/pdf/${checkId}/${pageIndex}`;
+                
+                // Skip if already cached
+                if (pdfCache.has(pdfUrl)) {
+                    console.log('PDF already cached:', pageIndex);
+                    return;
+                }
+                
+                console.log('🔄 Preloading PDF in background:', pageIndex);
+                
+                try {
+                    const loadingTask = pdfjsLib.getDocument({
+                        url: pdfUrl,
+                        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                        cMapPacked: true,
+                        disableAutoFetch: true,
+                        disableStream: false,
+                        useSystemFonts: true
+                    });
+                    
+                    const pdfDoc = await loadingTask.promise;
+                    const pdfPage = await pdfDoc.getPage(1);
+                    
+                    // Cache the loaded PDF doc and page
+                    pdfCache.set(pdfUrl, { doc: pdfDoc, page: pdfPage });
+                    console.log('✅ PDF cached:', pageIndex);
+                } catch (error) {
+                    console.error('Preload failed for page', pageIndex, error);
+                }
+            }
+            
+            // Preload adjacent pages when user views a page
+            function preloadAdjacentPages(currentIndex) {
+                // Cancel any in-progress preload
+                if (preloadAbortController) {
+                    preloadAbortController.abort();
+                }
+                preloadAbortController = new AbortController();
+                
+                // Preload next page (most likely to be viewed)
+                if (currentIndex + 1 < batchImages.length) {
+                    preloadPDF(currentIndex + 1);
+                }
+                
+                // Preload previous page (might go back)
+                if (currentIndex - 1 >= 0) {
+                    preloadPDF(currentIndex - 1);
+                }
+                
+                // Preload 2 pages ahead for fast users
+                if (currentIndex + 2 < batchImages.length) {
+                    setTimeout(() => preloadPDF(currentIndex + 2), 500);
+                }
+            }
+            
+            // PDF Rendering function - NOW WITH INSTANT CACHE! ⚡
+            async function renderPDF(pageIndex = 0) {
+                if (!batchImages || batchImages.length === 0) {
+                    console.warn('No PDF pages available');
+                    if (pdfLoading) pdfLoading.style.display = 'none';
+                    if (pdfError) pdfError.style.display = 'flex';
+                    return;
+                }
+                
+                try {
+                    const startTime = performance.now();
+                    
+                    // Show loading indicator
+                    if (pdfLoading) pdfLoading.style.display = 'flex';
+                    if (pdfError) pdfError.style.display = 'none';
+                    
+                    const currentImg = batchImages[pageIndex];
+                    const checkId = '{{ check.id }}';
+                    const pdfUrl = `/checks/pdf/${checkId}/${pageIndex}`;
+                    
+                    // CHECK CACHE FIRST! 🚀
+                    let pdfDoc, pdfPage;
+                    if (pdfCache.has(pdfUrl)) {
+                        console.log('💨 INSTANT LOAD from cache!', pageIndex);
+                        const cached = pdfCache.get(pdfUrl);
+                        pdfDoc = cached.doc;
+                        pdfPage = cached.page;
+                    } else {
+                        // Not cached - load it now
+                        console.log('Loading PDF:', pdfUrl);
+                        
+                        const loadingTask = pdfjsLib.getDocument({
+                            url: pdfUrl,
+                            cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                            cMapPacked: true,
+                            disableAutoFetch: true,
+                            disableStream: false,
+                            disableFontFace: false,
+                            useSystemFonts: true
+                        });
+                        
+                        pdfDoc = await loadingTask.promise;
+                        pdfPage = await pdfDoc.getPage(1);
+                        
+                        // Cache it for next time
+                        pdfCache.set(pdfUrl, { doc: pdfDoc, page: pdfPage });
+                        
+                        console.log('PDF loaded in', Math.round(performance.now() - startTime), 'ms');
+                    }
+                    
+                    currentPdfDoc = pdfDoc;
+                    currentPdfPage = pdfPage;
+                    
+                    // MAXIMUM CLARITY: Use 2.0x scale for sharpest rendering!
+                    // This is retina-quality - super crisp text
+                    const viewport = pdfPage.getViewport({ scale: 2.0 });
+                    
+                    // Set canvas dimensions
+                    pdfCanvas.width = viewport.width;
+                    pdfCanvas.height = viewport.height;
+                    pdfCanvas.style.width = (viewport.width / 2.0) + 'px';
+                    pdfCanvas.style.height = (viewport.height / 2.0) + 'px';
+                    
+                    // Render PDF page to canvas with optimized settings
+                    const context = pdfCanvas.getContext('2d', {
+                        alpha: false,
+                        desynchronized: true
+                    });
+                    
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport,
+                        intent: 'display',
+                        renderInteractiveForms: false,
+                        enableWebGL: true
+                    };
+                    
+                    await pdfPage.render(renderContext).promise;
+                    
+                    const totalTime = Math.round(performance.now() - startTime);
+                    console.log('PDF rendered in', totalTime, 'ms TOTAL');
+                    
+                    // Hide loading
+                    if (pdfLoading) pdfLoading.style.display = 'none';
+                    
+                    // Update form with extracted data if available
+                    if (currentImg.extracted_data) {
+                        updateFormWithExtractedData(currentImg.extracted_data);
+                    }
+                    
+                    // PRELOAD ADJACENT PAGES IN BACKGROUND! 🚀
+                    preloadAdjacentPages(pageIndex);
+                    
+                } catch (error) {
+                    console.error('PDF rendering error:', error);
+                    if (pdfLoading) pdfLoading.style.display = 'none';
+                    if (pdfError) pdfError.style.display = 'flex';
+                }
+            }
+            
             function setupBatchImageNavigation() {
-                if (batchImages.length <= 1) return;
+                if (batchImages.length <= 1) {
+                    // Single page - just render it
+                    renderPDF(0);
+                    return;
+                }
+                
+                // THROTTLED PREFETCH - Don't overwhelm the server! 
+                // Load next few pages with delays between requests
+                console.log('🔥 Starting throttled prefetch of', batchImages.length, 'PDFs...');
+                
+                // Immediately preload page 1 (most likely next)
+                if (batchImages.length > 1) {
+                    setTimeout(() => preloadPDF(1), 100);
+                }
+                
+                // Then preload others with 2-second delays
+                for (let i = 2; i < batchImages.length; i++) {
+                    setTimeout(() => preloadPDF(i), i * 2000);  // Stagger by 2 seconds
+                }
                 
                 const prevBtn = document.getElementById('prevImage');
                 const nextBtn = document.getElementById('nextImage');
                 const indexDisplay = document.getElementById('currentImageIndex');
-                const checkImage = document.getElementById('checkImage');
                 
-                function updateImageDisplay() {
+                async function updateImageDisplay() {
                     if (batchImages[currentImageIndex]) {
-                        const currentImg = batchImages[currentImageIndex];
-                        const checkId = '{{ check.id }}';
-                        const imageUrl = `/checks/image-proxy/${checkId}/${currentImageIndex}`;
-                        checkImage.src = imageUrl;
-                        checkImage.alt = `Check Image - ${currentImg.file_name || currentImg.filename || 'Image ' + (currentImageIndex + 1)}`;
                         indexDisplay.textContent = currentImageIndex + 1;
                         
-                        console.log('Switching to image:', imageUrl);
+                        console.log('Switching to PDF page:', currentImageIndex);
                         
-                        // Update form fields with extracted data if available
-                        if (currentImg.extracted_data) {
-                            updateFormWithExtractedData(currentImg.extracted_data);
-                        }
+                        // Render the new PDF page
+                        await renderPDF(currentImageIndex);
                         
                         // Update button states
                         prevBtn.disabled = currentImageIndex === 0;
                         nextBtn.disabled = currentImageIndex === batchImages.length - 1;
                     }
-                }
-                
-                function updateFormWithExtractedData(extractedData) {
-                    // Update form fields with extracted data
-                    const fieldMappings = {
-                        'claimant': extractedData.claimant,
-                        'pay_to': extractedData.pay_to,
-                        'amount': extractedData.amount,
-                        'check_issue_date': extractedData.check_issue_date,
-                        'date_of_loss': extractedData.date_of_loss,
-                        'check_number': extractedData.check_number,
-                        'routing_number': extractedData.routing_number,
-                        'account_number': extractedData.account_number,
-                        'memo': extractedData.memo,
-                        'provider_name': extractedData.provider_name || extractedData.insurance_company,
-                        'claim_number': extractedData.claim_number,
-                        'policy_number': extractedData.policy_number
-                    };
-                    
-                    Object.entries(fieldMappings).forEach(([fieldName, value]) => {
-                        const field = document.querySelector(`[name="${fieldName}"]`);
-                        if (field && value) {
-                            field.value = value;
-                        }
-                    });
                 }
                 
                 prevBtn?.addEventListener('click', () => {
@@ -679,7 +875,7 @@
                 disableNeedsReviewButton();
             }
             
-            const checkImage = document.getElementById('checkImage');
+            const pdfCanvasElement = document.getElementById('pdfCanvas');
             const imageContainer = document.getElementById('imageContainer');
             const imageWrapper = document.getElementById('imageWrapper');
             const zoomInBtn = document.getElementById('zoomIn');
@@ -690,7 +886,7 @@
             const zoomLevel = document.getElementById('zoomLevel');
             const imageWithCorners = document.querySelector('.image-with-corners');
             
-            // Enhanced pan and zoom state
+            // Enhanced pan and zoom state - WORKS SAME AS BEFORE!
             let currentZoom = 1.04;  // Default to zoomed-in view (one + click worth)
             let panX = 0;
             let panY = 0;
@@ -709,15 +905,6 @@
                     console.log('Initial zoom applied:', currentZoom);
                 }
             }, 100);
-            
-            // Update display when image loads
-            if (checkImage) {
-                checkImage.onload = function() {
-                    updateImageDimensions();
-                    updateZoomLevel();
-                    updateTransform(); // Apply initial zoom transform
-                };
-            }
             
             function updateTransform() {
                 if (imageWithCorners) {
@@ -740,8 +927,8 @@
             }
             
             function updateImageDimensions() {
-                if (checkImage && imageDimensions) {
-                    imageDimensions.textContent = `${checkImage.naturalWidth} × ${checkImage.naturalHeight}px`;
+                if (pdfCanvasElement && imageDimensions) {
+                    imageDimensions.textContent = `${pdfCanvasElement.width} × ${pdfCanvasElement.height}px`;
                 }
             }
             
@@ -923,13 +1110,6 @@
                 imageContainer.addEventListener('touchend', (e) => {
                     e.preventDefault();
                     endDrag();
-                });
-            }
-            
-            // Prevent image dragging
-            if (checkImage) {
-                checkImage.addEventListener('dragstart', (e) => {
-                    e.preventDefault();
                 });
             }
             
