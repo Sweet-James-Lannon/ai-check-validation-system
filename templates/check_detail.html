@@ -620,6 +620,17 @@
             // FIELD HIGHLIGHTING - Clean & Professional 🎨
             // ============================================================================
             function applyFieldHighlights() {
+                // Helper function to check if field has real data
+                function hasRealData(value) {
+                    if (!value) return false;
+                    const trimmed = value.trim();
+                    if (trimmed === '') return false;
+                    if (trimmed.toLowerCase() === 'none') return false;
+                    if (trimmed.toLowerCase() === 'null') return false;
+                    if (trimmed === '0' || trimmed === '0.00' || trimmed === '$0.00') return false;
+                    return true;
+                }
+                
                 // Salesforce-pulled fields (blue highlight) - top 3 fields
                 const salesforceFields = ['matter_name', 'matter_id', 'claimant'];
                 
@@ -632,18 +643,18 @@
                     'reference_number', 'bank_name', 'insured_name', 'extraction_notes'
                 ];
                 
-                // Apply blue highlights to Salesforce fields if they have data
+                // Apply blue highlights to Salesforce fields if they have REAL data
                 salesforceFields.forEach(fieldName => {
                     const field = document.querySelector(`[name="${fieldName}"]`);
-                    if (field && field.value && field.value.trim() !== '') {
+                    if (field && hasRealData(field.value)) {
                         field.classList.add('field-salesforce');
                     }
                 });
                 
-                // Apply green highlights to extracted fields if they have data
+                // Apply green highlights to extracted fields if they have REAL data
                 extractedFields.forEach(fieldName => {
                     const field = document.querySelector(`[name="${fieldName}"]`);
-                    if (field && field.value && field.value.trim() !== '') {
+                    if (field && hasRealData(field.value)) {
                         field.classList.add('field-extracted');
                     }
                 });
