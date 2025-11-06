@@ -654,7 +654,9 @@
                     pdfCache.set(pdfUrl, { doc: pdfDoc, page: pdfPage });
                     console.log('✅ PDF cached:', pageIndex);
                 } catch (error) {
-                    console.error('Preload failed for page', pageIndex, error);
+                    // Preload failures are not critical - just log and continue
+                    console.warn(`⚠️ Preload failed for page ${pageIndex}:`, error.message || error);
+                    // Don't show error to user - they'll see it if they navigate to that page
                 }
             }
             
@@ -776,9 +778,43 @@
                     preloadAdjacentPages(pageIndex);
                     
                 } catch (error) {
-                    console.error('PDF rendering error:', error);
+                    console.error('❌ PDF rendering error:', error);
+                    console.error('Error type:', error.name);
+                    console.error('Error message:', error.message);
+                    console.error('Stack trace:', error.stack);
+                    
+                    // Hide loading
                     if (pdfLoading) pdfLoading.style.display = 'none';
-                    if (pdfError) pdfError.style.display = 'flex';
+                    
+                    // Show detailed error to user
+                    if (pdfError) {
+                        pdfError.style.display = 'flex';
+                        
+                        // Update error message with details
+                        const errorTitle = pdfError.querySelector('h3');
+                        const errorDesc = pdfError.querySelector('p');
+                        
+                        if (error.name === 'UnexpectedResponseException') {
+                            if (errorTitle) errorTitle.textContent = 'PDF Loading Failed';
+                            if (errorDesc) errorDesc.innerHTML = `
+                                <strong>Server Error (500)</strong><br>
+                                The server encountered an error loading this PDF.<br>
+                                <span class="text-xs">Check: ${checkId}, Page: ${pageIndex}</span>
+                            `;
+                        } else if (error.message && error.message.includes('404')) {
+                            if (errorTitle) errorTitle.textContent = 'PDF Not Found';
+                            if (errorDesc) errorDesc.textContent = 'This PDF file could not be found in storage.';
+                        } else if (error.message && error.message.includes('NetworkError')) {
+                            if (errorTitle) errorTitle.textContent = 'Network Error';
+                            if (errorDesc) errorDesc.textContent = 'Could not connect to server. Check your internet connection.';
+                        } else {
+                            if (errorTitle) errorTitle.textContent = 'PDF Rendering Error';
+                            if (errorDesc) errorDesc.innerHTML = `
+                                ${error.message || 'Unknown error occurred'}<br>
+                                <span class="text-xs mt-2 block">Error type: ${error.name}</span>
+                            `;
+                        }
+                    }
                 }
             }
             
