@@ -670,53 +670,47 @@ def serve_check_pdf(check_id, page_index):
         if not isinstance(image_info, dict):
             return "Invalid PDF data", 400
         
-        # Get filename
-        file_name = image_info.get('filename') or image_info.get('file_name')
-        if not file_name:
-            api_logger.error(f"No filename found in image_info: {image_info}")
-            return "No filename available", 404
+        # Extract storage path from URL (much faster than searching!)
+        pdf_url = image_info.get('url') or image_info.get('primary_url') or image_info.get('download_url')
         
-        # Only serve PDFs through this endpoint
-        file_type = image_info.get('file_type', '').lower() or file_name.lower().split('.')[-1]
-        if file_type != 'pdf':
-            return "This endpoint only serves PDF files", 400
+        if not pdf_url:
+            api_logger.error(f"No URL found in image_info: {image_info}")
+            return "No PDF URL available", 404
         
-        api_logger.info(f"Looking for PDF file: {file_name}")
-        
-        # Search for the PDF in Supabase Storage
+        # Extract the storage path from the URL
+        # URL format: https://...supabase.co/storage/v1/object/public/check-documents/batch-1762471297198/006-C-1.pdf
+        # We need: batch-1762471297198/006-C-1.pdf
         bucket_name = 'check-documents'
-        storage_path = None
         
         try:
-            # List all folders in the bucket
-            folders = supabase_service.client.storage.from_(bucket_name).list()
-            
-            # Search through folders for the file
-            for folder_item in folders:
-                folder_name = folder_item.get('name')
-                if not folder_name or folder_name.startswith('.'):
-                    continue
+            # Split URL to get the path after the bucket name
+            if '/check-documents/' in pdf_url:
+                storage_path = pdf_url.split('/check-documents/')[1]
+            else:
+                # Fallback: try to extract filename and folder
+                file_name = image_info.get('filename') or image_info.get('file_name')
+                if not file_name:
+                    api_logger.error(f"No filename or path found in image_info: {image_info}")
+                    return "No filename available", 404
                 
-                try:
-                    files_in_folder = supabase_service.client.storage.from_(bucket_name).list(folder_name)
-                    
-                    for file_item in files_in_folder:
-                        if file_item.get('name') == file_name:
-                            storage_path = f"{folder_name}/{file_name}"
-                            api_logger.info(f"Found PDF at: {storage_path}")
+                # Try to find the folder from URL or use batch ID
+                if '/' in pdf_url:
+                    parts = pdf_url.split('/')
+                    # Look for batch folder pattern
+                    for i, part in enumerate(parts):
+                        if part.startswith('batch-') and i + 1 < len(parts):
+                            storage_path = f"{part}/{file_name}"
                             break
-                    
-                    if storage_path:
-                        break
-                except Exception as e:
-                    api_logger.warning(f"Error listing files in folder {folder_name}: {e}")
-                    continue
+                    else:
+                        storage_path = file_name
+                else:
+                    storage_path = file_name
+            
+            api_logger.info(f"Extracted storage path: {storage_path}")
+            
         except Exception as e:
-            api_logger.error(f"Error listing folders in bucket: {e}")
-        
-        if not storage_path:
-            api_logger.error(f"No storage path found for check {check_id}, page {page_index}")
-            return "PDF file not found in storage", 404
+            api_logger.error(f"Error extracting storage path from URL: {e}")
+            return "Failed to parse PDF URL", 404
         
         api_logger.info(f"Fetching PDF from Supabase Storage: {storage_path}")
         

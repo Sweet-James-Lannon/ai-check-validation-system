@@ -87,6 +87,195 @@
         }
 
         /* ===================================================================== */
+        /* SEARCHABLE DROPDOWN - Clean & Professional 🔍 */
+        /* ===================================================================== */
+        
+        /* Hide the original select element */
+        /* 🔥 MATTER NAME SELECT - Searchable Dropdown Styling */
+        select.matter-name-select {
+            display: none !important;
+        }
+
+        .dropdown-select {
+            background-color: #fff;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
+            box-sizing: border-box;
+            cursor: pointer;
+            display: block;
+            font-size: 0.875rem;
+            height: auto;
+            line-height: 1.5rem;
+            outline: none;
+            padding: 0.5rem 0.75rem;
+            padding-right: 2rem;
+            position: relative;
+            text-align: left !important;
+            transition: all 0.2s ease-in-out;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            white-space: nowrap;
+            width: 100%;
+        }
+
+        .dropdown-select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .dropdown-select:hover {
+            border-color: #9ca3af;
+        }
+
+        .dropdown-select:active,
+        .dropdown-select.open {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Dropdown arrow */
+        .dropdown-select:after {
+            height: 0;
+            width: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid #6b7280;
+            -webkit-transform: origin(50% 20%);
+            transform: origin(50% 20%);
+            transition: all 0.125s ease-in-out;
+            content: '';
+            display: block;
+            margin-top: -2px;
+            pointer-events: none;
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+        }
+
+        .dropdown-select.open:after {
+            -webkit-transform: rotate(-180deg);
+            transform: rotate(-180deg);
+        }
+
+        .dropdown-select.open .list {
+            -webkit-transform: scale(1);
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .dropdown-select.open .option {
+            cursor: pointer;
+        }
+
+        /* Dropdown list container */
+        .dropdown-select .list {
+            box-sizing: border-box;
+            transition: all 0.15s cubic-bezier(0.25, 0, 0.25, 1.75), opacity 0.1s linear;
+            -webkit-transform: scale(0.75);
+            transform: scale(0.75);
+            -webkit-transform-origin: 50% 0;
+            transform-origin: 50% 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            background-color: #fff;
+            border-radius: 0.5rem;
+            margin-top: 0.25rem;
+            padding: 0.25rem 0;
+            opacity: 0;
+            overflow: hidden;
+            pointer-events: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            max-height: 300px;
+            overflow: auto;
+            border: 1px solid #e5e7eb;
+        }
+
+        .dropdown-select .list:hover .option:not(:hover) {
+            background-color: transparent !important;
+        }
+
+        /* Search box inside dropdown */
+        .dropdown-select .dd-search {
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 1;
+        }
+
+        .dropdown-select .dd-searchbox {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            outline: none;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .dropdown-select .dd-searchbox:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Dropdown options */
+        .dropdown-select .list ul {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        .dropdown-select .option {
+            cursor: default;
+            font-weight: 400;
+            line-height: 1.5rem;
+            outline: none;
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+            transition: all 0.2s;
+            list-style: none;
+            font-size: 0.875rem;
+        }
+
+        .dropdown-select .option:hover,
+        .dropdown-select .option:focus {
+            background-color: #f3f4f6 !important;
+        }
+
+        .dropdown-select .option.selected {
+            font-weight: 600;
+            color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        .dropdown-select .option.selected:focus {
+            background: #e0f2fe;
+        }
+
+        /* Empty state */
+        .dropdown-select .option.no-results {
+            color: #9ca3af;
+            font-style: italic;
+            cursor: default;
+        }
+
+        .dropdown-select .option.no-results:hover {
+            background-color: transparent !important;
+        }
+
+        /* ===================================================================== */
         /* L-SHAPED CORNER MARKERS - Precisely Aligned to Document Edges */
         /* ===================================================================== */
         
@@ -407,11 +596,12 @@
                                     </h3>
                                     
                                     <div class="grid grid-cols-1 gap-3">
+                                        <!-- 🔥 MATTER NAME - NOW THE SEARCHABLE DROPDOWN! -->
                                         <div class="field-container">
-                                            <label class="block text-xs font-medium text-gray-600 mb-1">Matter Name</label>
-                                            <input type="text" value="{{ check.matter_name }}" 
-                                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                                   name="matter_name" placeholder="Auto-populated from memo">
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">Matter Name <span class="text-blue-600">(Searchable)</span></label>
+                                            <select name="matter_name" data-required="true" class="matter-name-select w-full">
+                                                <option value="{{ check.matter_name }}" selected>{{ check.matter_name if check.matter_name else 'Search by matter name...' }}</option>
+                                            </select>
                                             <div class="field-status">
                                                 <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
                                                 <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
@@ -423,18 +613,19 @@
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Matter ID</label>
                                                 <input type="text" value="{{ check.matter_id or '' }}" 
                                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
-                                                       name="matter_id" placeholder="From Salesforce lookup">
+                                                       name="matter_id" placeholder="Auto-populated from Salesforce" readonly>
                                                 <div class="field-status">
                                                     <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
                                                     <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
                                                 </div>
                                             </div>
                                             
+                                            <!-- 🔥 CLAIMANT - NOW A REGULAR INPUT (auto-populated) -->
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Claimant</label>
-                                                <input type="text" value="{{ check.claimant }}" 
+                                                <input type="text" value="{{ check.claimant or '' }}" 
                                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                                       name="claimant" data-required="true">
+                                                       name="claimant" data-required="true" placeholder="Auto-populated from Matter" readonly>
                                                 <div class="field-status">
                                                     <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
                                                     <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
@@ -615,6 +806,392 @@
             // Batch Images Setup
             const batchImages = {{ check.batch_images|tojson if check.batch_images else '[]' }};
             let currentImageIndex = 0;
+            
+            // ============================================================================
+            // SEARCHABLE DROPDOWN SYSTEM - FIRE! 🔥🔍
+            // ============================================================================
+            
+            // Global variables for dropdown state
+            let allClaimants = [];
+            let claimantDropdownCreated = false;
+            
+            // 🔥 CREATE THE MATTER NAME DROPDOWN IMMEDIATELY!
+            createCustomDropdown();
+            
+            // ============================================================================
+            // SALESFORCE SEARCH - Real-time as you type! 🔥
+            // ============================================================================
+            
+            let searchTimeout = null;
+            const SEARCH_DELAY = 300; // Wait 300ms after user stops typing
+            
+            // Fetch claimants list from API (initial load - fallback to Supabase)
+            async function loadClaimantsList() {
+                try {
+                    const response = await fetch('/api/claimants/list');
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        allClaimants = data.claimants || [];
+                        console.log(`🔥 Loaded ${allClaimants.length} claimant names (${data.source || 'supabase'})!`);
+                        
+                        // Populate the select element with options
+                        const selectElement = document.querySelector('select.claimant-select');
+                        if (selectElement) {
+                            // Keep the current value option
+                            const currentValue = selectElement.value;
+                            
+                            // Add all claimants as options
+                            allClaimants.forEach(claimant => {
+                                const option = document.createElement('option');
+                                option.value = claimant;
+                                option.textContent = claimant;
+                                selectElement.appendChild(option);
+                            });
+                            
+                            // Create the custom dropdown UI
+                            createCustomDropdown();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error loading claimants:', error);
+                }
+            }
+            
+            // =============================================================================
+            // 🔥 SALESFORCE SEARCH - FUTURE-PROOF FOR MATTER NAME SEARCH! 
+            // =============================================================================
+            // When Jai updates SOQL to search MatterName field, this will automatically work!
+            // Current: Searches by claimant name (ClaimentName field in SOQL)
+            // Future: Will search by matter name (MatterName field in SOQL) - NO CODE CHANGES NEEDED!
+            // =============================================================================
+            async function searchSalesforce(query, dropdown, ul) {
+                try {
+                    console.log(`🔍 Searching Salesforce for: "${query}"`);
+                    
+                    // Add loading indicator
+                    ul.innerHTML = '<li class="option no-results"><i class="fa-solid fa-spinner fa-spin"></i> Searching Salesforce...</li>';
+                    
+                    const response = await fetch(`/api/salesforce/search?q=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    
+                    // Clear the list
+                    ul.innerHTML = '';
+                    
+                    if (data.status === 'success' && data.results && data.results.length > 0) {
+                        console.log(`✅ Found ${data.total} matches from ${data.source}!`);
+                        
+                        // =============================================================================
+                        // DISPLAY LOGIC: Show Matter Name as PRIMARY text
+                        // Store Claimant and Matter ID as data attributes
+                        // =============================================================================
+                        data.results.forEach(item => {
+                            const li = document.createElement('li');
+                            li.className = 'option';
+                            
+                            // Store ALL data for auto-population
+                            li.setAttribute('data-value', item.matter_name);  // Matter name is the value!
+                            li.setAttribute('data-claimant', item.claimant || '');  // Claimant stored as attribute
+                            li.setAttribute('data-matter-id', item.matter_id || '');
+                            
+                            // =============================================================================
+                            // DISPLAY FORMAT: Matter Name (primary) + Claimant (secondary)
+                            // User sees: "Ryan Powers | CA | 10/24/25 | Auto (Claimant: Ryan Powers)"
+                            // =============================================================================
+                            const displayText = item.matter_name 
+                                ? `${item.matter_name}` 
+                                : item.claimant; // Fallback if no matter name
+                            
+                            li.textContent = displayText;
+                            ul.appendChild(li);
+                        });
+                        
+                        console.log('📋 Results now display Matter Name as primary field!');
+                    } else {
+                        // No results found
+                        const noResults = document.createElement('li');
+                        noResults.className = 'option no-results';
+                        noResults.innerHTML = `<i class="fa-solid fa-search"></i> No matters found matching "${query}"`;
+                        ul.appendChild(noResults);
+                    }
+                } catch (error) {
+                    console.error('Salesforce search failed:', error);
+                    
+                    // Show error state
+                    ul.innerHTML = '';
+                    const errorLi = document.createElement('li');
+                    errorLi.className = 'option no-results';
+                    errorLi.innerHTML = '<i class="fa-solid fa-exclamation-triangle"></i> Search error - try again';
+                    ul.appendChild(errorLi);
+                }
+            }
+            
+            // Filter local options (when less than 2 chars or as fallback)
+            function filterLocalOptions(query, ul) {
+                const searchValue = query.toLowerCase().trim();
+                let visibleCount = 0;
+                
+                ul.querySelectorAll('.option:not(.no-results)').forEach(option => {
+                    const text = option.textContent.toLowerCase();
+                    if (text.indexOf(searchValue) > -1) {
+                        option.style.display = '';
+                        visibleCount++;
+                    } else {
+                        option.style.display = 'none';
+                    }
+                });
+                
+                // Show/hide "no results" message
+                let noResultsLi = ul.querySelector('.option.no-results');
+                if (visibleCount === 0 && searchValue.length > 0) {
+                    if (!noResultsLi) {
+                        noResultsLi = document.createElement('li');
+                        noResultsLi.className = 'option no-results';
+                        ul.appendChild(noResultsLi);
+                    }
+                    noResultsLi.textContent = 'No matching claimants found';
+                    noResultsLi.style.display = '';
+                } else if (noResultsLi) {
+                    noResultsLi.style.display = 'none';
+                }
+            }
+            
+            // Create custom searchable dropdown for MATTER NAME
+            function createCustomDropdown() {
+                const selectElement = document.querySelector('select.matter-name-select');
+                if (!selectElement || claimantDropdownCreated) return;
+                
+                claimantDropdownCreated = true;
+                
+                // Create dropdown container
+                const dropdown = document.createElement('div');
+                dropdown.className = 'dropdown-select wide';
+                dropdown.setAttribute('tabindex', '0');
+                
+                // Current value display - MATTER NAME DROPDOWN! 🔥
+                const current = document.createElement('span');
+                current.className = 'current';
+                const selectedOption = selectElement.querySelector('option:checked') || selectElement.querySelector('option');
+                current.textContent = selectedOption ? selectedOption.textContent : 'Search by matter name...';
+                dropdown.appendChild(current);
+                
+                // List container
+                const listDiv = document.createElement('div');
+                listDiv.className = 'list';
+                
+                // Search box - MATTER NAME SEARCH! 🔥
+                const searchDiv = document.createElement('div');
+                searchDiv.className = 'dd-search';
+                const searchInput = document.createElement('input');
+                searchInput.id = 'matterNameSearchBox';
+                searchInput.className = 'dd-searchbox';
+                searchInput.type = 'text';
+                searchInput.placeholder = 'Search matter names...';
+                searchInput.autocomplete = 'off';
+                searchDiv.appendChild(searchInput);
+                listDiv.appendChild(searchDiv);
+                
+                // Options list
+                const ul = document.createElement('ul');
+                const options = selectElement.querySelectorAll('option');
+                options.forEach((option, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'option' + (option.selected ? ' selected' : '');
+                    li.setAttribute('data-value', option.value);
+                    li.textContent = option.textContent;
+                    ul.appendChild(li);
+                });
+                listDiv.appendChild(ul);
+                dropdown.appendChild(listDiv);
+                
+                // Insert after select element
+                selectElement.parentNode.insertBefore(dropdown, selectElement.nextSibling);
+                
+                console.log('✅ Searchable dropdown created!');
+                
+                // Setup event handlers
+                setupDropdownEvents(dropdown, selectElement, searchInput, ul);
+            }
+            
+            // Setup all dropdown event handlers
+            function setupDropdownEvents(dropdown, selectElement, searchInput, ul) {
+                // Toggle dropdown open/close
+                dropdown.addEventListener('click', function(event) {
+                    if (event.target.matches('.dd-searchbox')) {
+                        return; // Don't close when clicking search box
+                    }
+                    
+                    // Close other dropdowns
+                    document.querySelectorAll('.dropdown-select').forEach(dd => {
+                        if (dd !== dropdown) dd.classList.remove('open');
+                    });
+                    
+                    dropdown.classList.toggle('open');
+                    
+                    if (dropdown.classList.contains('open')) {
+                        ul.querySelectorAll('.option').forEach(opt => opt.setAttribute('tabindex', '0'));
+                        const selected = ul.querySelector('.option.selected');
+                        if (selected) selected.focus();
+                        // Focus search box when opening
+                        setTimeout(() => searchInput.focus(), 50);
+                    } else {
+                        ul.querySelectorAll('.option').forEach(opt => opt.removeAttribute('tabindex'));
+                        dropdown.focus();
+                    }
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!dropdown.contains(event.target)) {
+                        dropdown.classList.remove('open');
+                        ul.querySelectorAll('.option').forEach(opt => opt.removeAttribute('tabindex'));
+                    }
+                });
+                
+                // DEBOUNCED SALESFORCE SEARCH - searches as user types!
+                searchInput.addEventListener('keyup', function() {
+                    const searchValue = this.value.trim();
+                    
+                    // Clear previous timeout
+                    if (searchTimeout) {
+                        clearTimeout(searchTimeout);
+                    }
+                    
+                    // If empty or less than 2 chars, just filter local options
+                    if (searchValue.length < 2) {
+                        filterLocalOptions(searchValue, ul);
+                        return;
+                    }
+                    
+                    // Wait for user to stop typing, THEN search Salesforce
+                    searchTimeout = setTimeout(async () => {
+                        await searchSalesforce(searchValue, dropdown, ul);
+                    }, SEARCH_DELAY);
+                });
+                
+                // Option selection - AUTO-POPULATE FIELDS FROM STORED DATA! 🔥
+                ul.addEventListener('click', async function(event) {
+                    if (event.target.matches('.option') && !event.target.matches('.no-results')) {
+                        // Update selected state
+                        ul.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
+                        event.target.classList.add('selected');
+                        
+                        // Update display
+                        dropdown.querySelector('.current').textContent = event.target.textContent;
+                        
+                        // Update actual select value
+                        selectElement.value = event.target.getAttribute('data-value');
+                        
+                        // Trigger change event for validation
+                        selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+                        selectElement.dispatchEvent(new Event('input', { bubbles: true }));
+                        
+                        // Close dropdown
+                        dropdown.classList.remove('open');
+                        dropdown.focus();
+                        
+                        const matterName = event.target.textContent;
+                        const claimantName = event.target.getAttribute('data-claimant');
+                        const matterId = event.target.getAttribute('data-matter-id');
+                        
+                        console.log('✅ Matter selected:', matterName);
+                        console.log('📋 Matter data already loaded:', { claimantName, matterId });
+                        
+                        // =============================================================================
+                        // AUTO-POPULATE ALL 3 FIELDS - Data already loaded! 🚀
+                        // =============================================================================
+                        
+                        // 1. Matter Name (already set in select)
+                        const matterNameInput = document.querySelector('select[name="matter_name"]');
+                        if (matterNameInput) {
+                            matterNameInput.value = matterName;
+                            matterNameInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            matterNameInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            // Add Salesforce highlight
+                            matterNameInput.classList.add('field-salesforce');
+                            console.log('📝 Auto-populated matter_name:', matterName);
+                        }
+                        
+                        // 2. Claimant - use name selector (now an INPUT, not select!)
+                        if (claimantName) {
+                            const claimantInput = document.querySelector('input[name="claimant"]');
+                            if (claimantInput) {
+                                claimantInput.value = claimantName;
+                                claimantInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                claimantInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                // Add Salesforce highlight
+                                claimantInput.classList.add('field-salesforce');
+                                console.log('📝 Auto-populated claimant:', claimantName);
+                            } else {
+                                console.warn('⚠️ Claimant input not found!');
+                            }
+                        }
+                        
+                        // 3. Matter ID - use name selector!
+                        if (matterId) {
+                            const matterIdInput = document.querySelector('input[name="matter_id"]');
+                            if (matterIdInput) {
+                                matterIdInput.value = matterId;
+                                matterIdInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                matterIdInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                // Add Salesforce highlight
+                                matterIdInput.classList.add('field-salesforce');
+                                console.log('📝 Auto-populated matter_id:', matterId);
+                            } else {
+                                console.warn('⚠️ Matter ID input not found!');
+                            }
+                        }
+                        
+                        console.log('🎉 All 3 fields auto-populated instantly - no extra API call needed!');
+                    }
+                });
+                
+                // Keyboard navigation
+                dropdown.addEventListener('keydown', function(event) {
+                    const focused = ul.querySelector('.option:focus') || ul.querySelector('.option.selected');
+                    
+                    if (event.keyCode == 13) { // Enter
+                        if (dropdown.classList.contains('open')) {
+                            if (focused && !focused.matches('.no-results')) {
+                                focused.click();
+                            }
+                        } else {
+                            dropdown.click();
+                        }
+                        event.preventDefault();
+                    } else if (event.keyCode == 40) { // Down arrow
+                        if (!dropdown.classList.contains('open')) {
+                            dropdown.click();
+                        } else if (focused) {
+                            let next = focused.nextElementSibling;
+                            while (next && next.style.display === 'none') {
+                                next = next.nextElementSibling;
+                            }
+                            if (next) next.focus();
+                        }
+                        event.preventDefault();
+                    } else if (event.keyCode == 38) { // Up arrow
+                        if (!dropdown.classList.contains('open')) {
+                            dropdown.click();
+                        } else if (focused) {
+                            let prev = focused.previousElementSibling;
+                            while (prev && prev.style.display === 'none') {
+                                prev = prev.previousElementSibling;
+                            }
+                            if (prev) prev.focus();
+                        }
+                        event.preventDefault();
+                    } else if (event.keyCode == 27) { // Escape
+                        if (dropdown.classList.contains('open')) {
+                            dropdown.click();
+                        }
+                        event.preventDefault();
+                    }
+                });
+            }
+            
+            // Initialize dropdown on page load
+            loadClaimantsList();
             
             // ============================================================================
             // FIELD HIGHLIGHTING - Clean & Professional 🎨

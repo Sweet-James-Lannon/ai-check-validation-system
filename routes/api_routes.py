@@ -273,6 +273,315 @@ def get_check_details(check_id):
         api_logger.error(f"Error getting check {check_id}: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@api_bp.route("/api/claimants/list", methods=["GET"])
+@login_required
+def get_claimants_list():
+    """
+    FALLBACK: Get unique list of claimant names from Supabase
+    Used for testing or when Salesforce is unavailable
+    """
+    try:
+        api_logger.info("Fetching unique claimant names from Supabase (fallback)")
+        
+        # Get all checks with claimant data
+        response = supabase_service.client.table('checks')\
+            .select('claimant')\
+            .not_.is_('claimant', 'null')\
+            .execute()
+        
+        if not response.data:
+            return jsonify({
+                "status": "success",
+                "claimants": [],
+                "source": "supabase"
+            })
+        
+        # Extract unique claimant names (filter out None, empty, "None" strings)
+        claimants_set = set()
+        for check in response.data:
+            claimant = check.get('claimant', '').strip()
+            if claimant and claimant.lower() not in ['none', 'null', '']:
+                claimants_set.add(claimant)
+        
+        # Sort alphabetically
+        unique_claimants = sorted(list(claimants_set))
+        
+        api_logger.info(f"Returning {len(unique_claimants)} unique claimant names from Supabase")
+        
+        return jsonify({
+            "status": "success",
+            "claimants": unique_claimants,
+            "total": len(unique_claimants),
+            "source": "supabase"
+        })
+        
+    except Exception as e:
+        api_logger.error(f"Error fetching claimants list: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@api_bp.route("/api/salesforce/claimant-lookup", methods=["POST"])
+@login_required
+def salesforce_claimant_lookup():
+    """
+    🔥 SALESFORCE: Fetch matter data from Salesforce
+    Uses Jai's Salesforce endpoint to get claimant, matter_name, and matter_id
+    
+    POST body: {"claimant_name": "Jose Martinez"}
+    
+    Returns: {
+        "status": "success",
+        "claimant": "Jose Martinez",
+        "matter_name": "Martinez v. State Farm",
+        "matter_id": "500..."
+    }
+    
+    Salesforce Endpoint (configured):
+        URL: https://sweetjames--sjfull.sandbox.my.salesforce-sites.com/SmartReceptionAI/services/apexrest/AI_Flask_App_Fetch_Matter
+        Method: GET
+        Token: 00DEc00000H8mAZMAZ
+    """
+    try:
+        import os
+        import requests
+        
+        data = request.get_json()
+        claimant_name = data.get('claimant_name', '').strip()
+        
+        if not claimant_name:
+            return jsonify({
+                "status": "error",
+                "message": "No claimant name provided"
+            }), 400
+        
+        api_logger.info(f"🔍 Salesforce lookup for: '{claimant_name}'")
+        
+        # =============================================================================
+        # SALESFORCE CONFIGURATION
+        # =============================================================================
+        
+        # Jai's Salesforce endpoint
+        salesforce_url = "https://sweetjames--sjfull.sandbox.my.salesforce-sites.com/SmartReceptionAI/services/apexrest/AI_Flask_App_Fetch_Matter"
+        salesforce_token = "00DEc00000H8mAZMAZ"
+        
+        # =============================================================================
+        # Call Salesforce API
+        # =============================================================================
+        
+        # Payload format from Jai's specs (GET request with JSON body)
+        payload = {
+            'searchKey': claimant_name,
+            'token': salesforce_token
+        }
+        
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        
+        api_logger.info(f"Calling Salesforce API with searchKey: {claimant_name}")
+        
+        # Note: GET request with JSON body (unusual but that's what Salesforce wants)
+        response = requests.request(
+            'GET',
+            salesforce_url,
+            json=payload,
+            headers=headers,
+            timeout=10
+        )
+        
+        response.raise_for_status()  # Raise error for bad status codes
+        
+        result = response.json()
+        
+        api_logger.info(f"✅ Salesforce API response: {result}")
+        
+        # Parse Salesforce response
+        # Salesforce returns an array of matches with these field names:
+        # - ClaimentName (note the typo - "Claiment" not "Claimant")
+        # - MatterName
+        # - MatterId
+        
+        # Take the first match if multiple results
+        if isinstance(result, list) and len(result) > 0:
+            first_match = result[0]
+            
+            return jsonify({
+                "status": "success",
+                "claimant": first_match.get('ClaimentName', claimant_name),
+                "matter_name": first_match.get('MatterName', ''),
+                "matter_id": first_match.get('MatterId', '')
+            })
+        else:
+            # No matches found
+            return jsonify({
+                "status": "success",
+                "claimant": claimant_name,
+                "matter_name": "",
+                "matter_id": "",
+                "message": "No matches found in Salesforce"
+            })
+        
+    except requests.exceptions.Timeout:
+        api_logger.error("Salesforce API timeout")
+        return jsonify({
+            "status": "error",
+            "message": "Salesforce request timed out"
+        }), 504
+        
+    except requests.exceptions.RequestException as e:
+        api_logger.error(f"Salesforce API error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": f"Salesforce connection failed: {str(e)}"
+        }), 500
+        
+    except Exception as e:
+        api_logger.error(f"Salesforce lookup error: {str(e)}")
+        import traceback
+        api_logger.error(traceback.format_exc())
+        
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@api_bp.route("/api/salesforce/search", methods=["GET"])
+@login_required
+def salesforce_search_claimants():
+    """
+    🔥 REAL-TIME SEARCH: Search Salesforce as user types
+    Returns full matter data for each match
+    
+    =============================================================================
+    🚨 JAI: UPDATE SOQL TO SEARCH MATTER NAME FIELD! 🚨
+    =============================================================================
+    Current SOQL: Searches ClaimentName field
+    Needed SOQL: Search MatterName field (or BOTH ClaimentName AND MatterName)
+    
+    Example SOQL:
+    SELECT ClaimentName__c, MatterName__c, Id 
+    FROM Matter__c 
+    WHERE MatterName__c LIKE '%{searchKey}%' 
+    OR ClaimentName__c LIKE '%{searchKey}%'
+    
+    Frontend is ALREADY set up to handle this! No frontend changes needed!
+    =============================================================================
+    
+    Query params: ?q=auto accident
+    
+    Returns: {
+        "status": "success",
+        "results": [
+            {
+                "claimant": "Rebecca Smith",
+                "matter_name": "Rebecca Smith | CA | 1/1/24 | Auto",
+                "matter_id": "a0L5f0000058N4j"
+            }
+        ],
+        "total": 5
+    }
+    """
+    try:
+        import requests
+        
+        search_query = request.args.get('q', '').strip()
+        
+        # Minimum 2 characters
+        if len(search_query) < 2:
+            return jsonify({
+                "status": "success",
+                "results": [],
+                "total": 0,
+                "message": "Type at least 2 characters"
+            })
+        
+        api_logger.info(f"🔍 Real-time Salesforce search: '{search_query}'")
+        
+        # Salesforce configuration
+        salesforce_url = "https://sweetjames--sjfull.sandbox.my.salesforce-sites.com/SmartReceptionAI/services/apexrest/AI_Flask_App_Fetch_Matter"
+        salesforce_token = "00DEc00000H8mAZMAZ"
+        
+        # Call Salesforce
+        payload = {
+            'searchKey': search_query,
+            'token': salesforce_token
+        }
+        
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        
+        response = requests.request(
+            'GET',
+            salesforce_url,
+            json=payload,
+            headers=headers,
+            timeout=10
+        )
+        
+        response.raise_for_status()
+        result = response.json()
+        
+        # Extract full matter data with unique claimant names
+        results = []
+        seen = set()
+        
+        if isinstance(result, list):
+            for item in result:
+                claimant_name = item.get('ClaimentName', '').strip()
+                matter_name = item.get('MatterName', '').strip()
+                matter_id = item.get('MatterId', '').strip()
+                
+                # Only add unique claimants with complete data
+                if claimant_name and claimant_name not in seen:
+                    results.append({
+                        'claimant': claimant_name,
+                        'matter_name': matter_name,
+                        'matter_id': matter_id
+                    })
+                    seen.add(claimant_name)
+        
+        api_logger.info(f"✅ Found {len(results)} Salesforce matches for '{search_query}'")
+        
+        return jsonify({
+            "status": "success",
+            "results": results,
+            "total": len(results),
+            "source": "salesforce"
+        })
+        
+    except Exception as e:
+        api_logger.error(f"Salesforce search error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "claimants": [],
+            "total": 0
+        }), 500
+        
+    except requests.exceptions.Timeout:
+        api_logger.error("Salesforce API timeout")
+        return jsonify({
+            "status": "error",
+            "message": "Salesforce request timed out"
+        }), 504
+        
+    except requests.exceptions.RequestException as e:
+        api_logger.error(f"Salesforce API error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": f"Salesforce connection failed: {str(e)}"
+        }), 500
+        
+    except Exception as e:
+        api_logger.error(f"Salesforce lookup error: {str(e)}")
+        import traceback
+        api_logger.error(traceback.format_exc())
+        
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 @api_bp.route("/api/checks/stats", methods=["GET"])
 @login_required
 
@@ -689,8 +998,6 @@ def ingest_batch():
         import traceback
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
-
-
 
 # =============================================================================
 # SYSTEM HEALTH API ENDPOINTS
