@@ -183,7 +183,7 @@
             background-color: #fff;
             border-radius: 0.5rem;
             margin-top: 0.25rem;
-            padding: 0.25rem 0;
+            padding: 0;
             opacity: 0;
             overflow: hidden;
             pointer-events: none;
@@ -191,7 +191,7 @@
             top: 100%;
             left: 0;
             right: 0;
-            z-index: 999;
+            z-index: 99;
             max-height: 300px;
             overflow: auto;
             border: 1px solid #e5e7eb;
@@ -201,7 +201,7 @@
             background-color: transparent !important;
         }
 
-        /* Search box inside dropdown */
+        
         .dropdown-select .dd-search {
             overflow: hidden;
             display: flex;
@@ -210,10 +210,14 @@
             padding: 0.5rem;
             border-bottom: 1px solid #e5e7eb;
             position: sticky;
-            top: 0;
+            top: 0px;
+            height: 60px;   /* CHANGE: Increase from 15px to accommodate input */
+            min-height: 60px; /* ADD: Ensure it doesn't shrink */
             background: white;
-            z-index: 10;
-            box-shadow: 0 8px 16px -8px rgba(255, 255, 255, 1); /* White shadow below to fade cut-off text */
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            /* ADD: These ensure nothing bleeds through */
+            isolation: isolate;  /* Creates new stacking context */
         }
 
         .dropdown-select .dd-searchbox {
