@@ -212,7 +212,8 @@
             position: sticky;
             top: 0;
             background: white;
-            z-index: 1;
+            z-index: 10;
+            box-shadow: 0 8px 16px -8px rgba(255, 255, 255, 1); /* White shadow below to fade cut-off text */
         }
 
         .dropdown-select .dd-searchbox {
@@ -598,7 +599,12 @@
                                     <div class="grid grid-cols-1 gap-3">
                                         <!-- 🔥 MATTER NAME - NOW THE SEARCHABLE DROPDOWN! -->
                                         <div class="field-container">
-                                            <label class="block text-xs font-medium text-gray-600 mb-1">Matter Name <span class="text-blue-600">(Searchable)</span></label>
+                                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                                                Matter Name 
+                                                <span class="text-blue-600">
+                                                    (Searchable) <i class="fa-solid fa-magnifying-glass"></i>
+                                                </span>
+                                            </label>
                                             <select name="matter_name" data-required="true" class="matter-name-select w-full">
                                                 <option value="{{ check.matter_name }}" selected>{{ check.matter_name if check.matter_name else 'Search by matter name...' }}</option>
                                             </select>
@@ -1101,9 +1107,26 @@
                         // AUTO-POPULATE ALL 3 FIELDS - Data already loaded! 🚀
                         // =============================================================================
                         
-                        // 1. Matter Name (already set in select)
+                        // 1. Matter Name (update the hidden select properly!)
                         const matterNameInput = document.querySelector('select[name="matter_name"]');
                         if (matterNameInput) {
+                            // IMPORTANT: We need to create/update an option with this value
+                            // because select elements can only have values that match their options
+                            let existingOption = Array.from(matterNameInput.options).find(opt => opt.value === matterName);
+                            
+                            if (!existingOption) {
+                                // Create new option if it doesn't exist
+                                const newOption = document.createElement('option');
+                                newOption.value = matterName;
+                                newOption.textContent = matterName;
+                                newOption.selected = true;
+                                matterNameInput.appendChild(newOption);
+                            } else {
+                                // Select existing option
+                                existingOption.selected = true;
+                            }
+                            
+                            // Now set the value
                             matterNameInput.value = matterName;
                             matterNameInput.dispatchEvent(new Event('change', { bubbles: true }));
                             matterNameInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1143,6 +1166,10 @@
                         }
                         
                         console.log('🎉 All 3 fields auto-populated instantly - no extra API call needed!');
+                        
+                        // 🔥 UNLOCK THE APPROVE BUTTON NOW! 
+                        console.log('🔓 Checking if Quick Approve should be unlocked...');
+                        validateQuickApprove();
                     }
                 });
                 
@@ -1261,23 +1288,36 @@
                 const claimantField = document.querySelector('[name="claimant"]');
                 const quickApproveBtn = document.getElementById('quickApprove');
                 
-                if (!quickApproveBtn) return;
+                if (!quickApproveBtn) {
+                    console.error('❌ Quick Approve button not found!');
+                    return;
+                }
+                
+                // DEBUG: Log field values
+                console.log('🔍 Validation Check:');
+                console.log('  Matter Name:', matterNameField ? matterNameField.value : 'NOT FOUND');
+                console.log('  Matter ID:', matterIdField ? matterIdField.value : 'NOT FOUND');
+                console.log('  Claimant:', claimantField ? claimantField.value : 'NOT FOUND');
                 
                 // Check if all three have real data
                 const matterNameValid = matterNameField && hasRealData(matterNameField.value);
                 const matterIdValid = matterIdField && hasRealData(matterIdField.value);
                 const claimantValid = claimantField && hasRealData(claimantField.value);
                 
+                console.log('  Valid?', { matterNameValid, matterIdValid, claimantValid });
+                
                 const allFieldsValid = matterNameValid && matterIdValid && claimantValid;
                 
                 if (allFieldsValid) {
                     // Enable Quick Approve - all Salesforce fields populated
+                    console.log('✅ ALL VALID - UNLOCKING QUICK APPROVE!');
                     quickApproveBtn.disabled = false;
                     quickApproveBtn.classList.remove('bg-gray-400', 'cursor-not-allowed', 'opacity-50');
                     quickApproveBtn.classList.add('bg-green-600', 'hover:bg-green-700');
                     quickApproveBtn.title = 'All required Salesforce fields populated - ready to approve';
                 } else {
                     // Disable Quick Approve - missing Salesforce data
+                    console.log('❌ VALIDATION FAILED - KEEPING LOCKED');
                     quickApproveBtn.disabled = true;
                     quickApproveBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
                     quickApproveBtn.classList.add('bg-gray-400', 'cursor-not-allowed', 'opacity-50');
@@ -1289,6 +1329,7 @@
                     if (!claimantValid) missingFields.push('Claimant');
                     
                     quickApproveBtn.title = `Cannot approve: Missing Salesforce data (${missingFields.join(', ')})`;
+                    console.log('  Missing:', missingFields.join(', '));
                 }
             }
             
