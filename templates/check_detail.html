@@ -2189,23 +2189,29 @@
                 field.classList.add('bg-gray-100', 'text-gray-600');
             });
             
-            // Disable all action buttons
-            document.getElementById('saveProgress').disabled = true;
-            document.getElementById('quickApprove').disabled = true;
-            document.getElementById('sendToReview').disabled = true;
+            // Disable all action buttons (with null checks)
+            const saveBtn = document.getElementById('saveProgress');
+            const approveBtn = document.getElementById('quickApprove');
+            const reviewBtn = document.getElementById('sendToReview');
             
-            // Style Quick Approve button as "Approved"
-            document.getElementById('quickApprove').innerHTML = '<i class="fa-solid fa-check w-4 h-4"></i> Approved';
-            document.getElementById('quickApprove').classList.remove('bg-green-600', 'hover:bg-green-700');
-            document.getElementById('quickApprove').classList.add('bg-gray-400', 'cursor-not-allowed');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.classList.remove('bg-slate-500', 'hover:bg-slate-400');
+                saveBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            }
             
-            // Grey out Save Progress button
-            document.getElementById('saveProgress').classList.remove('bg-slate-500', 'hover:bg-slate-400');
-            document.getElementById('saveProgress').classList.add('bg-gray-400', 'cursor-not-allowed');
+            if (approveBtn) {
+                approveBtn.disabled = true;
+                approveBtn.innerHTML = '<i class="fa-solid fa-check w-4 h-4"></i> Approved';
+                approveBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                approveBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            }
             
-            // Grey out Needs Review button
-            document.getElementById('sendToReview').classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
-            document.getElementById('sendToReview').classList.add('bg-gray-400', 'cursor-not-allowed');
+            if (reviewBtn) {
+                reviewBtn.disabled = true;
+                reviewBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+                reviewBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            }
         }
 
         function disableNeedsReviewButton() {
