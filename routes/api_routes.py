@@ -772,8 +772,8 @@ def analyze_batch_splits():
                 'page_count': total_pages - current_pos
             })
         
-        # Generate sub-batch labels
-        sub_batches = [chr(65 + i) for i in range(len(splits))]
+        # Generate sub-batch labels using 3-digit numeric format (001, 002, 003, etc.)
+        sub_batches = [f"{i+1:03d}" for i in range(len(splits))]
         
         # Add 1 to all page numbers for human-readable 1-based indexing
         separator_pages_display = [p + 1 for p in separator_page_indices]
