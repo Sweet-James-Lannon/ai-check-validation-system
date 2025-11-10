@@ -680,9 +680,9 @@
                                     <div class="grid grid-cols-1 gap-3">
                                         <div class="field-container">
                                             <label class="block text-xs font-medium text-gray-600 mb-1">Provider Name</label>
-                                            <input type="text" value="{{ check.provider_name }}" 
+                                            <input type="text" value="{{ check.provider_name if check.provider_name and check.provider_name != 'None' else '' }}" 
                                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                                   name="provider_name" data-required="true">
+                                                   name="provider_name" placeholder="Provider name" data-required="true">
                                             <div class="field-status">
                                                 <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
                                                 <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
@@ -692,9 +692,9 @@
                                         <div class="grid grid-cols-2 gap-3">
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Claim Number</label>
-                                                <input type="text" value="{{ check.claim_number }}" 
+                                                <input type="text" value="{{ check.claim_number if check.claim_number and check.claim_number != 'None' else '' }}" 
                                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
-                                                       name="claim_number" placeholder="Auto-extracted from check">
+                                                       name="claim_number" placeholder="Claim number">
                                                 <div class="field-status">
                                                     <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
                                                     <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
@@ -703,9 +703,9 @@
                                             
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Policy Number</label>
-                                                <input type="text" value="{{ check.policy_number }}" 
+                                                <input type="text" value="{{ check.policy_number if check.policy_number and check.policy_number != 'None' else '' }}" 
                                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
-                                                       name="policy_number" placeholder="Auto-extracted from check">
+                                                       name="policy_number" placeholder="Policy number">
                                                 <div class="field-status">
                                                     <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
                                                     <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
@@ -765,7 +765,7 @@
                                                 <input type="text" 
                                                        value="{{ check.date_of_loss or '' }}"
                                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                                       name="date_of_loss">
+                                                       name="date_of_loss" placeholder="Date of loss">
                                                 <div class="field-status">
                                                     <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
                                                     <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
@@ -775,9 +775,9 @@
                                         
                                         <div class="field-container">
                                             <label class="block text-xs font-medium text-gray-600 mb-1">Check Number</label>
-                                            <input type="text" value="{{ check.check_number }}" 
+                                            <input type="text" value="{{ check.check_number if check.check_number and check.check_number != 'None' else '' }}" 
                                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
-                                                   name="check_number" data-required="true">
+                                                   name="check_number" placeholder="Check number" data-required="true">
                                             <div class="field-status">
                                                 <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
                                                 <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
@@ -796,9 +796,9 @@
                                         <div class="grid grid-cols-2 gap-3">
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Routing Number</label>
-                                                <input type="text" value="{{ check.routing_number }}" 
+                                                <input type="text" value="{{ check.routing_number if check.routing_number and check.routing_number != 'None' else '' }}" 
                                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
-                                                       name="routing_number" data-required="true">
+                                                       name="routing_number" placeholder="Routing number" data-required="true">
                                                 <div class="field-status">
                                                     <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
                                                     <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
@@ -807,9 +807,9 @@
                                             
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Account Number</label>
-                                                <input type="text" value="{{ check.account_number }}" 
+                                                <input type="text" value="{{ check.account_number if check.account_number and check.account_number != 'None' else '' }}" 
                                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
-                                                       name="account_number" data-required="true">
+                                                       name="account_number" placeholder="Account number" data-required="true">
                                                 <div class="field-status">
                                                     <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
                                                     <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
@@ -821,10 +821,38 @@
                                             <label class="block text-xs font-medium text-gray-600 mb-1">Memo</label>
                                             <textarea 
                                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
-                                                   name="memo" rows="2" placeholder="Auto-extracted from check">{{ check.memo }}</textarea>
+                                                   name="memo" rows="2" placeholder="Memo from check">{{ check.memo if check.memo and check.memo != 'None' else '' }}</textarea>
                                             <div class="field-status">
                                                 <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
                                                 <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">
+                                                    <i class="fa-solid fa-truck mr-1"></i>Delivery Service
+                                                </label>
+                                                <input type="text" value="{{ check.delivery_service if check.delivery_service and check.delivery_service != 'None' else '' }}" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                                       name="delivery_service" placeholder="e.g., FedEx, UPS, USPS">
+                                                <div class="field-status">
+                                                    <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">
+                                                    <i class="fa-solid fa-barcode mr-1"></i>Tracking Number
+                                                </label>
+                                                <input type="text" value="{{ check.tracking_number if check.tracking_number and check.tracking_number != 'None' else '' }}" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
+                                                       name="tracking_number" placeholder="Tracking number">
+                                                <div class="field-status">
+                                                    <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
