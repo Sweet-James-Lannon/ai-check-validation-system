@@ -349,7 +349,7 @@
             background-color: transparent !important;
         }
 
-        /* 🔥 BACKDROP OVERLAY - Dims entire screen */
+        /* 🔥 BACKDROP OVERLAY - Dims entire screen with smooth transitions */
         .dropdown-backdrop {
             position: fixed;
             top: 0;
@@ -359,7 +359,8 @@
             background: rgba(0, 0, 0, 0.5);
             z-index: 9990;
             opacity: 0;
-            transition: opacity 0.3s ease-in-out;
+            /* Smooth fade in/out for opacity, delay visibility change until after fade-out */
+            transition: opacity 0.3s ease-in-out, visibility 0s linear 0.3s;
             pointer-events: none;
             visibility: hidden;
         }
@@ -368,6 +369,8 @@
             opacity: 1;
             pointer-events: auto;
             visibility: visible;
+            /* When showing, make visibility instant (no delay) but keep opacity smooth */
+            transition: opacity 0.3s ease-in-out, visibility 0s linear 0s;
         }
 
         /* 🔥 LEFT PANEL (PDF Viewer) - Stays bright above backdrop */
@@ -1175,8 +1178,13 @@
                     console.log('Closing dropdown and removing backdrop');
                     dropdown.classList.remove('open');
                     backdrop.classList.remove('show');
-                    // 🔥 Remove bright class from left panel
-                    if (leftPanel) leftPanel.classList.remove('left-panel-bright');
+
+                    // 🔥 DELAY removing bright class from left panel until AFTER backdrop fade-out completes
+                    // This prevents the strobing effect where left panel dims before backdrop fades
+                    setTimeout(() => {
+                        if (leftPanel) leftPanel.classList.remove('left-panel-bright');
+                    }, 300); // Match the backdrop transition duration (0.3s = 300ms)
+
                     ul.querySelectorAll('.option').forEach(opt => opt.removeAttribute('tabindex'));
                     document.body.style.overflow = ''; // Re-enable scrolling
                     console.log('Backdrop classes after close:', backdrop.className);
