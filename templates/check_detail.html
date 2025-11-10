@@ -351,7 +351,6 @@
 
         /* 🔥 BACKDROP OVERLAY - Dims background when dropdown is open */
         .dropdown-backdrop {
-            display: none;
             position: fixed;
             top: 0;
             left: 0;
@@ -361,12 +360,14 @@
             z-index: 9990;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
-            pointer-events: auto;
+            pointer-events: none;
+            visibility: hidden;
         }
 
         .dropdown-backdrop.show {
-            display: block;
             opacity: 1;
+            pointer-events: auto;
+            visibility: visible;
         }
 
         /* ===================================================================== */
@@ -1144,6 +1145,7 @@
             // Setup all dropdown event handlers
             function setupDropdownEvents(dropdown, selectElement, searchInput, ul) {
                 const backdrop = document.getElementById('dropdownBackdrop');
+                console.log('Backdrop element found:', backdrop);
 
                 // Function to position dropdown relative to left panel
                 const positionDropdown = () => {
@@ -1160,10 +1162,12 @@
 
                 // Close dropdown helper
                 const closeDropdown = () => {
+                    console.log('Closing dropdown and removing backdrop');
                     dropdown.classList.remove('open');
                     backdrop.classList.remove('show');
                     ul.querySelectorAll('.option').forEach(opt => opt.removeAttribute('tabindex'));
                     document.body.style.overflow = ''; // Re-enable scrolling
+                    console.log('Backdrop classes after close:', backdrop.className);
                 };
 
                 // Toggle dropdown open/close
@@ -1254,10 +1258,9 @@
                         // Trigger change event for validation
                         selectElement.dispatchEvent(new Event('change', { bubbles: true }));
                         selectElement.dispatchEvent(new Event('input', { bubbles: true }));
-                        
-                        // Close dropdown
-                        dropdown.classList.remove('open');
-                        dropdown.focus();
+
+                        // 🔥 CLOSE DROPDOWN AND BACKDROP
+                        closeDropdown();
                         
                         const matterName = event.target.textContent;
                         const claimantName = event.target.getAttribute('data-claimant');
