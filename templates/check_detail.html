@@ -187,8 +187,8 @@
         }
 
         .dropdown-select.open .list {
-            -webkit-transform: scale(1);
-            transform: scale(1);
+            -webkit-transform: translateY(-50%) scale(1);
+            transform: translateY(-50%) scale(1);
             opacity: 1;
             pointer-events: auto;
         }
@@ -203,8 +203,8 @@
             transition: all 0.15s cubic-bezier(0.25, 0, 0.25, 1.75), opacity 0.1s linear;
             -webkit-transform: scale(0.75);
             transform: scale(0.75);
-            -webkit-transform-origin: 50% 0;
-            transform-origin: 50% 0;
+            -webkit-transform-origin: 0% 0;
+            transform-origin: 0% 0;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             background-color: #fff;
             border-radius: 0.5rem;
@@ -213,14 +213,17 @@
             opacity: 0;
             overflow: hidden;
             pointer-events: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
+            position: fixed;
+            top: 19.0rem;
+            left: 6.5rem;
+            transform: translateY(-50%) scale(0.75);
+            right: auto;
+            width: 990px;
+            max-width: 90vw;
             z-index: 9999; /* ABOVE backdrop */
-            max-height: 300px;
+            max-height: 70vh;
             overflow: auto;
-            border: 1px solid #e5e7eb;
+            border: 2px solid #3b82f6;
         }
 
         .dropdown-select .list:hover .option:not(:hover) {
@@ -314,10 +317,11 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.4);
-            z-index: 9998;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9990;
             opacity: 0;
-            transition: opacity 0.2s ease-in-out;
+            transition: opacity 0.3s ease-in-out;
+            pointer-events: auto;
         }
 
         .dropdown-backdrop.show {
@@ -1131,8 +1135,20 @@
                     dropdown.classList.toggle('open');
 
                     if (dropdown.classList.contains('open')) {
+                        // 🔥 POSITION DROPDOWN - Match left panel width dynamically
+                        // Find the left panel (it has bg-gray-50 and border-r classes)
+                        const leftPanel = document.querySelector('.bg-gray-50.border-r.flex.flex-col');
+                        const listElement = dropdown.querySelector('.list');
+                        if (leftPanel && listElement) {
+                            const rect = leftPanel.getBoundingClientRect();
+                            listElement.style.width = rect.width + 'px';
+                            listElement.style.left = rect.left + 'px';
+                        }
+
                         // 🔥 SHOW BACKDROP and disable body scroll
+                        console.log('Adding backdrop show class', backdrop);
                         backdrop.classList.add('show');
+                        console.log('Backdrop classes:', backdrop.className);
                         document.body.style.overflow = 'hidden';
 
                         ul.querySelectorAll('.option').forEach(opt => opt.setAttribute('tabindex', '0'));
