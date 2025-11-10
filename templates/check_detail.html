@@ -1168,7 +1168,7 @@
                         const rect = rightPanel.getBoundingClientRect();
                         listElement.style.width = rect.width + 'px';
                         listElement.style.left = rect.left + 'px';
-                        listElement.style.top = rect.top + 'px';
+                        listElement.style.top = (rect.top - 4) + 'px'; // Scoot up by 2px
                         listElement.style.maxHeight = rect.height + 'px';
                     }
                 };
