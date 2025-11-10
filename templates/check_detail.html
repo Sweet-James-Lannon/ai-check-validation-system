@@ -349,7 +349,7 @@
             background-color: transparent !important;
         }
 
-        /* 🔥 BACKDROP OVERLAY - Dims background when dropdown is open */
+        /* 🔥 BACKDROP OVERLAY - Dims entire screen */
         .dropdown-backdrop {
             position: fixed;
             top: 0;
@@ -368,6 +368,12 @@
             opacity: 1;
             pointer-events: auto;
             visibility: visible;
+        }
+
+        /* 🔥 LEFT PANEL (PDF Viewer) - Stays bright above backdrop */
+        .left-panel-bright {
+            position: relative;
+            z-index: 9995 !important;
         }
 
         /* ===================================================================== */
@@ -1147,12 +1153,16 @@
                 const backdrop = document.getElementById('dropdownBackdrop');
                 console.log('Backdrop element found:', backdrop);
 
-                // Function to position dropdown relative to left panel
+                // Get left panel reference
+                const leftPanel = document.querySelector('.bg-gray-50.border-r.flex.flex-col');
+
+                // Function to position dropdown to cover RIGHT panel (form fields)
                 const positionDropdown = () => {
-                    const leftPanel = document.querySelector('.bg-gray-50.border-r.flex.flex-col');
+                    const rightPanel = document.querySelector('.bg-white.border-l-2.border-gray-300');
                     const listElement = dropdown.querySelector('.list');
-                    if (leftPanel && listElement && dropdown.classList.contains('open')) {
-                        const rect = leftPanel.getBoundingClientRect();
+
+                    if (rightPanel && listElement && dropdown.classList.contains('open')) {
+                        const rect = rightPanel.getBoundingClientRect();
                         listElement.style.width = rect.width + 'px';
                         listElement.style.left = rect.left + 'px';
                         listElement.style.top = rect.top + 'px';
@@ -1165,6 +1175,8 @@
                     console.log('Closing dropdown and removing backdrop');
                     dropdown.classList.remove('open');
                     backdrop.classList.remove('show');
+                    // 🔥 Remove bright class from left panel
+                    if (leftPanel) leftPanel.classList.remove('left-panel-bright');
                     ul.querySelectorAll('.option').forEach(opt => opt.removeAttribute('tabindex'));
                     document.body.style.overflow = ''; // Re-enable scrolling
                     console.log('Backdrop classes after close:', backdrop.className);
@@ -1195,6 +1207,10 @@
                         // 🔥 SHOW BACKDROP and disable body scroll
                         console.log('Adding backdrop show class', backdrop);
                         backdrop.classList.add('show');
+
+                        // 🔥 BRIGHTEN LEFT PANEL - Keep PDF viewer above backdrop
+                        if (leftPanel) leftPanel.classList.add('left-panel-bright');
+
                         console.log('Backdrop classes:', backdrop.className);
                         document.body.style.overflow = 'hidden';
 
@@ -1208,14 +1224,22 @@
                     }
                 });
 
-                // Close dropdown when clicking backdrop
+                // Close dropdown when clicking backdrop (dimmed grey areas)
                 backdrop.addEventListener('click', closeDropdown);
 
-                // Close dropdown when clicking outside
+                // Close dropdown when clicking outside - BUT NOT on left panel (PDF viewer)
                 document.addEventListener('click', function(event) {
-                    if (!dropdown.contains(event.target) && !event.target.matches('.dropdown-backdrop')) {
-                        closeDropdown();
-                    }
+                    // Don't close if clicking dropdown itself
+                    if (dropdown.contains(event.target)) return;
+
+                    // Don't close if clicking backdrop (it has its own handler)
+                    if (event.target.matches('.dropdown-backdrop')) return;
+
+                    // 🔥 DON'T CLOSE if clicking left panel (PDF viewer) - user needs to interact with PDF
+                    if (leftPanel && leftPanel.contains(event.target)) return;
+
+                    // Otherwise, close the dropdown
+                    closeDropdown();
                 });
 
                 // 🔥 REPOSITION DROPDOWN ON WINDOW RESIZE
