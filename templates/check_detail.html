@@ -187,8 +187,8 @@
         }
 
         .dropdown-select.open .list {
-            -webkit-transform: translateY(-50%) scale(1);
-            transform: translateY(-50%) scale(1);
+            -webkit-transform: scale(1);
+            transform: scale(1);
             opacity: 1;
             pointer-events: auto;
         }
@@ -214,11 +214,12 @@
             overflow: hidden;
             pointer-events: none;
             position: fixed;
-            top: 19.0rem;
-            left: 6.5rem;
-            transform: translateY(-50%) scale(0.75);
+            top: auto;
+            left: auto;
+            transform: scale(0.75);
+            transform-origin: top left;
             right: auto;
-            width: 990px;
+            width: 500px;
             max-width: 90vw;
             z-index: 9999; /* ABOVE backdrop */
             max-height: 70vh;
@@ -1121,6 +1122,8 @@
                         const rect = leftPanel.getBoundingClientRect();
                         listElement.style.width = rect.width + 'px';
                         listElement.style.left = rect.left + 'px';
+                        listElement.style.top = rect.top + 'px';
+                        listElement.style.maxHeight = rect.height + 'px';
                     }
                 };
 
