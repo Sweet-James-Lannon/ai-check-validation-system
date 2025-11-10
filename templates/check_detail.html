@@ -1113,6 +1113,17 @@
             function setupDropdownEvents(dropdown, selectElement, searchInput, ul) {
                 const backdrop = document.getElementById('dropdownBackdrop');
 
+                // Function to position dropdown relative to left panel
+                const positionDropdown = () => {
+                    const leftPanel = document.querySelector('.bg-gray-50.border-r.flex.flex-col');
+                    const listElement = dropdown.querySelector('.list');
+                    if (leftPanel && listElement && dropdown.classList.contains('open')) {
+                        const rect = leftPanel.getBoundingClientRect();
+                        listElement.style.width = rect.width + 'px';
+                        listElement.style.left = rect.left + 'px';
+                    }
+                };
+
                 // Close dropdown helper
                 const closeDropdown = () => {
                     dropdown.classList.remove('open');
@@ -1136,14 +1147,7 @@
 
                     if (dropdown.classList.contains('open')) {
                         // 🔥 POSITION DROPDOWN - Match left panel width dynamically
-                        // Find the left panel (it has bg-gray-50 and border-r classes)
-                        const leftPanel = document.querySelector('.bg-gray-50.border-r.flex.flex-col');
-                        const listElement = dropdown.querySelector('.list');
-                        if (leftPanel && listElement) {
-                            const rect = leftPanel.getBoundingClientRect();
-                            listElement.style.width = rect.width + 'px';
-                            listElement.style.left = rect.left + 'px';
-                        }
+                        positionDropdown();
 
                         // 🔥 SHOW BACKDROP and disable body scroll
                         console.log('Adding backdrop show class', backdrop);
@@ -1170,6 +1174,9 @@
                         closeDropdown();
                     }
                 });
+
+                // 🔥 REPOSITION DROPDOWN ON WINDOW RESIZE
+                window.addEventListener('resize', positionDropdown);
                 
                 // DEBOUNCED SALESFORCE SEARCH - searches as user types!
                 searchInput.addEventListener('keyup', function() {
