@@ -1023,31 +1023,8 @@
                             li.setAttribute('data-claimant', item.claimant || '');
                             li.setAttribute('data-matter-id', item.matter_id || '');
 
-                            // Parse matter name for structured display
-                            // Format: "Name | State | Date | Case Type"
-                            const parts = item.matter_name ? item.matter_name.split('|').map(p => p.trim()) : [];
-                            const name = parts[0] || item.claimant || 'Unknown';
-                            const date = parts[2] || '';
-                            const caseType = parts[3] || 'Case';
-
-                            // Build card HTML
-                            li.innerHTML = `
-                                <div class="option-header">
-                                    <div class="option-main">${name}${date ? ' | ' + date : ''}</div>
-                                    <div class="option-badge">${caseType}</div>
-                                </div>
-                                <div class="option-details">
-                                    <div class="option-detail">
-                                        <strong>Matter ID:</strong> ${item.matter_id ? item.matter_id.substring(0, 10) + '...' : 'N/A'}
-                                    </div>
-                                    <div class="option-detail">
-                                        <strong>Claimant:</strong> ${item.claimant || 'N/A'}
-                                    </div>
-                                    <div class="option-detail">
-                                        <strong>Full Name:</strong> ${item.matter_name || 'N/A'}
-                                    </div>
-                                </div>
-                            `;
+                            // Just show the matter name for now
+                            li.textContent = item.matter_name || item.claimant || 'Unknown';
                             ul.appendChild(li);
                         });
                         
@@ -1193,6 +1170,11 @@
                 dropdown.addEventListener('click', function(event) {
                     if (event.target.matches('.dd-searchbox')) {
                         return; // Don't close when clicking search box
+                    }
+
+                    // Don't toggle if clicking on an option or inside an option
+                    if (event.target.closest('.option')) {
+                        return; // Let the option click handler deal with it
                     }
 
                     // Close other dropdowns
