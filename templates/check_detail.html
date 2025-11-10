@@ -994,6 +994,7 @@
             let isPanelDragging = false;
             let panelStartX = 0;
             let panelStartLeftWidth = 0;
+            let justFinishedDragging = false; // Track if we just finished dragging
 
             if (divider && leftPanel && rightPanel && container) {
                 // Position divider initially at the border between panels
@@ -1062,6 +1063,14 @@
                         divider.classList.remove('dragging');
                         document.body.style.cursor = '';
                         document.body.style.userSelect = '';
+
+                        // 🔥 Mark that we just finished dragging to prevent accidental dropdown close
+                        justFinishedDragging = true;
+
+                        // Clear the flag after a short delay (longer than click event timing)
+                        setTimeout(() => {
+                            justFinishedDragging = false;
+                        }, 100);
                     }
                 });
             }
@@ -1363,6 +1372,10 @@
 
                 // Close dropdown when clicking outside - BUT NOT on left panel or divider
                 document.addEventListener('click', function(event) {
+                    // 🔥 DON'T CLOSE if we just finished dragging the panel divider
+                    // This prevents accidental closes when releasing mouse after drag
+                    if (justFinishedDragging) return;
+
                     // Don't close if clicking dropdown itself
                     if (dropdown.contains(event.target)) return;
 
