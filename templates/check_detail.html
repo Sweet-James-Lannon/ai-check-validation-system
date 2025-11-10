@@ -272,31 +272,70 @@
             list-style: none;
         }
 
+        /* Card Style - Option 2 from mockup */
         .dropdown-select .option {
-            cursor: default;
-            font-weight: 400;
-            line-height: 1.5rem;
-            outline: none;
-            padding: 0.5rem 0.75rem;
-            text-align: left;
-            transition: all 0.2s;
+            cursor: pointer;
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+            transition: all 0.15s ease;
             list-style: none;
-            font-size: 0.875rem;
         }
 
         .dropdown-select .option:hover,
         .dropdown-select .option:focus {
-            background-color: #f3f4f6 !important;
+            background-color: #f9fafb !important;
+            border-left: 3px solid #3b82f6;
         }
 
         .dropdown-select .option.selected {
-            font-weight: 600;
-            color: #3b82f6;
             background-color: #eff6ff;
+            border-left: 3px solid #3b82f6;
         }
 
         .dropdown-select .option.selected:focus {
             background: #e0f2fe;
+        }
+
+        /* Card header with matter name and case type badge */
+        .option-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .option-main {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 15px;
+        }
+
+        .option-badge {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Card details row */
+        .option-details {
+            display: flex;
+            gap: 20px;
+            color: #6b7280;
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+
+        .option-detail {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .option-detail strong {
+            color: #374151;
         }
 
         /* Empty state */
@@ -973,27 +1012,42 @@
                         console.log(`✅ Found ${data.total} matches from ${data.source}!`);
                         
                         // =============================================================================
-                        // DISPLAY LOGIC: Show Matter Name as PRIMARY text
-                        // Store Claimant and Matter ID as data attributes
+                        // CARD STYLE DISPLAY (Option 2)
                         // =============================================================================
                         data.results.forEach(item => {
                             const li = document.createElement('li');
                             li.className = 'option';
-                            
+
                             // Store ALL data for auto-population
-                            li.setAttribute('data-value', item.matter_name);  // Matter name is the value!
-                            li.setAttribute('data-claimant', item.claimant || '');  // Claimant stored as attribute
+                            li.setAttribute('data-value', item.matter_name);
+                            li.setAttribute('data-claimant', item.claimant || '');
                             li.setAttribute('data-matter-id', item.matter_id || '');
-                            
-                            // =============================================================================
-                            // DISPLAY FORMAT: Matter Name (primary) + Claimant (secondary)
-                            // User sees: "Ryan Powers | CA | 10/24/25 | Auto (Claimant: Ryan Powers)"
-                            // =============================================================================
-                            const displayText = item.matter_name 
-                                ? `${item.matter_name}` 
-                                : item.claimant; // Fallback if no matter name
-                            
-                            li.textContent = displayText;
+
+                            // Parse matter name for structured display
+                            // Format: "Name | State | Date | Case Type"
+                            const parts = item.matter_name ? item.matter_name.split('|').map(p => p.trim()) : [];
+                            const name = parts[0] || item.claimant || 'Unknown';
+                            const date = parts[2] || '';
+                            const caseType = parts[3] || 'Case';
+
+                            // Build card HTML
+                            li.innerHTML = `
+                                <div class="option-header">
+                                    <div class="option-main">${name}${date ? ' | ' + date : ''}</div>
+                                    <div class="option-badge">${caseType}</div>
+                                </div>
+                                <div class="option-details">
+                                    <div class="option-detail">
+                                        <strong>Matter ID:</strong> ${item.matter_id ? item.matter_id.substring(0, 10) + '...' : 'N/A'}
+                                    </div>
+                                    <div class="option-detail">
+                                        <strong>Claimant:</strong> ${item.claimant || 'N/A'}
+                                    </div>
+                                    <div class="option-detail">
+                                        <strong>Full Name:</strong> ${item.matter_name || 'N/A'}
+                                    </div>
+                                </div>
+                            `;
                             ul.appendChild(li);
                         });
                         
