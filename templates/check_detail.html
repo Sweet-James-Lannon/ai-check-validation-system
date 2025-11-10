@@ -14,6 +14,32 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     </script>
     <style>
+        /* Responsive fluid container - expands elegantly with screen size */
+        .container-fluid {
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Smart max-widths for different screen sizes */
+        @media (min-width: 1536px) {
+            .container-fluid {
+                max-width: 1800px; /* 2xl screens - generous width */
+            }
+        }
+        
+        @media (min-width: 1920px) {
+            .container-fluid {
+                max-width: 2000px; /* Full HD+ screens */
+            }
+        }
+        
+        @media (min-width: 2560px) {
+            .container-fluid {
+                max-width: 2400px; /* 2K/4K screens - use more space */
+            }
+        }
+        
         /* Grid background pattern */
         .grid-background {
             background-image: 
@@ -361,7 +387,7 @@
 <body>
     <!-- Header -->
     <header class="surface-elevated sticky top-0 z-50 backdrop-blur-md bg-white/95">
-        <div class="max-w-7xl mx-auto px-6 py-4">
+        <div class="container-fluid px-6 lg:px-8 xl:px-12 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg flex items-center justify-center">
@@ -390,7 +416,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-6 py-8">
+    <main class="container-fluid px-6 lg:px-8 xl:px-12 py-8">
         <div class="surface rounded-xl mb-8 overflow-hidden">
             <!-- Header with Confidence Score -->
             <div class="px-6 py-3 bg-gradient-to-br from-slate-800 to-slate-700 rounded-t-xl">
@@ -488,9 +514,9 @@
             </div>
             
             <!-- Main Content Area - Image Left, Fields Right -->
-            <div class="flex flex-col lg:flex-row min-h-[700px]" style="border-top-right-radius: 12px; overflow: hidden;">
+            <div class="flex flex-col lg:flex-row min-h-[700px] xl:min-h-[800px] 2xl:min-h-[900px]" style="border-top-right-radius: 12px; overflow: hidden;">
                 <!-- Left Side - Check Image -->
-                <div class="lg:w-1/2 bg-gray-50 border-r border-gray-200 flex flex-col">
+                <div class="lg:w-1/2 xl:w-[55%] 2xl:w-[58%] bg-gray-50 border-r border-gray-200 flex flex-col">
                     <!-- Image Container -->
                     <div class="flex-1 relative">
                         {% if check.image_data or check.batch_images %}     
@@ -589,8 +615,8 @@
                 </div>
 
                 <!-- Right Side - Check Details Form -->
-                <div class="lg:w-1/2 bg-white border-l-2 border-gray-300">
-                    <div class="p-6 h-full overflow-y-auto">
+                <div class="lg:w-1/2 xl:w-[45%] 2xl:w-[42%] bg-white border-l-2 border-gray-300">
+                    <div class="p-6 xl:p-8 h-full overflow-y-auto">
                         <form id="checkDetailsForm">
                             <!-- Extracted Fields Grid -->
                             <div class="space-y-3">
@@ -877,13 +903,16 @@
             // =============================================================================
             async function searchSalesforce(query, dropdown, ul) {
                 try {
-                    console.log(`🔍 Searching Salesforce for: "${query}"`);
-                    
                     // Add loading indicator
                     ul.innerHTML = '<li class="option no-results"><i class="fa-solid fa-spinner fa-spin"></i> Searching Salesforce...</li>';
                     
                     const response = await fetch(`/api/salesforce/search?q=${encodeURIComponent(query)}`);
                     const data = await response.json();
+                    
+                    // 📊 CLEAN TABLE VIEW - All Salesforce fields
+                    if (data.raw_salesforce_response && data.raw_salesforce_response.length > 0) {
+                        console.table(data.raw_salesforce_response);
+                    }
                     
                     // Clear the list
                     ul.innerHTML = '';
@@ -1104,9 +1133,6 @@
                         const claimantName = event.target.getAttribute('data-claimant');
                         const matterId = event.target.getAttribute('data-matter-id');
                         
-                        console.log('✅ Matter selected:', matterName);
-                        console.log('📋 Matter data already loaded:', { claimantName, matterId });
-                        
                         // =============================================================================
                         // AUTO-POPULATE ALL 3 FIELDS - Data already loaded! 🚀
                         // =============================================================================
@@ -1134,46 +1160,33 @@
                             matterNameInput.value = matterName;
                             matterNameInput.dispatchEvent(new Event('change', { bubbles: true }));
                             matterNameInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            // Add Salesforce highlight
                             matterNameInput.classList.add('field-salesforce');
-                            console.log('📝 Auto-populated matter_name:', matterName);
                         }
                         
-                        // 2. Claimant - use name selector (now an INPUT, not select!)
+                        // 2. Claimant
                         if (claimantName) {
                             const claimantInput = document.querySelector('input[name="claimant"]');
                             if (claimantInput) {
                                 claimantInput.value = claimantName;
                                 claimantInput.dispatchEvent(new Event('change', { bubbles: true }));
                                 claimantInput.dispatchEvent(new Event('input', { bubbles: true }));
-                                // Add Salesforce highlight
                                 claimantInput.classList.add('field-salesforce');
-                                console.log('📝 Auto-populated claimant:', claimantName);
-                            } else {
-                                console.warn('⚠️ Claimant input not found!');
                             }
                         }
                         
-                        // 3. Matter ID - use name selector!
+                        // 3. Matter ID
                         if (matterId) {
                             const matterIdInput = document.querySelector('input[name="matter_id"]');
                             if (matterIdInput) {
                                 matterIdInput.value = matterId;
                                 matterIdInput.dispatchEvent(new Event('change', { bubbles: true }));
                                 matterIdInput.dispatchEvent(new Event('input', { bubbles: true }));
-                                // Add Salesforce highlight
                                 matterIdInput.classList.add('field-salesforce');
-                                console.log('📝 Auto-populated matter_id:', matterId);
-                            } else {
-                                console.warn('⚠️ Matter ID input not found!');
                             }
                         }
                         
-                        console.log('🎉 All 3 fields auto-populated instantly - no extra API call needed!');
-                        
-                        // 🔥 UNLOCK THE APPROVE BUTTON NOW! 
-                        console.log('🔓 Checking if Quick Approve should be unlocked...');
-                        validateQuickApprove();
+                        // Validate after auto-population
+                        setTimeout(validateQuickApprove, 0);
                     }
                 });
                 
@@ -1292,48 +1305,32 @@
                 const claimantField = document.querySelector('[name="claimant"]');
                 const quickApproveBtn = document.getElementById('quickApprove');
                 
-                if (!quickApproveBtn) {
-                    console.error('❌ Quick Approve button not found!');
-                    return;
-                }
-                
-                // DEBUG: Log field values
-                console.log('🔍 Validation Check:');
-                console.log('  Matter Name:', matterNameField ? matterNameField.value : 'NOT FOUND');
-                console.log('  Matter ID:', matterIdField ? matterIdField.value : 'NOT FOUND');
-                console.log('  Claimant:', claimantField ? claimantField.value : 'NOT FOUND');
+                if (!quickApproveBtn) return;
                 
                 // Check if all three have real data
                 const matterNameValid = matterNameField && hasRealData(matterNameField.value);
                 const matterIdValid = matterIdField && hasRealData(matterIdField.value);
                 const claimantValid = claimantField && hasRealData(claimantField.value);
-                
-                console.log('  Valid?', { matterNameValid, matterIdValid, claimantValid });
-                
                 const allFieldsValid = matterNameValid && matterIdValid && claimantValid;
                 
                 if (allFieldsValid) {
-                    // Enable Quick Approve - all Salesforce fields populated
-                    console.log('✅ ALL VALID - UNLOCKING QUICK APPROVE!');
+                    // Enable Quick Approve
                     quickApproveBtn.disabled = false;
                     quickApproveBtn.classList.remove('bg-gray-400', 'cursor-not-allowed', 'opacity-50');
                     quickApproveBtn.classList.add('bg-green-600', 'hover:bg-green-700');
                     quickApproveBtn.title = 'All required Salesforce fields populated - ready to approve';
                 } else {
-                    // Disable Quick Approve - missing Salesforce data
-                    console.log('❌ VALIDATION FAILED - KEEPING LOCKED');
+                    // Disable Quick Approve
                     quickApproveBtn.disabled = true;
                     quickApproveBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
                     quickApproveBtn.classList.add('bg-gray-400', 'cursor-not-allowed', 'opacity-50');
                     
-                    // Build helpful tooltip message
                     const missingFields = [];
                     if (!matterNameValid) missingFields.push('Matter Name');
                     if (!matterIdValid) missingFields.push('Matter ID');
                     if (!claimantValid) missingFields.push('Claimant');
                     
                     quickApproveBtn.title = `Cannot approve: Missing Salesforce data (${missingFields.join(', ')})`;
-                    console.log('  Missing:', missingFields.join(', '));
                 }
             }
             
@@ -1341,11 +1338,12 @@
             validateQuickApprove();
             
             // Re-validate when any of the required fields change
+            // Use setTimeout to defer validation until after auto-population completes
             ['matter_name', 'matter_id', 'claimant'].forEach(fieldName => {
                 const field = document.querySelector(`[name="${fieldName}"]`);
                 if (field) {
-                    field.addEventListener('input', validateQuickApprove);
-                    field.addEventListener('change', validateQuickApprove);
+                    field.addEventListener('input', () => setTimeout(validateQuickApprove, 0));
+                    field.addEventListener('change', () => setTimeout(validateQuickApprove, 0));
                 }
             });
             

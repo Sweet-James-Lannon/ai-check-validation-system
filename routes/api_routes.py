@@ -521,6 +521,13 @@ def salesforce_search_claimants():
         response.raise_for_status()
         result = response.json()
         
+        # 📦 LOG FULL SALESFORCE RESPONSE PAYLOAD
+        api_logger.info(f"📦 FULL Salesforce Response Payload:")
+        api_logger.info(f"   Type: {type(result)}")
+        api_logger.info(f"   Length: {len(result) if isinstance(result, list) else 'N/A'}")
+        import json
+        api_logger.info(f"   Complete JSON:\n{json.dumps(result, indent=2)}")
+        
         # Extract full matter data with unique claimant names
         results = []
         seen = set()
@@ -546,7 +553,8 @@ def salesforce_search_claimants():
             "status": "success",
             "results": results,
             "total": len(results),
-            "source": "salesforce"
+            "source": "salesforce",
+            "raw_salesforce_response": result  # 📦 DEBUG: Full Salesforce payload
         })
         
     except Exception as e:
@@ -576,7 +584,7 @@ def salesforce_search_claimants():
         api_logger.error(f"Salesforce lookup error: {str(e)}")
         import traceback
         api_logger.error(traceback.format_exc())
-        
+              
         return jsonify({
             "status": "error",
             "message": str(e)
