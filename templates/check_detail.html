@@ -217,7 +217,7 @@
             top: 100%;
             left: 0;
             right: 0;
-            z-index: 99;
+            z-index: 9999; /* ABOVE backdrop */
             max-height: 300px;
             overflow: auto;
             border: 1px solid #e5e7eb;
@@ -304,6 +304,25 @@
 
         .dropdown-select .option.no-results:hover {
             background-color: transparent !important;
+        }
+
+        /* 🔥 BACKDROP OVERLAY - Dims background when dropdown is open */
+        .dropdown-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 9998;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .dropdown-backdrop.show {
+            display: block;
+            opacity: 1;
         }
 
         /* ===================================================================== */
@@ -1027,9 +1046,15 @@
             function createCustomDropdown() {
                 const selectElement = document.querySelector('select.matter-name-select');
                 if (!selectElement || claimantDropdownCreated) return;
-                
+
                 claimantDropdownCreated = true;
-                
+
+                // 🔥 CREATE BACKDROP OVERLAY
+                const backdrop = document.createElement('div');
+                backdrop.className = 'dropdown-backdrop';
+                backdrop.id = 'dropdownBackdrop';
+                document.body.appendChild(backdrop);
+
                 // Create dropdown container
                 const dropdown = document.createElement('div');
                 dropdown.className = 'dropdown-select wide';
@@ -1082,36 +1107,51 @@
             
             // Setup all dropdown event handlers
             function setupDropdownEvents(dropdown, selectElement, searchInput, ul) {
+                const backdrop = document.getElementById('dropdownBackdrop');
+
+                // Close dropdown helper
+                const closeDropdown = () => {
+                    dropdown.classList.remove('open');
+                    backdrop.classList.remove('show');
+                    ul.querySelectorAll('.option').forEach(opt => opt.removeAttribute('tabindex'));
+                    document.body.style.overflow = ''; // Re-enable scrolling
+                };
+
                 // Toggle dropdown open/close
                 dropdown.addEventListener('click', function(event) {
                     if (event.target.matches('.dd-searchbox')) {
                         return; // Don't close when clicking search box
                     }
-                    
+
                     // Close other dropdowns
                     document.querySelectorAll('.dropdown-select').forEach(dd => {
                         if (dd !== dropdown) dd.classList.remove('open');
                     });
-                    
+
                     dropdown.classList.toggle('open');
-                    
+
                     if (dropdown.classList.contains('open')) {
+                        // 🔥 SHOW BACKDROP and disable body scroll
+                        backdrop.classList.add('show');
+                        document.body.style.overflow = 'hidden';
+
                         ul.querySelectorAll('.option').forEach(opt => opt.setAttribute('tabindex', '0'));
                         const selected = ul.querySelector('.option.selected');
                         if (selected) selected.focus();
                         // Focus search box when opening
                         setTimeout(() => searchInput.focus(), 50);
                     } else {
-                        ul.querySelectorAll('.option').forEach(opt => opt.removeAttribute('tabindex'));
-                        dropdown.focus();
+                        closeDropdown();
                     }
                 });
-                
+
+                // Close dropdown when clicking backdrop
+                backdrop.addEventListener('click', closeDropdown);
+
                 // Close dropdown when clicking outside
                 document.addEventListener('click', function(event) {
-                    if (!dropdown.contains(event.target)) {
-                        dropdown.classList.remove('open');
-                        ul.querySelectorAll('.option').forEach(opt => opt.removeAttribute('tabindex'));
+                    if (!dropdown.contains(event.target) && !event.target.matches('.dropdown-backdrop')) {
+                        closeDropdown();
                     }
                 });
                 
