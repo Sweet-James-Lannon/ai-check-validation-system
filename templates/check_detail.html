@@ -1735,7 +1735,7 @@
                             }
                         }
 
-                        // 4. Add dropdown BELOW input to view Salesforce insurance numbers
+                        // 4. Add integrated dropdown to view Salesforce insurance numbers
                         if (insuranceNumbers && insuranceNumbers.length > 0) {
                             console.log('💼 Found insurance numbers:', insuranceNumbers);
 
@@ -1743,83 +1743,140 @@
                             const claimNumbers = insuranceNumbers.filter(ins => ins.type === 'claim');
                             const policyNumbers = insuranceNumbers.filter(ins => ins.type === 'policy');
 
-                            // Handle CLAIM NUMBER dropdown BELOW the input
+                            // Function to add dropdown wrapper to input
+                            const addInsuranceDropdown = (inputElement, numbers, type) => {
+                                if (!inputElement || numbers.length === 0) return;
+
+                                // Remove any existing wrapper
+                                const existingWrapper = inputElement.parentElement.classList.contains('insurance-dropdown-wrapper')
+                                    ? inputElement.parentElement
+                                    : null;
+
+                                if (existingWrapper) {
+                                    const parent = existingWrapper.parentElement;
+                                    parent.insertBefore(inputElement, existingWrapper);
+                                    existingWrapper.remove();
+                                }
+
+                                // Create wrapper container
+                                const wrapper = document.createElement('div');
+                                wrapper.className = 'insurance-dropdown-wrapper';
+                                wrapper.style.position = 'relative';
+                                wrapper.style.width = '100%';
+
+                                // Wrap the input
+                                inputElement.parentNode.insertBefore(wrapper, inputElement);
+                                wrapper.appendChild(inputElement);
+
+                                // Modify input to make room for dropdown button
+                                inputElement.style.paddingRight = '35px';
+
+                                // Create dropdown button/icon
+                                const dropdownBtn = document.createElement('button');
+                                dropdownBtn.type = 'button';
+                                dropdownBtn.className = 'insurance-dropdown-btn';
+                                dropdownBtn.innerHTML = '▼';
+                                dropdownBtn.title = `View ${numbers.length} Salesforce ${type} number${numbers.length > 1 ? 's' : ''}`;
+                                dropdownBtn.style.position = 'absolute';
+                                dropdownBtn.style.right = '8px';
+                                dropdownBtn.style.top = '50%';
+                                dropdownBtn.style.transform = 'translateY(-50%)';
+                                dropdownBtn.style.background = '#3b82f6';
+                                dropdownBtn.style.color = 'white';
+                                dropdownBtn.style.border = 'none';
+                                dropdownBtn.style.borderRadius = '4px';
+                                dropdownBtn.style.width = '24px';
+                                dropdownBtn.style.height = '24px';
+                                dropdownBtn.style.cursor = 'pointer';
+                                dropdownBtn.style.fontSize = '10px';
+                                dropdownBtn.style.display = 'flex';
+                                dropdownBtn.style.alignItems = 'center';
+                                dropdownBtn.style.justifyContent = 'center';
+                                dropdownBtn.style.zIndex = '10';
+
+                                // Create dropdown list
+                                const dropdownList = document.createElement('div');
+                                dropdownList.className = 'insurance-dropdown-list';
+                                dropdownList.style.position = 'absolute';
+                                dropdownList.style.top = 'calc(100% + 4px)';
+                                dropdownList.style.left = '0';
+                                dropdownList.style.right = '0';
+                                dropdownList.style.background = 'white';
+                                dropdownList.style.border = '1px solid #cbd5e1';
+                                dropdownList.style.borderRadius = '6px';
+                                dropdownList.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                                dropdownList.style.maxHeight = '200px';
+                                dropdownList.style.overflowY = 'auto';
+                                dropdownList.style.zIndex = '1000';
+                                dropdownList.style.display = 'none';
+
+                                // Add header
+                                const header = document.createElement('div');
+                                header.textContent = `Salesforce ${type} numbers (view only)`;
+                                header.style.padding = '8px 12px';
+                                header.style.background = '#f1f5f9';
+                                header.style.borderBottom = '1px solid #cbd5e1';
+                                header.style.fontWeight = 'bold';
+                                header.style.fontSize = '12px';
+                                header.style.color = '#475569';
+                                dropdownList.appendChild(header);
+
+                                // Add insurance numbers
+                                numbers.forEach(ins => {
+                                    const item = document.createElement('div');
+                                    item.textContent = ins.number;
+                                    item.style.padding = '8px 12px';
+                                    item.style.fontSize = '13px';
+                                    item.style.borderBottom = '1px solid #f1f5f9';
+                                    item.style.cursor = 'default';
+                                    item.style.transition = 'background 0.15s';
+
+                                    item.addEventListener('mouseenter', () => {
+                                        item.style.background = '#f8fafc';
+                                    });
+                                    item.addEventListener('mouseleave', () => {
+                                        item.style.background = 'white';
+                                    });
+
+                                    dropdownList.appendChild(item);
+                                });
+
+                                wrapper.appendChild(dropdownBtn);
+                                wrapper.appendChild(dropdownList);
+
+                                // Toggle dropdown on button click
+                                dropdownBtn.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    const isOpen = dropdownList.style.display === 'block';
+
+                                    // Close all other insurance dropdowns
+                                    document.querySelectorAll('.insurance-dropdown-list').forEach(dl => {
+                                        dl.style.display = 'none';
+                                    });
+
+                                    dropdownList.style.display = isOpen ? 'none' : 'block';
+                                    dropdownBtn.innerHTML = isOpen ? '▼' : '▲';
+                                });
+
+                                // Close dropdown when clicking outside
+                                document.addEventListener('click', (e) => {
+                                    if (!wrapper.contains(e.target)) {
+                                        dropdownList.style.display = 'none';
+                                        dropdownBtn.innerHTML = '▼';
+                                    }
+                                });
+
+                                console.log(`✅ ${type} number Salesforce view dropdown integrated`);
+                            };
+
+                            // Add dropdown to claim number input
                             const claimNumberInput = document.querySelector('input[name="claim_number"]');
-                            if (claimNumberInput && claimNumbers.length > 0) {
-                                // Remove any existing dropdown
-                                const existingDropdown = document.getElementById('claimNumberSalesforceView');
-                                if (existingDropdown) existingDropdown.remove();
+                            addInsuranceDropdown(claimNumberInput, claimNumbers, 'claim');
 
-                                // Create dropdown to VIEW Salesforce claim numbers
-                                const select = document.createElement('select');
-                                select.id = 'claimNumberSalesforceView';
-                                select.className = 'w-full px-3 py-2 text-sm border border-blue-300 rounded-lg bg-blue-50 mt-2';
-                                select.style.cursor = 'pointer';
-
-                                // Add header option
-                                const headerOption = document.createElement('option');
-                                headerOption.value = '';
-                                headerOption.textContent = `▼ View ${claimNumbers.length} Salesforce claim number${claimNumbers.length > 1 ? 's' : ''}`;
-                                headerOption.style.fontWeight = 'bold';
-                                select.appendChild(headerOption);
-
-                                // Add all claim numbers
-                                claimNumbers.forEach(ins => {
-                                    const option = document.createElement('option');
-                                    option.value = ins.number;
-                                    option.textContent = ins.number;
-                                    select.appendChild(option);
-                                });
-
-                                // Prevent selection - always reset to header
-                                select.addEventListener('change', function() {
-                                    this.value = '';
-                                });
-
-                                // Insert AFTER the input field
-                                claimNumberInput.parentNode.insertBefore(select, claimNumberInput.nextSibling);
-
-                                console.log('✅ Claim number Salesforce view dropdown added');
-                            }
-
-                            // Handle POLICY NUMBER dropdown BELOW the input
+                            // Add dropdown to policy number input
                             const policyNumberInput = document.querySelector('input[name="policy_number"]');
-                            if (policyNumberInput && policyNumbers.length > 0) {
-                                // Remove any existing dropdown
-                                const existingDropdown = document.getElementById('policyNumberSalesforceView');
-                                if (existingDropdown) existingDropdown.remove();
+                            addInsuranceDropdown(policyNumberInput, policyNumbers, 'policy');
 
-                                // Create dropdown to VIEW Salesforce policy numbers
-                                const select = document.createElement('select');
-                                select.id = 'policyNumberSalesforceView';
-                                select.className = 'w-full px-3 py-2 text-sm border border-blue-300 rounded-lg bg-blue-50 mt-2';
-                                select.style.cursor = 'pointer';
-
-                                // Add header option
-                                const headerOption = document.createElement('option');
-                                headerOption.value = '';
-                                headerOption.textContent = `▼ View ${policyNumbers.length} Salesforce policy number${policyNumbers.length > 1 ? 's' : ''}`;
-                                headerOption.style.fontWeight = 'bold';
-                                select.appendChild(headerOption);
-
-                                // Add all policy numbers
-                                policyNumbers.forEach(ins => {
-                                    const option = document.createElement('option');
-                                    option.value = ins.number;
-                                    option.textContent = ins.number;
-                                    select.appendChild(option);
-                                });
-
-                                // Prevent selection - always reset to header
-                                select.addEventListener('change', function() {
-                                    this.value = '';
-                                });
-
-                                // Insert AFTER the input field
-                                policyNumberInput.parentNode.insertBefore(select, policyNumberInput.nextSibling);
-
-                                console.log('✅ Policy number Salesforce view dropdown added');
-                            }
                         } else {
                             console.log('ℹ️ No insurance numbers found, keeping as input fields');
                         }
