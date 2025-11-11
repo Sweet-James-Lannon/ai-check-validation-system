@@ -250,6 +250,17 @@
             isolation: isolate;  /* Creates new stacking context */
         }
 
+        /* 🔥 STICKY SEARCH BOX - Always visible at top */
+        .dropdown-select .dd-search {
+            position: sticky;
+            top: 0;
+            z-index: 101;
+            background: white;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
         .dropdown-select .dd-searchbox {
             width: 100%;
             padding: 0.5rem;
@@ -258,6 +269,7 @@
             outline: none;
             font-size: 0.875rem;
             transition: all 0.2s;
+            background: white;
         }
 
         .dropdown-select .dd-searchbox:focus {
@@ -272,7 +284,62 @@
             list-style: none;
         }
 
-        /* Card Style - Option 2 from mockup */
+        /* 🔥 TABLE VIEW for search results */
+        .dropdown-select .results-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .dropdown-select .results-table thead {
+            position: sticky;
+            top: 60px; /* Position below search box (12px padding + 36px input height + 12px padding) */
+            z-index: 100;
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .dropdown-select .results-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: #f9fafb;
+            position: relative;
+        }
+
+        .dropdown-select .results-table tbody tr {
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .dropdown-select .results-table tbody tr:hover {
+            background: linear-gradient(90deg, #eff6ff 0%, #f9fafb 100%);
+        }
+
+        .dropdown-select .results-table tbody tr.selected {
+            background: linear-gradient(90deg, #dbeafe 0%, #eff6ff 100%);
+        }
+
+        .dropdown-select .results-table td {
+            padding: 14px 16px;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .dropdown-select .results-table td:first-child {
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .dropdown-select .results-table td.text-gray {
+            color: #6b7280;
+        }
+
+        /* Legacy card style for no-results and loading states */
         .dropdown-select .option {
             cursor: pointer;
             padding: 16px;
@@ -338,15 +405,31 @@
             color: #374151;
         }
 
-        /* Empty state */
+        /* Empty state and prompt messages */
         .dropdown-select .option.no-results {
             color: #9ca3af;
             font-style: italic;
             cursor: default;
+            transition: none !important;
         }
 
-        .dropdown-select .option.no-results:hover {
+        .dropdown-select .option.no-results:hover,
+        .dropdown-select .option.no-results:focus {
             background-color: transparent !important;
+            border-left: 0 !important;
+            border: none !important;
+        }
+
+        .dropdown-select .option.prompt-message {
+            transition: none !important;
+            pointer-events: none;
+        }
+
+        .dropdown-select .option.prompt-message:hover,
+        .dropdown-select .option.prompt-message:focus {
+            background-color: transparent !important;
+            border-left: 0 !important;
+            border: none !important;
         }
 
         /* 🔥 BACKDROP OVERLAY - Dims entire screen with smooth transitions */
@@ -1189,25 +1272,48 @@
                     
                     if (data.status === 'success' && data.results && data.results.length > 0) {
                         console.log(`✅ Found ${data.total} matches from ${data.source}!`);
-                        
+
                         // =============================================================================
-                        // CARD STYLE DISPLAY (Option 2)
+                        // 🔥 TABLE VIEW - Clean, scannable results
                         // =============================================================================
+                        const table = document.createElement('table');
+                        table.className = 'results-table';
+
+                        // Table header
+                        const thead = document.createElement('thead');
+                        thead.innerHTML = `
+                            <tr>
+                                <th>Matter Name</th>
+                                <th>Claimant</th>
+                                <th>Matter ID</th>
+                            </tr>
+                        `;
+                        table.appendChild(thead);
+
+                        // Table body with results
+                        const tbody = document.createElement('tbody');
                         data.results.forEach(item => {
-                            const li = document.createElement('li');
-                            li.className = 'option';
+                            const tr = document.createElement('tr');
+                            tr.className = 'table-row-option';
 
                             // Store ALL data for auto-population
-                            li.setAttribute('data-value', item.matter_name);
-                            li.setAttribute('data-claimant', item.claimant || '');
-                            li.setAttribute('data-matter-id', item.matter_id || '');
+                            tr.setAttribute('data-value', item.matter_name);
+                            tr.setAttribute('data-claimant', item.claimant || '');
+                            tr.setAttribute('data-matter-id', item.matter_id || '');
 
-                            // Just show the matter name for now
-                            li.textContent = item.matter_name || item.claimant || 'Unknown';
-                            ul.appendChild(li);
+                            // Create table cells
+                            tr.innerHTML = `
+                                <td>${item.matter_name || '-'}</td>
+                                <td class="text-gray">${item.claimant || '-'}</td>
+                                <td class="text-gray">${item.matter_id || '-'}</td>
+                            `;
+
+                            tbody.appendChild(tr);
                         });
-                        
-                        console.log('📋 Results now display Matter Name as primary field!');
+                        table.appendChild(tbody);
+
+                        ul.appendChild(table);
+                        console.log('📋 Results displayed in table format!');
                     } else {
                         // No results found
                         const noResults = document.createElement('li');
@@ -1226,37 +1332,7 @@
                     ul.appendChild(errorLi);
                 }
             }
-            
-            // Filter local options (when less than 2 chars or as fallback)
-            function filterLocalOptions(query, ul) {
-                const searchValue = query.toLowerCase().trim();
-                let visibleCount = 0;
-                
-                ul.querySelectorAll('.option:not(.no-results)').forEach(option => {
-                    const text = option.textContent.toLowerCase();
-                    if (text.indexOf(searchValue) > -1) {
-                        option.style.display = '';
-                        visibleCount++;
-                    } else {
-                        option.style.display = 'none';
-                    }
-                });
-                
-                // Show/hide "no results" message
-                let noResultsLi = ul.querySelector('.option.no-results');
-                if (visibleCount === 0 && searchValue.length > 0) {
-                    if (!noResultsLi) {
-                        noResultsLi = document.createElement('li');
-                        noResultsLi.className = 'option no-results';
-                        ul.appendChild(noResultsLi);
-                    }
-                    noResultsLi.textContent = 'No matching claimants found';
-                    noResultsLi.style.display = '';
-                } else if (noResultsLi) {
-                    noResultsLi.style.display = 'none';
-                }
-            }
-            
+
             // Create custom searchable dropdown for MATTER NAME
             function createCustomDropdown() {
                 const selectElement = document.querySelector('select.matter-name-select');
@@ -1298,16 +1374,15 @@
                 searchDiv.appendChild(searchInput);
                 listDiv.appendChild(searchDiv);
                 
-                // Options list
+                // Options list - START EMPTY, populate on search
                 const ul = document.createElement('ul');
-                const options = selectElement.querySelectorAll('option');
-                options.forEach((option, index) => {
-                    const li = document.createElement('li');
-                    li.className = 'option' + (option.selected ? ' selected' : '');
-                    li.setAttribute('data-value', option.value);
-                    li.textContent = option.textContent;
-                    ul.appendChild(li);
-                });
+
+                // Show friendly prompt message instead of options
+                const promptLi = document.createElement('li');
+                promptLi.className = 'option no-results prompt-message';
+                promptLi.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Type to search for matter names...';
+                ul.appendChild(promptLi);
+
                 listDiv.appendChild(ul);
                 dropdown.appendChild(listDiv);
                 
@@ -1365,9 +1440,9 @@
                         return; // Don't close when clicking search box
                     }
 
-                    // Don't toggle if clicking on an option or inside an option
-                    if (event.target.closest('.option')) {
-                        return; // Let the option click handler deal with it
+                    // Don't toggle if clicking on an option, table row, or inside them
+                    if (event.target.closest('.option') || event.target.closest('tr.table-row-option') || event.target.closest('.results-table')) {
+                        return; // Let the option/row click handler deal with it
                     }
 
                     // Close other dropdowns
@@ -1434,18 +1509,32 @@
                 // DEBOUNCED SALESFORCE SEARCH - searches as user types!
                 searchInput.addEventListener('keyup', function() {
                     const searchValue = this.value.trim();
-                    
+
                     // Clear previous timeout
                     if (searchTimeout) {
                         clearTimeout(searchTimeout);
                     }
-                    
-                    // If empty or less than 2 chars, just filter local options
-                    if (searchValue.length < 2) {
-                        filterLocalOptions(searchValue, ul);
+
+                    // If empty, show prompt message
+                    if (searchValue.length === 0) {
+                        ul.innerHTML = '';
+                        const promptLi = document.createElement('li');
+                        promptLi.className = 'option no-results prompt-message';
+                        promptLi.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Type to search for matter names...';
+                        ul.appendChild(promptLi);
                         return;
                     }
-                    
+
+                    // If less than 2 chars, show instruction
+                    if (searchValue.length < 2) {
+                        ul.innerHTML = '';
+                        const instructionLi = document.createElement('li');
+                        instructionLi.className = 'option no-results';
+                        instructionLi.innerHTML = '<i class="fa-solid fa-keyboard"></i> Type at least 2 characters to search...';
+                        ul.appendChild(instructionLi);
+                        return;
+                    }
+
                     // Wait for user to stop typing, THEN search Salesforce
                     searchTimeout = setTimeout(async () => {
                         await searchSalesforce(searchValue, dropdown, ul);
@@ -1454,28 +1543,41 @@
                 
                 // Option selection - AUTO-POPULATE FIELDS FROM STORED DATA! 🔥
                 ul.addEventListener('click', async function(event) {
-                    if (event.target.matches('.option') && !event.target.matches('.no-results')) {
+                    console.log('Click detected on:', event.target);
+
+                    // Check if clicked on a table row or list option
+                    const targetRow = event.target.closest('tr.table-row-option');
+                    const targetOption = event.target.matches('.option') && !event.target.matches('.no-results') ? event.target : null;
+                    const clickedElement = targetRow || targetOption;
+
+                    console.log('Clicked element:', clickedElement);
+
+                    if (clickedElement) {
+                        console.log('Valid selection detected, processing...');
                         // Update selected state
-                        ul.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
-                        event.target.classList.add('selected');
-                        
+                        ul.querySelectorAll('.option, tr.table-row-option').forEach(opt => opt.classList.remove('selected'));
+                        clickedElement.classList.add('selected');
+
+                        // Get data from attributes
+                        const matterName = clickedElement.getAttribute('data-value');
+                        const claimantName = clickedElement.getAttribute('data-claimant');
+                        const matterId = clickedElement.getAttribute('data-matter-id');
+
                         // Update display
-                        dropdown.querySelector('.current').textContent = event.target.textContent;
-                        
+                        dropdown.querySelector('.current').textContent = matterName;
+
                         // Update actual select value
-                        selectElement.value = event.target.getAttribute('data-value');
-                        
+                        selectElement.value = matterName;
+
                         // Trigger change event for validation
                         selectElement.dispatchEvent(new Event('change', { bubbles: true }));
                         selectElement.dispatchEvent(new Event('input', { bubbles: true }));
 
                         // 🔥 CLOSE DROPDOWN AND BACKDROP
+                        console.log('About to close dropdown...');
                         closeDropdown();
-                        
-                        const matterName = event.target.textContent;
-                        const claimantName = event.target.getAttribute('data-claimant');
-                        const matterId = event.target.getAttribute('data-matter-id');
-                        
+                        console.log('Dropdown closed, backdrop should be hidden');
+
                         // =============================================================================
                         // AUTO-POPULATE ALL 3 FIELDS - Data already loaded! 🚀
                         // =============================================================================
