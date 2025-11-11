@@ -406,13 +406,37 @@ def salesforce_claimant_lookup():
         if isinstance(result, list) and len(result) > 0:
             first_match = result[0]
 
+            # Extract insurance numbers from Insurances array
+            insurances = first_match.get('Insurances', [])
+            insurance_numbers = []
+
+            if isinstance(insurances, list):
+                for insurance in insurances:
+                    claim_num = insurance.get('ClaimNumber')
+                    policy_num = insurance.get('PolicyNumber')
+
+                    if claim_num:
+                        insurance_numbers.append({
+                            'type': 'claim',
+                            'number': claim_num,
+                            'insurance_id': insurance.get('InsuranceId', '')
+                        })
+
+                    if policy_num:
+                        insurance_numbers.append({
+                            'type': 'policy',
+                            'number': policy_num,
+                            'insurance_id': insurance.get('InsuranceId', '')
+                        })
+
             return jsonify({
                 "status": "success",
                 "claimant": first_match.get('ClaimentName') or claimant_name,
                 "matter_name": first_match.get('MatterName') or '',
                 "matter_id": first_match.get('MatterId') or '',
                 "date_of_birth": first_match.get('DOB') or '',  # Field name is DOB (uppercase)
-                "stage": first_match.get('Stage') or ''
+                "stage": first_match.get('Stage') or '',
+                "insurance_numbers": insurance_numbers  # Array of insurance objects
             })
         else:
             # No matches found
@@ -422,7 +446,8 @@ def salesforce_claimant_lookup():
                 "matter_name": "",
                 "matter_id": "",
                 "date_of_birth": "",
-                "stage": "",  # 🔥 Add stage
+                "stage": "",
+                "insurance_numbers": [],  # Empty array
                 "message": "No matches found in Salesforce"
             })
         
@@ -540,12 +565,49 @@ def salesforce_search_claimants():
         
         if isinstance(result, list):
             for item in result:
+                # 🔍 DEBUG: Log all available keys in the Salesforce response
+                if result.index(item) == 0:  # Only log first item to avoid spam
+                    api_logger.info(f"📋 Available Salesforce fields: {list(item.keys())}")
+
                 # Handle None values by converting to empty string first
                 claimant_name = (item.get('ClaimentName') or '').strip()
                 matter_name = (item.get('MatterName') or '').strip()
                 matter_id = (item.get('MatterId') or '').strip()
                 date_of_birth = (item.get('DOB') or '').strip()  # Field name is DOB (uppercase)
                 stage = (item.get('Stage') or '').strip()
+
+                # Extract insurance numbers from Insurances array
+                insurances = item.get('Insurances', [])
+                insurance_numbers = []
+
+                # 🔍 DEBUG: Log what we got from Insurances
+                api_logger.info(f"🔍 Insurances field type: {type(insurances)}, value: {insurances}")
+
+                if isinstance(insurances, list):
+                    api_logger.info(f"🔍 Insurances is a list with {len(insurances)} items")
+                    for insurance in insurances:
+                        api_logger.info(f"🔍 Processing insurance item: {insurance}")
+                        claim_num = insurance.get('ClaimNumber')
+                        policy_num = insurance.get('PolicyNumber')
+                        api_logger.info(f"🔍 Extracted - Claim: {claim_num}, Policy: {policy_num}")
+
+                        if claim_num:
+                            insurance_numbers.append({
+                                'type': 'claim',
+                                'number': claim_num,
+                                'insurance_id': insurance.get('InsuranceId', '')
+                            })
+
+                        if policy_num:
+                            insurance_numbers.append({
+                                'type': 'policy',
+                                'number': policy_num,
+                                'insurance_id': insurance.get('InsuranceId', '')
+                            })
+
+                # 🔍 DEBUG: Log insurance values
+                if insurance_numbers:
+                    api_logger.info(f"💼 Insurance found for {claimant_name}: {insurance_numbers}")
 
                 # Only add unique claimants with complete data
                 if claimant_name and claimant_name not in seen:
@@ -554,7 +616,8 @@ def salesforce_search_claimants():
                         'matter_name': matter_name,
                         'matter_id': matter_id,
                         'date_of_birth': date_of_birth,
-                        'stage': stage
+                        'stage': stage,
+                        'insurance_numbers': insurance_numbers  # Array of insurance objects
                     })
                     seen.add(claimant_name)
         

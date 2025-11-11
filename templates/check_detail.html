@@ -1288,6 +1288,8 @@
                             tr.setAttribute('data-matter-id', item.matter_id || '');
                             tr.setAttribute('data-date-of-birth', item.date_of_birth || '');
                             tr.setAttribute('data-stage', item.stage || '');
+                            // Store insurance numbers as JSON string
+                            tr.setAttribute('data-insurance-numbers', JSON.stringify(item.insurance_numbers || []));
 
                             // Create table cells
                             tr.innerHTML = `
@@ -1562,6 +1564,16 @@
                         const claimantName = clickedElement.getAttribute('data-claimant');
                         const matterId = clickedElement.getAttribute('data-matter-id');
 
+                        // Parse insurance numbers from JSON string
+                        let insuranceNumbers = [];
+                        try {
+                            const insuranceData = clickedElement.getAttribute('data-insurance-numbers');
+                            insuranceNumbers = insuranceData ? JSON.parse(insuranceData) : [];
+                        } catch (e) {
+                            console.error('Failed to parse insurance numbers:', e);
+                            insuranceNumbers = [];
+                        }
+
                         // Update display
                         dropdown.querySelector('.current').textContent = matterName;
 
@@ -1628,7 +1640,62 @@
                                 matterIdInput.classList.add('field-salesforce');
                             }
                         }
-                        
+
+                        // 4. Claim Number - Convert to dropdown if insurance numbers exist
+                        const claimNumberInput = document.querySelector('input[name="claim_number"]');
+                        if (claimNumberInput && insuranceNumbers && insuranceNumbers.length > 0) {
+                            console.log('💼 Found insurance numbers:', insuranceNumbers);
+
+                            // Check if there's already a dropdown, or convert input to dropdown
+                            let claimNumberSelect = document.querySelector('select[name="claim_number"]');
+
+                            if (!claimNumberSelect) {
+                                // Convert input to select
+                                claimNumberSelect = document.createElement('select');
+                                claimNumberSelect.name = 'claim_number';
+                                claimNumberSelect.className = claimNumberInput.className;
+
+                                // Replace input with select
+                                claimNumberInput.parentNode.replaceChild(claimNumberSelect, claimNumberInput);
+                            } else {
+                                // Clear existing options
+                                claimNumberSelect.innerHTML = '';
+                            }
+
+                            // Add empty option
+                            const emptyOption = document.createElement('option');
+                            emptyOption.value = '';
+                            emptyOption.textContent = '-- Select Insurance Number --';
+                            claimNumberSelect.appendChild(emptyOption);
+
+                            // Add all insurance numbers from the array
+                            insuranceNumbers.forEach((insurance, index) => {
+                                const option = document.createElement('option');
+                                option.value = insurance.number;
+
+                                // Format the label based on type
+                                const typeLabel = insurance.type === 'claim' ? 'Claim #' : 'Policy #';
+                                option.textContent = `${typeLabel}: ${insurance.number}`;
+
+                                claimNumberSelect.appendChild(option);
+
+                                // Select first option by default
+                                if (index === 0) {
+                                    claimNumberSelect.value = insurance.number;
+                                }
+                            });
+
+                            claimNumberSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                            claimNumberSelect.dispatchEvent(new Event('input', { bubbles: true }));
+                            claimNumberSelect.classList.add('field-salesforce');
+
+                            console.log('✅ Claim number dropdown populated with', insuranceNumbers.length, 'options');
+                        } else if (claimNumberInput && (!insuranceNumbers || insuranceNumbers.length === 0)) {
+                            console.log('ℹ️ No insurance numbers found, keeping as input field');
+                            // No insurance numbers - keep it as input field
+                            // Do nothing, it remains an input field
+                        }
+
                         // Validate after auto-population
                         setTimeout(validateQuickApprove, 0);
                     }
