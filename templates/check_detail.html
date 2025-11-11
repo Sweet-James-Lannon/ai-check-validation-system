@@ -379,7 +379,7 @@
             z-index: 9995 !important;
         }
 
-        /* 🔥 DRAGGABLE DIVIDER - Resize panels */
+        /* 🔥 DRAGGABLE DIVIDER - Simple and intuitive */
         .panel-divider {
             position: absolute;
             top: 0;
@@ -388,34 +388,68 @@
             background: transparent;
             cursor: col-resize;
             z-index: 10000;
-            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .panel-divider:hover,
-        .panel-divider.dragging {
-            background: linear-gradient(90deg,
-                rgba(59, 130, 246, 0.3) 0%,
-                rgba(59, 130, 246, 0.6) 50%,
-                rgba(59, 130, 246, 0.3) 100%);
-        }
-
+        /* Simple vertical grip bar */
         .panel-divider::before {
             content: '';
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 3px;
-            height: 40px;
-            background: rgba(156, 163, 175, 0.4);
-            border-radius: 2px;
-            transition: all 0.2s ease;
+            width: 10px;
+            height: 48px;
+            background: #d1d5db;
+            border-radius: 3px;
+            transition: all 0.15s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
-        .panel-divider:hover::before,
+        /* Three horizontal lines for grip texture */
+        .panel-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 5px;
+            height: 20px;
+            background-image:
+                linear-gradient(#9ca3af, #9ca3af),
+                linear-gradient(#9ca3af, #9ca3af),
+                linear-gradient(#9ca3af, #9ca3af);
+            background-size: 5px 1px;
+            background-position: center 2px, center 10px, center 18px;
+            background-repeat: no-repeat;
+            transition: all 0.15s ease;
+            pointer-events: none;
+        }
+
+        .panel-divider:hover::before {
+            background: #3b82f6;
+            height: 56px;
+        }
+
+        .panel-divider:hover::after {
+            background-image:
+                linear-gradient(white, white),
+                linear-gradient(white, white),
+                linear-gradient(white, white);
+        }
+
         .panel-divider.dragging::before {
-            background: rgba(59, 130, 246, 0.8);
-            height: 60px;
+            background: #2563eb;
+            height: 56px;
+        }
+
+        .panel-divider.dragging::after {
+            background-image:
+                linear-gradient(white, white),
+                linear-gradient(white, white),
+                linear-gradient(white, white);
         }
 
         /* ===================================================================== */
