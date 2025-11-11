@@ -1420,6 +1420,12 @@
 
                 // Close dropdown helper
                 const closeDropdown = () => {
+                    // 🔥 DON'T CLOSE if search box still has focus
+                    if (document.activeElement === searchInput) {
+                        console.log('Search box has focus, keeping dropdown open');
+                        return;
+                    }
+
                     console.log('Closing dropdown and removing backdrop');
                     dropdown.classList.remove('open');
                     backdrop.classList.remove('show');
@@ -1427,7 +1433,10 @@
                     // 🔥 DELAY removing bright class from left panel until AFTER backdrop fade-out completes
                     // This prevents the strobing effect where left panel dims before backdrop fades
                     setTimeout(() => {
-                        if (leftPanel) leftPanel.classList.remove('left-panel-bright');
+                        // Only remove bright class if search box is NOT focused
+                        if (leftPanel && document.activeElement !== searchInput) {
+                            leftPanel.classList.remove('left-panel-bright');
+                        }
                     }, 300); // Match the backdrop transition duration (0.3s = 300ms)
 
                     ul.querySelectorAll('.option').forEach(opt => opt.removeAttribute('tabindex'));
@@ -1507,6 +1516,50 @@
                 window.addEventListener('resize', positionDropdown);
                 window.addEventListener('panelResize', positionDropdown);
                 
+                // 🔥 ENSURE LEFT PANEL BRIGHTNESS WHEN CLICKING/FOCUSING SEARCH BOX
+                const ensureDropdownOpen = function() {
+                    if (!dropdown.classList.contains('open')) {
+                        // Open the dropdown
+                        dropdown.classList.add('open');
+
+                        // Position dropdown
+                        positionDropdown();
+
+                        // Show backdrop and brighten left panel
+                        backdrop.classList.add('show');
+                        if (leftPanel) leftPanel.classList.add('left-panel-bright');
+
+                        document.body.style.overflow = 'hidden';
+                        ul.querySelectorAll('.option').forEach(opt => opt.setAttribute('tabindex', '0'));
+                    } else {
+                        // Dropdown is already open, but ensure left panel is bright
+                        if (leftPanel && !leftPanel.classList.contains('left-panel-bright')) {
+                            leftPanel.classList.add('left-panel-bright');
+                        }
+                    }
+                };
+
+                // Handle search box focus - ALWAYS open dropdown and brighten left panel
+                searchInput.addEventListener('focus', ensureDropdownOpen);
+
+                // Handle search box click - ALWAYS open dropdown and brighten left panel
+                searchInput.addEventListener('click', function(event) {
+                    event.stopPropagation(); // Prevent dropdown click handler from interfering
+                    ensureDropdownOpen();
+                });
+
+                // Handle search box blur - only close if clicking outside dropdown entirely
+                searchInput.addEventListener('blur', function(event) {
+                    // Use setTimeout to allow click events to process first
+                    setTimeout(() => {
+                        // Only close if the new focused element is not within the dropdown
+                        const focusedElement = document.activeElement;
+                        if (!dropdown.contains(focusedElement) && !backdrop.contains(focusedElement)) {
+                            closeDropdown();
+                        }
+                    }, 150);
+                });
+
                 // DEBOUNCED SALESFORCE SEARCH - searches as user types!
                 searchInput.addEventListener('keyup', function() {
                     const searchValue = this.value.trim();
