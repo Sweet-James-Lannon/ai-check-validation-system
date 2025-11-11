@@ -405,12 +405,14 @@ def salesforce_claimant_lookup():
         # Take the first match if multiple results
         if isinstance(result, list) and len(result) > 0:
             first_match = result[0]
-            
+
             return jsonify({
                 "status": "success",
                 "claimant": first_match.get('ClaimentName', claimant_name),
                 "matter_name": first_match.get('MatterName', ''),
-                "matter_id": first_match.get('MatterId', '')
+                "matter_id": first_match.get('MatterId', ''),
+                "date_of_birth": first_match.get('dob', ''),
+                "stage": first_match.get('Stage', '')  # 🔥 Add stage
             })
         else:
             # No matches found
@@ -419,6 +421,8 @@ def salesforce_claimant_lookup():
                 "claimant": claimant_name,
                 "matter_name": "",
                 "matter_id": "",
+                "date_of_birth": "",
+                "stage": "",  # 🔥 Add stage
                 "message": "No matches found in Salesforce"
             })
         
@@ -539,13 +543,17 @@ def salesforce_search_claimants():
                 claimant_name = item.get('ClaimentName', '').strip()
                 matter_name = item.get('MatterName', '').strip()
                 matter_id = item.get('MatterId', '').strip()
-                
+                date_of_birth = item.get('DOB', '').strip()
+                stage = item.get('Stage', '').strip()  # 🔥 Add stage
+
                 # Only add unique claimants with complete data
                 if claimant_name and claimant_name not in seen:
                     results.append({
                         'claimant': claimant_name,
                         'matter_name': matter_name,
-                        'matter_id': matter_id
+                        'matter_id': matter_id,
+                        'date_of_birth': date_of_birth,
+                        'stage': stage  # 🔥 Include stage
                     })
                     seen.add(claimant_name)
         

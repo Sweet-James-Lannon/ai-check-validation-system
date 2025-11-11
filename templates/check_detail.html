@@ -1269,7 +1269,8 @@
                         thead.innerHTML = `
                             <tr>
                                 <th>Matter Name</th>
-                                <th>Claimant</th>
+                                <th>Date of Birth</th>
+                                <th>Stage</th>
                                 <th>Matter ID</th>
                             </tr>
                         `;
@@ -1285,11 +1286,14 @@
                             tr.setAttribute('data-value', item.matter_name);
                             tr.setAttribute('data-claimant', item.claimant || '');
                             tr.setAttribute('data-matter-id', item.matter_id || '');
+                            tr.setAttribute('data-date-of-birth', item.date_of_birth || '');
+                            tr.setAttribute('data-stage', item.stage || '');
 
                             // Create table cells
                             tr.innerHTML = `
                                 <td>${item.matter_name || '-'}</td>
-                                <td class="text-gray">${item.claimant || '-'}</td>
+                                <td class="text-gray">${item.date_of_birth || '-'}</td>
+                                <td class="text-gray">${item.stage || '-'}</td>
                                 <td class="text-gray">${item.matter_id || '-'}</td>
                             `;
 
