@@ -408,11 +408,11 @@ def salesforce_claimant_lookup():
 
             return jsonify({
                 "status": "success",
-                "claimant": first_match.get('ClaimentName', claimant_name),
-                "matter_name": first_match.get('MatterName', ''),
-                "matter_id": first_match.get('MatterId', ''),
-                "date_of_birth": first_match.get('dob', ''),
-                "stage": first_match.get('Stage', '')  # 🔥 Add stage
+                "claimant": first_match.get('ClaimentName') or claimant_name,
+                "matter_name": first_match.get('MatterName') or '',
+                "matter_id": first_match.get('MatterId') or '',
+                "date_of_birth": first_match.get('dob') or '',
+                "stage": first_match.get('Stage') or ''
             })
         else:
             # No matches found
@@ -540,11 +540,12 @@ def salesforce_search_claimants():
         
         if isinstance(result, list):
             for item in result:
-                claimant_name = item.get('ClaimentName', '').strip()
-                matter_name = item.get('MatterName', '').strip()
-                matter_id = item.get('MatterId', '').strip()
-                date_of_birth = item.get('DOB', '').strip()
-                stage = item.get('Stage', '').strip()  # 🔥 Add stage
+                # Handle None values by converting to empty string first
+                claimant_name = (item.get('ClaimentName') or '').strip()
+                matter_name = (item.get('MatterName') or '').strip()
+                matter_id = (item.get('MatterId') or '').strip()
+                date_of_birth = (item.get('dob') or '').strip()
+                stage = (item.get('Stage') or '').strip()
 
                 # Only add unique claimants with complete data
                 if claimant_name and claimant_name not in seen:
@@ -553,7 +554,7 @@ def salesforce_search_claimants():
                         'matter_name': matter_name,
                         'matter_id': matter_id,
                         'date_of_birth': date_of_birth,
-                        'stage': stage  # 🔥 Include stage
+                        'stage': stage
                     })
                     seen.add(claimant_name)
         
