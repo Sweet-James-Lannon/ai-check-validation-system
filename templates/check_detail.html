@@ -760,8 +760,8 @@
                                 <div id="imageWrapper" class="p-4 h-full flex items-center justify-center relative">
                                     <div class="image-with-corners">
                                         <!-- PDF Canvas - Renders PDFs with vector quality -->
-                                        <canvas id="pdfCanvas" 
-                                            class="border shadow-lg bg-white max-w-full max-h-full"
+                                        <canvas id="pdfCanvas"
+                                            class="border shadow-lg bg-white"
                                             style="transition: transform 0.1s ease-out;"
                                             data-check-id="{{ check.id }}"
                                             data-current-index="0">
@@ -2136,8 +2136,8 @@
             let isDragging = false;
             let lastX = 0;
             let lastY = 0;
-            let isMouseDown = false; 
-            let dragThreshold = 3;
+            let isMouseDown = false;
+            let dragThreshold = 1; // Reduced from 3 to 1 for more responsive dragging
             let gridVisible = true;
             
             // Apply initial state immediately - wait for DOM to be fully ready

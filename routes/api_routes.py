@@ -411,7 +411,7 @@ def salesforce_claimant_lookup():
                 "claimant": first_match.get('ClaimentName') or claimant_name,
                 "matter_name": first_match.get('MatterName') or '',
                 "matter_id": first_match.get('MatterId') or '',
-                "date_of_birth": first_match.get('dob') or '',
+                "date_of_birth": first_match.get('DOB') or '',  # Field name is DOB (uppercase)
                 "stage": first_match.get('Stage') or ''
             })
         else:
@@ -544,7 +544,7 @@ def salesforce_search_claimants():
                 claimant_name = (item.get('ClaimentName') or '').strip()
                 matter_name = (item.get('MatterName') or '').strip()
                 matter_id = (item.get('MatterId') or '').strip()
-                date_of_birth = (item.get('dob') or '').strip()
+                date_of_birth = (item.get('DOB') or '').strip()  # Field name is DOB (uppercase)
                 stage = (item.get('Stage') or '').strip()
 
                 # Only add unique claimants with complete data
