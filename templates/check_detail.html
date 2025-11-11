@@ -1735,7 +1735,7 @@
                             }
                         }
 
-                        // 4. Separate Claim Number and Policy Number dropdowns
+                        // 4. Add dropdown BELOW input to view Salesforce insurance numbers
                         if (insuranceNumbers && insuranceNumbers.length > 0) {
                             console.log('💼 Found insurance numbers:', insuranceNumbers);
 
@@ -1743,84 +1743,82 @@
                             const claimNumbers = insuranceNumbers.filter(ins => ins.type === 'claim');
                             const policyNumbers = insuranceNumbers.filter(ins => ins.type === 'policy');
 
-                            // Handle CLAIM NUMBER dropdown
+                            // Handle CLAIM NUMBER dropdown BELOW the input
                             const claimNumberInput = document.querySelector('input[name="claim_number"]');
                             if (claimNumberInput && claimNumbers.length > 0) {
-                                let claimNumberSelect = document.querySelector('select[name="claim_number"]');
+                                // Remove any existing dropdown
+                                const existingDropdown = document.getElementById('claimNumberSalesforceView');
+                                if (existingDropdown) existingDropdown.remove();
 
-                                if (!claimNumberSelect) {
-                                    claimNumberSelect = document.createElement('select');
-                                    claimNumberSelect.name = 'claim_number';
-                                    claimNumberSelect.className = claimNumberInput.className;
-                                    claimNumberInput.parentNode.replaceChild(claimNumberSelect, claimNumberInput);
-                                } else {
-                                    claimNumberSelect.innerHTML = '';
-                                }
+                                // Create dropdown to VIEW Salesforce claim numbers
+                                const select = document.createElement('select');
+                                select.id = 'claimNumberSalesforceView';
+                                select.className = 'w-full px-3 py-2 text-sm border border-blue-300 rounded-lg bg-blue-50 mt-2';
+                                select.style.cursor = 'pointer';
 
-                                // Add empty option
-                                const emptyOption = document.createElement('option');
-                                emptyOption.value = '';
-                                emptyOption.textContent = '-- Select Claim Number --';
-                                claimNumberSelect.appendChild(emptyOption);
+                                // Add header option
+                                const headerOption = document.createElement('option');
+                                headerOption.value = '';
+                                headerOption.textContent = `▼ View ${claimNumbers.length} Salesforce claim number${claimNumbers.length > 1 ? 's' : ''}`;
+                                headerOption.style.fontWeight = 'bold';
+                                select.appendChild(headerOption);
 
-                                // Add ONLY claim numbers
-                                claimNumbers.forEach((insurance, index) => {
+                                // Add all claim numbers
+                                claimNumbers.forEach(ins => {
                                     const option = document.createElement('option');
-                                    option.value = insurance.number;
-                                    option.textContent = insurance.number;
-                                    claimNumberSelect.appendChild(option);
-
-                                    // Select first option by default
-                                    if (index === 0) {
-                                        claimNumberSelect.value = insurance.number;
-                                    }
+                                    option.value = ins.number;
+                                    option.textContent = ins.number;
+                                    select.appendChild(option);
                                 });
 
-                                claimNumberSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                                claimNumberSelect.dispatchEvent(new Event('input', { bubbles: true }));
-                                claimNumberSelect.classList.add('field-salesforce');
+                                // Prevent selection - always reset to header
+                                select.addEventListener('change', function() {
+                                    this.value = '';
+                                });
 
-                                console.log('✅ Claim number dropdown populated with', claimNumbers.length, 'claim numbers');
+                                // Insert AFTER the input field
+                                claimNumberInput.parentNode.insertBefore(select, claimNumberInput.nextSibling);
+
+                                console.log('✅ Claim number Salesforce view dropdown added');
                             }
 
-                            // Handle POLICY NUMBER dropdown
+                            // Handle POLICY NUMBER dropdown BELOW the input
                             const policyNumberInput = document.querySelector('input[name="policy_number"]');
                             if (policyNumberInput && policyNumbers.length > 0) {
-                                let policyNumberSelect = document.querySelector('select[name="policy_number"]');
+                                // Remove any existing dropdown
+                                const existingDropdown = document.getElementById('policyNumberSalesforceView');
+                                if (existingDropdown) existingDropdown.remove();
 
-                                if (!policyNumberSelect) {
-                                    policyNumberSelect = document.createElement('select');
-                                    policyNumberSelect.name = 'policy_number';
-                                    policyNumberSelect.className = policyNumberInput.className;
-                                    policyNumberInput.parentNode.replaceChild(policyNumberSelect, policyNumberInput);
-                                } else {
-                                    policyNumberSelect.innerHTML = '';
-                                }
+                                // Create dropdown to VIEW Salesforce policy numbers
+                                const select = document.createElement('select');
+                                select.id = 'policyNumberSalesforceView';
+                                select.className = 'w-full px-3 py-2 text-sm border border-blue-300 rounded-lg bg-blue-50 mt-2';
+                                select.style.cursor = 'pointer';
 
-                                // Add empty option
-                                const emptyOption = document.createElement('option');
-                                emptyOption.value = '';
-                                emptyOption.textContent = '-- Select Policy Number --';
-                                policyNumberSelect.appendChild(emptyOption);
+                                // Add header option
+                                const headerOption = document.createElement('option');
+                                headerOption.value = '';
+                                headerOption.textContent = `▼ View ${policyNumbers.length} Salesforce policy number${policyNumbers.length > 1 ? 's' : ''}`;
+                                headerOption.style.fontWeight = 'bold';
+                                select.appendChild(headerOption);
 
-                                // Add ONLY policy numbers
-                                policyNumbers.forEach((insurance, index) => {
+                                // Add all policy numbers
+                                policyNumbers.forEach(ins => {
                                     const option = document.createElement('option');
-                                    option.value = insurance.number;
-                                    option.textContent = insurance.number;
-                                    policyNumberSelect.appendChild(option);
-
-                                    // Select first option by default
-                                    if (index === 0) {
-                                        policyNumberSelect.value = insurance.number;
-                                    }
+                                    option.value = ins.number;
+                                    option.textContent = ins.number;
+                                    select.appendChild(option);
                                 });
 
-                                policyNumberSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                                policyNumberSelect.dispatchEvent(new Event('input', { bubbles: true }));
-                                policyNumberSelect.classList.add('field-salesforce');
+                                // Prevent selection - always reset to header
+                                select.addEventListener('change', function() {
+                                    this.value = '';
+                                });
 
-                                console.log('✅ Policy number dropdown populated with', policyNumbers.length, 'policy numbers');
+                                // Insert AFTER the input field
+                                policyNumberInput.parentNode.insertBefore(select, policyNumberInput.nextSibling);
+
+                                console.log('✅ Policy number Salesforce view dropdown added');
                             }
                         } else {
                             console.log('ℹ️ No insurance numbers found, keeping as input fields');
