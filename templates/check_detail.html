@@ -2059,7 +2059,44 @@
                     field.addEventListener('change', () => setTimeout(validateQuickApprove, 0));
                 }
             });
-            
+
+            // ============================================================================
+            // MATTER ID CLICKABLE LINK - Initialize on page load
+            // ============================================================================
+            (function initializeMatterIdLink() {
+                const matterIdInput = document.querySelector('input[name="matter_id"]');
+                const matterUrl = '{{ check.matter_url or "" }}';
+
+                console.log('🔍 Matter ID initialization:', {
+                    hasInput: !!matterIdInput,
+                    matterUrl: matterUrl,
+                    matterIdValue: matterIdInput ? matterIdInput.value : 'N/A',
+                    allConditionsMet: !!(matterIdInput && matterUrl && matterIdInput.value)
+                });
+
+                if (matterIdInput && matterUrl && matterIdInput.value) {
+                    // Make Matter ID clickable
+                    matterIdInput.setAttribute('data-matter-url', matterUrl);
+                    matterIdInput.style.cursor = 'pointer';
+                    matterIdInput.style.color = '#3b82f6';  // Blue color
+                    matterIdInput.style.textDecoration = 'underline';
+                    matterIdInput.title = 'Click to open in Salesforce';
+
+                    // Add click handler
+                    matterIdInput.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const url = this.getAttribute('data-matter-url');
+                        if (url) {
+                            window.open(url, '_blank');
+                        }
+                    });
+
+                    console.log('✅ Matter ID link initialized on page load');
+                } else {
+                    console.log('❌ Matter ID link NOT initialized - missing required data');
+                }
+            })();
+
             // ============================================================================
             // PDF.js RENDERING SYSTEM - BLAZING FAST! 🔥
             // ============================================================================

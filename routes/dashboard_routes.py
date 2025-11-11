@@ -333,6 +333,7 @@ def check_detail(check_id):
             'pay_to': extracted_data.get('pay_to') or check.get('pay_to', ''),
             'matter_name': check.get('matter_name', ''),
             'matter_id': check.get('matter_id', ''),
+            'matter_url': check.get('matter_url', ''),
             'case_type': check.get('case_type', ''),
             'delivery_service': check.get('delivery_service', ''),
             'memo': extracted_data.get('memo') or check.get('memo', ''),
