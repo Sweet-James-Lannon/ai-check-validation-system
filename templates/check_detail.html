@@ -1286,6 +1286,7 @@
                             tr.setAttribute('data-value', item.matter_name);
                             tr.setAttribute('data-claimant', item.claimant || '');
                             tr.setAttribute('data-matter-id', item.matter_id || '');
+                            tr.setAttribute('data-matter-url', item.matter_url || '');  // Salesforce URL
                             tr.setAttribute('data-date-of-birth', item.date_of_birth || '');
                             tr.setAttribute('data-stage', item.stage || '');
                             // Store insurance numbers as JSON string
@@ -1616,6 +1617,7 @@
                         const matterName = clickedElement.getAttribute('data-value');
                         const claimantName = clickedElement.getAttribute('data-claimant');
                         const matterId = clickedElement.getAttribute('data-matter-id');
+                        const matterUrl = clickedElement.getAttribute('data-matter-url');
 
                         // Parse insurance numbers from JSON string
                         let insuranceNumbers = [];
@@ -1683,7 +1685,7 @@
                             }
                         }
                         
-                        // 3. Matter ID
+                        // 3. Matter ID - Make it clickable if we have a URL
                         if (matterId) {
                             const matterIdInput = document.querySelector('input[name="matter_id"]');
                             if (matterIdInput) {
@@ -1691,62 +1693,137 @@
                                 matterIdInput.dispatchEvent(new Event('change', { bubbles: true }));
                                 matterIdInput.dispatchEvent(new Event('input', { bubbles: true }));
                                 matterIdInput.classList.add('field-salesforce');
+
+                                console.log('🔗 Matter ID:', matterId);
+                                console.log('🔗 Matter URL:', matterUrl);
+                                console.log('🔗 Matter URL type:', typeof matterUrl);
+                                console.log('🔗 Matter URL truthy?', !!matterUrl);
+
+                                // Make the input clickable if we have a URL
+                                if (matterUrl) {
+                                    console.log('✅ Making Matter ID clickable with URL:', matterUrl);
+                                    // Store the URL in a data attribute
+                                    matterIdInput.setAttribute('data-matter-url', matterUrl);
+
+                                    // Add visual cue that it's clickable
+                                    matterIdInput.style.cursor = 'pointer';
+                                    matterIdInput.style.color = '#3b82f6';  // Blue color
+                                    matterIdInput.style.textDecoration = 'underline';
+                                    matterIdInput.title = 'Click to open in Salesforce';
+
+                                    // Remove any existing click handlers to avoid duplicates
+                                    const newInput = matterIdInput.cloneNode(true);
+                                    matterIdInput.parentNode.replaceChild(newInput, matterIdInput);
+
+                                    // Add click handler to open Salesforce URL
+                                    newInput.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        const url = this.getAttribute('data-matter-url');
+                                        if (url) {
+                                            window.open(url, '_blank');
+                                            console.log('Opening Salesforce matter:', url);
+                                        }
+                                    });
+
+                                    // Prevent text selection when clicking
+                                    newInput.addEventListener('mousedown', function(e) {
+                                        if (!e.shiftKey) {
+                                            e.preventDefault();
+                                        }
+                                    });
+                                }
                             }
                         }
 
-                        // 4. Claim Number - Convert to dropdown if insurance numbers exist
-                        const claimNumberInput = document.querySelector('input[name="claim_number"]');
-                        if (claimNumberInput && insuranceNumbers && insuranceNumbers.length > 0) {
+                        // 4. Separate Claim Number and Policy Number dropdowns
+                        if (insuranceNumbers && insuranceNumbers.length > 0) {
                             console.log('💼 Found insurance numbers:', insuranceNumbers);
 
-                            // Check if there's already a dropdown, or convert input to dropdown
-                            let claimNumberSelect = document.querySelector('select[name="claim_number"]');
+                            // Filter claim numbers and policy numbers
+                            const claimNumbers = insuranceNumbers.filter(ins => ins.type === 'claim');
+                            const policyNumbers = insuranceNumbers.filter(ins => ins.type === 'policy');
 
-                            if (!claimNumberSelect) {
-                                // Convert input to select
-                                claimNumberSelect = document.createElement('select');
-                                claimNumberSelect.name = 'claim_number';
-                                claimNumberSelect.className = claimNumberInput.className;
+                            // Handle CLAIM NUMBER dropdown
+                            const claimNumberInput = document.querySelector('input[name="claim_number"]');
+                            if (claimNumberInput && claimNumbers.length > 0) {
+                                let claimNumberSelect = document.querySelector('select[name="claim_number"]');
 
-                                // Replace input with select
-                                claimNumberInput.parentNode.replaceChild(claimNumberSelect, claimNumberInput);
-                            } else {
-                                // Clear existing options
-                                claimNumberSelect.innerHTML = '';
+                                if (!claimNumberSelect) {
+                                    claimNumberSelect = document.createElement('select');
+                                    claimNumberSelect.name = 'claim_number';
+                                    claimNumberSelect.className = claimNumberInput.className;
+                                    claimNumberInput.parentNode.replaceChild(claimNumberSelect, claimNumberInput);
+                                } else {
+                                    claimNumberSelect.innerHTML = '';
+                                }
+
+                                // Add empty option
+                                const emptyOption = document.createElement('option');
+                                emptyOption.value = '';
+                                emptyOption.textContent = '-- Select Claim Number --';
+                                claimNumberSelect.appendChild(emptyOption);
+
+                                // Add ONLY claim numbers
+                                claimNumbers.forEach((insurance, index) => {
+                                    const option = document.createElement('option');
+                                    option.value = insurance.number;
+                                    option.textContent = insurance.number;
+                                    claimNumberSelect.appendChild(option);
+
+                                    // Select first option by default
+                                    if (index === 0) {
+                                        claimNumberSelect.value = insurance.number;
+                                    }
+                                });
+
+                                claimNumberSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                                claimNumberSelect.dispatchEvent(new Event('input', { bubbles: true }));
+                                claimNumberSelect.classList.add('field-salesforce');
+
+                                console.log('✅ Claim number dropdown populated with', claimNumbers.length, 'claim numbers');
                             }
 
-                            // Add empty option
-                            const emptyOption = document.createElement('option');
-                            emptyOption.value = '';
-                            emptyOption.textContent = '-- Select Insurance Number --';
-                            claimNumberSelect.appendChild(emptyOption);
+                            // Handle POLICY NUMBER dropdown
+                            const policyNumberInput = document.querySelector('input[name="policy_number"]');
+                            if (policyNumberInput && policyNumbers.length > 0) {
+                                let policyNumberSelect = document.querySelector('select[name="policy_number"]');
 
-                            // Add all insurance numbers from the array
-                            insuranceNumbers.forEach((insurance, index) => {
-                                const option = document.createElement('option');
-                                option.value = insurance.number;
-
-                                // Format the label based on type
-                                const typeLabel = insurance.type === 'claim' ? 'Claim #' : 'Policy #';
-                                option.textContent = `${typeLabel}: ${insurance.number}`;
-
-                                claimNumberSelect.appendChild(option);
-
-                                // Select first option by default
-                                if (index === 0) {
-                                    claimNumberSelect.value = insurance.number;
+                                if (!policyNumberSelect) {
+                                    policyNumberSelect = document.createElement('select');
+                                    policyNumberSelect.name = 'policy_number';
+                                    policyNumberSelect.className = policyNumberInput.className;
+                                    policyNumberInput.parentNode.replaceChild(policyNumberSelect, policyNumberInput);
+                                } else {
+                                    policyNumberSelect.innerHTML = '';
                                 }
-                            });
 
-                            claimNumberSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                            claimNumberSelect.dispatchEvent(new Event('input', { bubbles: true }));
-                            claimNumberSelect.classList.add('field-salesforce');
+                                // Add empty option
+                                const emptyOption = document.createElement('option');
+                                emptyOption.value = '';
+                                emptyOption.textContent = '-- Select Policy Number --';
+                                policyNumberSelect.appendChild(emptyOption);
 
-                            console.log('✅ Claim number dropdown populated with', insuranceNumbers.length, 'options');
-                        } else if (claimNumberInput && (!insuranceNumbers || insuranceNumbers.length === 0)) {
-                            console.log('ℹ️ No insurance numbers found, keeping as input field');
-                            // No insurance numbers - keep it as input field
-                            // Do nothing, it remains an input field
+                                // Add ONLY policy numbers
+                                policyNumbers.forEach((insurance, index) => {
+                                    const option = document.createElement('option');
+                                    option.value = insurance.number;
+                                    option.textContent = insurance.number;
+                                    policyNumberSelect.appendChild(option);
+
+                                    // Select first option by default
+                                    if (index === 0) {
+                                        policyNumberSelect.value = insurance.number;
+                                    }
+                                });
+
+                                policyNumberSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                                policyNumberSelect.dispatchEvent(new Event('input', { bubbles: true }));
+                                policyNumberSelect.classList.add('field-salesforce');
+
+                                console.log('✅ Policy number dropdown populated with', policyNumbers.length, 'policy numbers');
+                            }
+                        } else {
+                            console.log('ℹ️ No insurance numbers found, keeping as input fields');
                         }
 
                         // Validate after auto-population
