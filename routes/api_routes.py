@@ -37,16 +37,16 @@ def save_check(check_id):
     try:
         user = session.get("user")
         data = request.get_json()
-        
+
         if not data:
             return jsonify({"status": "error", "message": "No data provided"}), 400
-        
+
         # Prepare update data - only include fields that exist in schema
         update_data = {}
-        
+
         # Map form fields to database fields - Aligned with actual schema
         field_mapping = {
-            'pay_to': 'pay_to', 
+            'pay_to': 'pay_to',
             'amount': 'amount',
             'check_number': 'check_number',
             'check_type': 'check_type',
@@ -60,6 +60,7 @@ def save_check(check_id):
             'policy_number': 'policy_number',
             'claim_number': 'claim_number',
             'insurance_company': 'insurance_company',
+            'insurance_id': 'insurance_id',
             'matter_id': 'matter_id',
             'check_issue_date': 'check_issue_date',
             'provider_name': 'provider_name',
@@ -115,7 +116,7 @@ def save_check(check_id):
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
 
 @api_bp.route("/api/checks/approve/<check_id>", methods=["POST"])
-@login_required  
+@login_required
 def approve_check(check_id):
     """
     Approve check and trigger Salesforce protocol
@@ -124,16 +125,16 @@ def approve_check(check_id):
     try:
         user = session.get("user")
         data = request.get_json()
-        
+
         if not data:
             return jsonify({"status": "error", "message": "No data provided"}), 400
-        
+
         # Prepare update data with all current form values
         update_data = {}
-        
+
         # Map form fields to database fields - Aligned with actual schema
         field_mapping = {
-            'pay_to': 'pay_to', 
+            'pay_to': 'pay_to',
             'amount': 'amount',
             'check_number': 'check_number',
             'check_type': 'check_type',
@@ -147,6 +148,7 @@ def approve_check(check_id):
             'policy_number': 'policy_number',
             'claim_number': 'claim_number',
             'insurance_company': 'insurance_company',
+            'insurance_id': 'insurance_id',
             'matter_id': 'matter_id',
             'check_issue_date': 'check_issue_date',
             'provider_name': 'provider_name',

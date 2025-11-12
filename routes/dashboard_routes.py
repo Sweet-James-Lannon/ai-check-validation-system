@@ -352,6 +352,7 @@ def check_detail(check_id):
             
             # Insurance fields (NEW SCHEMA)
             'insurance_company': check.get('insurance_company', ''),
+            'insurance_id': check.get('insurance_id', ''),
             'claim_number': extracted_data.get('claim_number') or check.get('claim_number', ''),
             'policy_number': extracted_data.get('policy_number') or check.get('policy_number', ''),
             'provider_name': check.get('provider_name') or check.get('pay_to') or check.get('claimant', ''),

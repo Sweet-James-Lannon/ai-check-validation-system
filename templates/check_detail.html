@@ -835,6 +835,9 @@
                 <div id="rightPanel" class="lg:w-1/2 xl:w-[45%] 2xl:w-[42%] bg-white border-l-2 border-gray-300">
                     <div class="p-6 xl:p-8 h-full overflow-y-auto">
                         <form id="checkDetailsForm">
+                            <!-- Hidden field for insurance_id -->
+                            <input type="hidden" name="insurance_id" value="{{ check.insurance_id or '' }}">
+
                             <!-- Extracted Fields Grid -->
                             <div class="space-y-3">
                                 <!-- Case Information - MOVED TO TOP -->
