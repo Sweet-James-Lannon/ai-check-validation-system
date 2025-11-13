@@ -2240,7 +2240,38 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             
-
+            // 🔥 ANIMATE STAT CARDS ON PAGE LOAD - Show that smooth counting animation!
+            {% if view_mode == 'batch_list' %}
+            // We're in batch list view - animate the stat cards counting up
+            const autoApproveEl = document.getElementById('autoApproveCount');
+            const needsReviewEl = document.getElementById('needsReviewCount');
+            const totalPendingEl = document.getElementById('totalPendingCount');
+            const validatedEl = document.getElementById('validatedCount');
+            
+            // Get the values that were rendered by the server
+            const autoApproveValue = autoApproveEl ? autoApproveEl.textContent : '0';
+            const needsReviewValue = needsReviewEl ? needsReviewEl.textContent : '0';
+            const totalPendingValue = totalPendingEl ? totalPendingEl.textContent : '0';
+            const validatedValue = validatedEl ? validatedEl.textContent : '0';
+            
+            // Start from 0 and animate up to the actual values
+            if (autoApproveEl) {
+                autoApproveEl.textContent = '0';
+                setTimeout(() => animateStatChange(autoApproveEl, autoApproveValue, 'up'), 100);
+            }
+            if (needsReviewEl) {
+                needsReviewEl.textContent = '0';
+                setTimeout(() => animateStatChange(needsReviewEl, needsReviewValue, 'up'), 200);
+            }
+            if (totalPendingEl) {
+                totalPendingEl.textContent = '0';
+                setTimeout(() => animateStatChange(totalPendingEl, totalPendingValue, 'up'), 300);
+            }
+            if (validatedEl) {
+                validatedEl.textContent = '0';
+                setTimeout(() => animateStatChange(validatedEl, validatedValue, 'up'), 400);
+            }
+            {% endif %}
             
             // Tab functionality
             const tabButtons = document.querySelectorAll('.tab-button');
