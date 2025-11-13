@@ -911,25 +911,26 @@
                                     </div>
                                 </div>
 
-                                <!-- Provider & Claims Information -->
-                                <div class="space-y-3 bg-white border border-gray-300 p-3 rounded-lg">
-                                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
-                                        <i class="fa-solid fa-shield-halved mr-2 text-gray-700"></i>Provider & Claims
-                                    </h3>
-                                    
-                                    <div class="grid grid-cols-1 gap-3">
-                                        <div class="field-container">
-                                            <label class="block text-xs font-medium text-gray-600 mb-1">Provider Name</label>
-                                            <input type="text" value="{{ check.provider_name if check.provider_name and check.provider_name != 'None' else '' }}" 
-                                                   class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                                   name="provider_name" placeholder="Provider name" data-required="true">
-                                            <div class="field-status">
-                                                <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
-                                                <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
-                                            </div>
-                                        </div>
+                                <!-- 🔥 TWO-COLUMN LAYOUT: Provider & Claims + Salesforce Insurance -->
+                                <div class="grid grid-cols-2 gap-3">
+                                    <!-- LEFT: Provider & Claims Information -->
+                                    <div class="space-y-3 bg-white border border-gray-300 p-3 rounded-lg">
+                                        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
+                                            <i class="fa-solid fa-shield-halved mr-2 text-gray-700"></i>Provider & Claims
+                                        </h3>
                                         
-                                        <div class="grid grid-cols-2 gap-3">
+                                        <div class="grid grid-cols-1 gap-3">
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Provider Name</label>
+                                                <input type="text" value="{{ check.provider_name if check.provider_name and check.provider_name != 'None' else '' }}" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                                       name="provider_name" placeholder="Provider name" data-required="true">
+                                                <div class="field-status">
+                                                    <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                                </div>
+                                            </div>
+                                            
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Claim Number</label>
                                                 <input type="text" value="{{ check.claim_number if check.claim_number and check.claim_number != 'None' else '' }}" 
@@ -946,6 +947,48 @@
                                                 <input type="text" value="{{ check.policy_number if check.policy_number and check.policy_number != 'None' else '' }}" 
                                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono"
                                                        name="policy_number" placeholder="Policy number">
+                                                <div class="field-status">
+                                                    <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- RIGHT: Salesforce Insurance Data -->
+                                    <div class="space-y-3 bg-white border border-gray-300 p-3 rounded-lg">
+                                        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
+                                            <i class="fa-solid fa-building-columns mr-2 text-gray-700"></i>Salesforce Insurance
+                                        </h3>
+                                        
+                                        <div class="grid grid-cols-1 gap-3">
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">Insurance Company</label>
+                                                <input type="text" value="{{ check.insurance_company if check.insurance_company and check.insurance_company != 'None' else '' }}" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                                                       name="insurance_company" placeholder="Auto-populated from Salesforce" readonly>
+                                                <div class="field-status">
+                                                    <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">SF Claim Number</label>
+                                                <input type="text" value="" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono bg-white"
+                                                       name="sf_claim_number" placeholder="Auto-populated from Salesforce" readonly>
+                                                <div class="field-status">
+                                                    <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
+                                                    <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="field-container">
+                                                <label class="block text-xs font-medium text-gray-600 mb-1">SF Policy Number</label>
+                                                <input type="text" value="" 
+                                                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono bg-white"
+                                                       name="sf_policy_number" placeholder="Auto-populated from Salesforce" readonly>
                                                 <div class="field-status">
                                                     <i class="fa-solid fa-check w-3 h-3 text-green-600 hidden"></i>
                                                     <i class="fa-solid fa-exclamation-triangle w-3 h-3 text-yellow-600 hidden"></i>
@@ -1759,7 +1802,7 @@
                             }
                         }
 
-                        // 4. Add integrated dropdown to view Salesforce insurance numbers
+                        // 4. 🔥 POPULATE SALESFORCE INSURANCE BOX (Right side) - Not left side!
                         if (insuranceNumbers && insuranceNumbers.length > 0) {
                             console.log('💼 Found insurance numbers:', insuranceNumbers);
 
@@ -1767,7 +1810,20 @@
                             const claimNumbers = insuranceNumbers.filter(ins => ins.type === 'claim');
                             const policyNumbers = insuranceNumbers.filter(ins => ins.type === 'policy');
 
-                            // Function to add dropdown wrapper to input
+                            // 🔥 POPULATE RIGHT SIDE SALESFORCE FIELDS
+                            // Insurance Company - Get from first insurance record if available
+                            const insuranceCompanyInput = document.querySelector('input[name="insurance_company"]');
+                            if (insuranceCompanyInput && insuranceNumbers[0]) {
+                                // You can extract insurance company name from Salesforce data if available
+                                // For now, we'll populate it if the data includes it
+                                insuranceCompanyInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                insuranceCompanyInput.classList.add('field-salesforce');
+                            }
+
+                            // 🎯 NO AUTO-POPULATION - We'll add DROPDOWNS to RIGHT side instead!
+                            // Users select from dropdown on the Salesforce Insurance box
+
+                            // Function to add dropdown wrapper to input (for LEFT side Provider & Claims if still needed)
                             const addInsuranceDropdown = (inputElement, numbers, type) => {
                                 if (!inputElement || numbers.length === 0) return;
 
@@ -1910,16 +1966,25 @@
                                 console.log(`✅ ${type} number Salesforce view dropdown integrated`);
                             };
 
-                            // Add dropdown to claim number input
-                            const claimNumberInput = document.querySelector('input[name="claim_number"]');
-                            addInsuranceDropdown(claimNumberInput, claimNumbers, 'claim');
-
-                            // Add dropdown to policy number input
-                            const policyNumberInput = document.querySelector('input[name="policy_number"]');
-                            addInsuranceDropdown(policyNumberInput, policyNumbers, 'policy');
+                            // 🔥 ADD DROPDOWNS TO RIGHT SIDE (Salesforce Insurance box)
+                            // Users select from Salesforce insurance options on the RIGHT side
+                            const sfClaimNumberInput = document.querySelector('input[name="sf_claim_number"]');
+                            const sfPolicyNumberInput = document.querySelector('input[name="sf_policy_number"]');
+                            
+                            if (claimNumbers.length > 0 && sfClaimNumberInput) {
+                                addInsuranceDropdown(sfClaimNumberInput, claimNumbers, 'claim');
+                                console.log('✅ Added dropdown to RIGHT side SF Claim Number');
+                            }
+                            
+                            if (policyNumbers.length > 0 && sfPolicyNumberInput) {
+                                addInsuranceDropdown(sfPolicyNumberInput, policyNumbers, 'policy');
+                                console.log('✅ Added dropdown to RIGHT side SF Policy Number');
+                            }
+                            
+                            console.log('✅ Insurance dropdowns added to RIGHT SIDE Salesforce Insurance box');
 
                         } else {
-                            console.log('ℹ️ No insurance numbers found, keeping as input fields');
+                            console.log('ℹ️ No insurance numbers found from Salesforce');
                         }
 
                         // Validate after auto-population
