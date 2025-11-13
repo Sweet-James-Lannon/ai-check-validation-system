@@ -285,9 +285,9 @@
         }
 
         .dropdown-select .results-table th {
-            padding: 12px 16px;
+            padding: 10px 12px;
             text-align: left;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 600;
             color: #6b7280;
             text-transform: uppercase;
@@ -310,14 +310,20 @@
         }
 
         .dropdown-select .results-table td {
-            padding: 14px 16px;
-            font-size: 14px;
+            padding: 10px 12px;
+            font-size: 12px;
             color: #374151;
+            line-height: 1.4;
         }
 
         .dropdown-select .results-table td:first-child {
             font-weight: 500;
             color: #1f2937;
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding-right: 20px !important;
         }
 
         .dropdown-select .results-table td.text-gray {
@@ -1573,6 +1579,7 @@
                         // =============================================================================
                         const table = document.createElement('table');
                         table.className = 'results-table';
+                        table.style.fontSize = '12px'; // 🔥 Smaller font for better readability
 
                         // Table header
                         const thead = document.createElement('thead');
@@ -1581,7 +1588,7 @@
                                 <th>Matter Name</th>
                                 <th>Date of Birth</th>
                                 <th>Stage</th>
-                                <th>Matter ID</th>
+                                <th>Claim Numbers</th>
                             </tr>
                         `;
                         table.appendChild(thead);
@@ -1602,12 +1609,25 @@
                             // Store insurance numbers as JSON string
                             tr.setAttribute('data-insurance-numbers', JSON.stringify(item.insurance_numbers || []));
 
+                            // 🔥 Extract ALL claim numbers from insurance_numbers array
+                            let claimNumbersText = '-';
+                            if (item.insurance_numbers && item.insurance_numbers.length > 0) {
+                                const claimNumbers = item.insurance_numbers
+                                    .filter(ins => ins.type === 'claim' && ins.number)
+                                    .map(ins => ins.number);
+                                
+                                if (claimNumbers.length > 0) {
+                                    // Join with commas - all on one line
+                                    claimNumbersText = claimNumbers.join(', ');
+                                }
+                            }
+
                             // Create table cells
                             tr.innerHTML = `
-                                <td>${item.matter_name || '-'}</td>
+                                <td style="font-weight: 500; font-size: 12.5px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 20px;" title="${item.matter_name || '-'}">${item.matter_name || '-'}</td>
                                 <td class="text-gray">${item.date_of_birth || '-'}</td>
                                 <td class="text-gray">${item.stage || '-'}</td>
-                                <td class="text-gray">${item.matter_id || '-'}</td>
+                                <td class="text-gray" style="font-size: 12px; font-weight: 500;">${claimNumbersText}</td>
                             `;
 
                             tbody.appendChild(tr);
