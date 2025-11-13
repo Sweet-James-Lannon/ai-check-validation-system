@@ -714,6 +714,10 @@
                             <i class="fa-solid fa-check w-4 h-4"></i>
                             Quick Approve
                         </button>
+                        <button id="undoApproval" class="hidden bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-left w-4 h-4"></i>
+                            Undo Approval
+                        </button>
                         <button id="sendToReview" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
                             <i class="fa-solid fa-magnifying-glass w-4 h-4"></i>
                             Needs Review
@@ -2876,6 +2880,50 @@
             }
         });
 
+        document.getElementById('undoApproval')?.addEventListener('click', async function() {
+            // Prevent double-clicking
+            if (this.disabled) {
+                return;
+            }
+
+            if (!confirm('Are you sure you want to undo this approval?\n\nThis will:\n• Keep this approved record unchanged (for audit trail)\n• Create a duplicate in the "Needs Review" queue\n• Redirect you to the duplicate to make corrections')) {
+                return;
+            }
+
+            const checkId = '{{ check.id }}';
+
+            try {
+                // Immediately disable button to prevent double-clicks
+                this.disabled = true;
+                this.innerHTML = '<i class="fa-solid fa-spinner fa-spin w-4 h-4 mr-2"></i>Creating duplicate...';
+
+                const response = await fetch(`/api/checks/undo-approval/${checkId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showNotification('Duplicate created in Needs Review queue! Redirecting...', 'success');
+
+                    // Redirect to the new duplicate check after a brief delay
+                    setTimeout(() => {
+                        window.location.href = `/checks/detail/${result.duplicate_check_id}`;
+                    }, 1500);
+                } else {
+                    showNotification(result.message || 'Failed to undo approval', 'error');
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fa-solid fa-rotate-left w-4 h-4"></i> Undo Approval';
+                }
+            } catch (error) {
+                console.error('Error undoing approval:', error);
+                showNotification('Error undoing approval', 'error');
+                this.disabled = false;
+                this.innerHTML = '<i class="fa-solid fa-rotate-left w-4 h-4"></i> Undo Approval';
+            }
+        });
+
         function showApprovedBanner(validatedAt, validatedByName) {
             // Remove any existing banner
             const existingBanner = document.getElementById('validationBanner');
@@ -2939,29 +2987,80 @@
                 field.disabled = true;
                 field.classList.add('bg-gray-100', 'text-gray-600');
             });
-            
+
             // Disable all action buttons (with null checks)
             const saveBtn = document.getElementById('saveProgress');
             const approveBtn = document.getElementById('quickApprove');
+            const undoBtn = document.getElementById('undoApproval');
             const reviewBtn = document.getElementById('sendToReview');
-            
+
             if (saveBtn) {
                 saveBtn.disabled = true;
                 saveBtn.classList.remove('bg-slate-500', 'hover:bg-slate-400');
                 saveBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
             }
-            
+
             if (approveBtn) {
-                approveBtn.disabled = true;
-                approveBtn.innerHTML = '<i class="fa-solid fa-check w-4 h-4"></i> Approved';
-                approveBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
-                approveBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                // Hide Quick Approve button when approved
+                approveBtn.classList.add('hidden');
             }
-            
+
+            // Show Undo Approval button when approved
+            if (undoBtn) {
+                undoBtn.classList.remove('hidden');
+            }
+
             if (reviewBtn) {
+                // Keep review button disabled when approved
                 reviewBtn.disabled = true;
                 reviewBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
                 reviewBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            }
+        }
+
+        function enableFormEditing() {
+            // Re-enable all form fields
+            document.querySelectorAll('#checkDetailsForm input, #checkDetailsForm textarea').forEach(field => {
+                field.disabled = false;
+                field.classList.remove('bg-gray-100', 'text-gray-600');
+            });
+
+            // Re-enable action buttons
+            const saveBtn = document.getElementById('saveProgress');
+            const approveBtn = document.getElementById('quickApprove');
+            const undoBtn = document.getElementById('undoApproval');
+            const reviewBtn = document.getElementById('sendToReview');
+
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                saveBtn.classList.add('bg-slate-500', 'hover:bg-slate-400');
+            }
+
+            if (approveBtn) {
+                // Show Quick Approve button again
+                approveBtn.classList.remove('hidden');
+                approveBtn.disabled = false;
+                approveBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                approveBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                approveBtn.innerHTML = '<i class="fa-solid fa-check w-4 h-4"></i> Quick Approve';
+            }
+
+            // Hide Undo Approval button
+            if (undoBtn) {
+                undoBtn.classList.add('hidden');
+            }
+
+            if (reviewBtn) {
+                reviewBtn.disabled = false;
+                reviewBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                reviewBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+            }
+
+            // Remove the approved banner
+            const existingBanner = document.getElementById('validationBanner');
+            if (existingBanner) {
+                existingBanner.remove();
             }
         }
 

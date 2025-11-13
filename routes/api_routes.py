@@ -209,6 +209,74 @@ def approve_check(check_id):
         api_logger.error(f"Error approving check {check_id}: {str(e)}")
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
 
+@api_bp.route("/api/checks/undo-approval/<check_id>", methods=["POST"])
+@login_required
+def undo_approval(check_id):
+    """
+    Undo check approval - re-opens check for editing
+    Creates duplicate in pending table and keeps original approved record
+    """
+    try:
+        user = session.get("user")
+        if not user:
+            return jsonify({"status": "error", "message": "User not authenticated"}), 401
+
+        api_logger.info(f"Undoing approval for check {check_id} by {user.get('preferred_username')}")
+
+        # Get the current check data
+        current_check_response = supabase_service.client.table('checks')\
+            .select('*')\
+            .eq('id', check_id)\
+            .single()\
+            .execute()
+
+        if not current_check_response.data:
+            return jsonify({"status": "error", "message": "Check not found"}), 404
+
+        current_check = current_check_response.data
+
+        # Verify the check is actually approved
+        if current_check.get('status') != 'approved':
+            return jsonify({"status": "error", "message": "Check is not approved"}), 400
+
+        # Create a duplicate check with needs_review status
+        # Copy all fields except id, status, validated_at, validated_by
+        duplicate_data = {
+            key: value for key, value in current_check.items()
+            if key not in ['id', 'created_at', 'updated_at', 'validated_at', 'validated_by', 'reviewed_at', 'reviewed_by', 'n8n_sync_enabled']
+        }
+
+        # Set status to needs_review for the duplicate (not pending)
+        duplicate_data['status'] = 'needs_review'
+        duplicate_data['created_at'] = datetime.utcnow().isoformat()
+        duplicate_data['updated_at'] = datetime.utcnow().isoformat()
+        duplicate_data['n8n_sync_enabled'] = False  # Don't sync the duplicate to N8N
+
+        # Insert the duplicate into the checks table
+        duplicate_response = supabase_service.client.table('checks').insert(duplicate_data).execute()
+
+        if not duplicate_response.data:
+            api_logger.error(f"Failed to create duplicate check for {check_id}")
+            return jsonify({"status": "error", "message": "Failed to create duplicate check"}), 500
+
+        api_logger.info(f"Created duplicate check {duplicate_response.data[0]['id']} from approved check {check_id} with status=needs_review")
+
+        # Note: We do NOT modify the original approved record
+        # It stays in the approved table with its validated_at timestamp intact
+
+        return jsonify({
+            "status": "success",
+            "message": "Approval undone successfully",
+            "duplicate_check_id": duplicate_response.data[0]['id'],
+            "new_status": "needs_review"
+        })
+
+    except Exception as e:
+        api_logger.error(f"Error undoing approval for check {check_id}: {str(e)}")
+        import traceback
+        api_logger.error(traceback.format_exc())
+        return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
+
 @api_bp.route("/api/checks/needs-review/<check_id>", methods=["POST"])
 @login_required
 def flag_needs_review(check_id):
