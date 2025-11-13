@@ -1803,33 +1803,83 @@
                         }
 
                         // 4. 🔥 POPULATE SALESFORCE INSURANCE BOX (Right side) - Not left side!
-                        if (insuranceNumbers && insuranceNumbers.length > 0) {
-                            console.log('💼 Found insurance numbers:', insuranceNumbers);
-
-                            // Filter claim numbers and policy numbers
-                            const claimNumbers = insuranceNumbers.filter(ins => ins.type === 'claim');
-                            const policyNumbers = insuranceNumbers.filter(ins => ins.type === 'policy');
-
-                            // 🔥 Extract unique Insurance Companies
-                            // Build array of {name, id, insuranceId} objects
-                            const insuranceCompaniesMap = new Map();
-                            insuranceNumbers.forEach(ins => {
-                                const companyName = ins.insurance_company_name;
-                                const companyId = ins.insurance_company_id;
-                                const insuranceId = ins.insurance_id;
-                                
-                                if (companyName && !insuranceCompaniesMap.has(insuranceId)) {
-                                    insuranceCompaniesMap.set(insuranceId, {
-                                        type: 'company',
-                                        name: companyName,
-                                        company_id: companyId,
-                                        insurance_id: insuranceId
-                                    });
+                        
+                        // 🧹 CLEAR PREVIOUS SALESFORCE INSURANCE DATA FIRST!
+                        // This ensures old data doesn't persist when selecting a new matter
+                        const clearSalesforceInsuranceFields = () => {
+                            console.log('🧹 Clearing previous Salesforce Insurance fields...');
+                            
+                            // Clear all three RIGHT side fields
+                            const insuranceCompanyInput = document.querySelector('input[name="insurance_company"]');
+                            const sfClaimNumberInput = document.querySelector('input[name="sf_claim_number"]');
+                            const sfPolicyNumberInput = document.querySelector('input[name="sf_policy_number"]');
+                            
+                            [insuranceCompanyInput, sfClaimNumberInput, sfPolicyNumberInput].forEach(input => {
+                                if (input) {
+                                    input.value = '';
+                                    delete input.dataset.insuranceId;
+                                    delete input.dataset.companyId;
+                                    input.classList.remove('field-salesforce');
+                                    
+                                    // Remove existing dropdown wrappers
+                                    const existingWrapper = input.parentElement?.classList.contains('insurance-dropdown-wrapper')
+                                        ? input.parentElement
+                                        : null;
+                                    
+                                    if (existingWrapper) {
+                                        const parent = existingWrapper.parentElement;
+                                        parent.insertBefore(input, existingWrapper);
+                                        existingWrapper.remove();
+                                        input.style.paddingRight = ''; // Reset padding
+                                    }
                                 }
                             });
                             
-                            const insuranceCompanies = Array.from(insuranceCompaniesMap.values());
-                            console.log('🏢 Extracted insurance companies:', insuranceCompanies);
+                            // Clear global state
+                            window.currentInsuranceRecords = [];
+                            
+                            console.log('✅ Salesforce Insurance fields cleared');
+                        };
+                        
+                        // Always clear first before processing new data
+                        clearSalesforceInsuranceFields();
+                        
+                        if (insuranceNumbers && insuranceNumbers.length > 0) {
+                            console.log('💼 Found insurance numbers:', insuranceNumbers);
+
+                            // 🔥 Group insurance data by InsuranceId (each insurance record has claim + policy)
+                            // This creates linked records: Company → Claim Number + Policy Number
+                            const insuranceRecordsMap = new Map();
+                            
+                            insuranceNumbers.forEach(ins => {
+                                const insuranceId = ins.insurance_id;
+                                const companyName = ins.insurance_company_name;
+                                const companyId = ins.insurance_company_id;
+                                
+                                if (!insuranceRecordsMap.has(insuranceId)) {
+                                    insuranceRecordsMap.set(insuranceId, {
+                                        insurance_id: insuranceId,
+                                        company_name: companyName,
+                                        company_id: companyId,
+                                        claim_number: null,
+                                        policy_number: null
+                                    });
+                                }
+                                
+                                const record = insuranceRecordsMap.get(insuranceId);
+                                if (ins.type === 'claim' && ins.number) {
+                                    record.claim_number = ins.number;
+                                } else if (ins.type === 'policy' && ins.number) {
+                                    record.policy_number = ins.number;
+                                }
+                            });
+                            
+                            // Convert to array for easier handling
+                            const insuranceRecords = Array.from(insuranceRecordsMap.values());
+                            console.log('🏢 Linked insurance records:', insuranceRecords);
+                            
+                            // Store globally so dropdown click handlers can access it
+                            window.currentInsuranceRecords = insuranceRecords;
 
                             // 🎯 NO AUTO-POPULATION - We'll add DROPDOWNS to RIGHT side instead!
                             // Users select from dropdown on the Salesforce Insurance box
@@ -1953,10 +2003,121 @@
                                     // Click to select
                                     item.addEventListener('click', () => {
                                         if (type === 'company') {
-                                            inputElement.value = ins.name;
-                                            // Store InsuranceId in a hidden field or data attribute
-                                            inputElement.dataset.insuranceId = ins.insurance_id;
+                                            // 🔥 LINKED SELECTION: Selecting company updates claim AND policy numbers!
+                                            // Find the full insurance record
+                                            const selectedRecord = window.currentInsuranceRecords.find(
+                                                rec => rec.insurance_id === ins.insurance_id
+                                            );
+                                            
+                                            if (selectedRecord) {
+                                                // Update Insurance Company field
+                                                inputElement.value = selectedRecord.company_name;
+                                                inputElement.dataset.insuranceId = selectedRecord.insurance_id;
+                                                inputElement.dataset.companyId = selectedRecord.company_id;
+                                                
+                                                // 🎯 AUTO-UPDATE linked Claim Number field
+                                                const claimInput = document.querySelector('input[name="sf_claim_number"]');
+                                                if (claimInput && selectedRecord.claim_number) {
+                                                    claimInput.value = selectedRecord.claim_number;
+                                                    claimInput.dataset.insuranceId = selectedRecord.insurance_id;
+                                                    claimInput.classList.add('field-salesforce');
+                                                    claimInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                                }
+                                                
+                                                // 🎯 AUTO-UPDATE linked Policy Number field
+                                                const policyInput = document.querySelector('input[name="sf_policy_number"]');
+                                                if (policyInput && selectedRecord.policy_number) {
+                                                    policyInput.value = selectedRecord.policy_number;
+                                                    policyInput.dataset.insuranceId = selectedRecord.insurance_id;
+                                                    policyInput.classList.add('field-salesforce');
+                                                    policyInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                                }
+                                                
+                                                console.log('🔗 LINKED UPDATE:', {
+                                                    company: selectedRecord.company_name,
+                                                    claim: selectedRecord.claim_number,
+                                                    policy: selectedRecord.policy_number,
+                                                    insuranceId: selectedRecord.insurance_id
+                                                });
+                                            }
+                                        } else if (type === 'claim') {
+                                            // 🔥 BIDIRECTIONAL LINKING: Selecting claim number updates company AND policy!
+                                            // Find the insurance record by claim number
+                                            const selectedRecord = window.currentInsuranceRecords.find(
+                                                rec => rec.claim_number === ins.number
+                                            );
+                                            
+                                            if (selectedRecord) {
+                                                // Update Claim Number field
+                                                inputElement.value = selectedRecord.claim_number;
+                                                inputElement.dataset.insuranceId = selectedRecord.insurance_id;
+                                                
+                                                // 🎯 AUTO-UPDATE linked Insurance Company field
+                                                const companyInput = document.querySelector('input[name="insurance_company"]');
+                                                if (companyInput && selectedRecord.company_name) {
+                                                    companyInput.value = selectedRecord.company_name;
+                                                    companyInput.dataset.insuranceId = selectedRecord.insurance_id;
+                                                    companyInput.dataset.companyId = selectedRecord.company_id;
+                                                    companyInput.classList.add('field-salesforce');
+                                                    companyInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                                }
+                                                
+                                                // 🎯 AUTO-UPDATE linked Policy Number field
+                                                const policyInput = document.querySelector('input[name="sf_policy_number"]');
+                                                if (policyInput && selectedRecord.policy_number) {
+                                                    policyInput.value = selectedRecord.policy_number;
+                                                    policyInput.dataset.insuranceId = selectedRecord.insurance_id;
+                                                    policyInput.classList.add('field-salesforce');
+                                                    policyInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                                }
+                                                
+                                                console.log('🔗 CLAIM SELECTED - LINKED UPDATE:', {
+                                                    claim: selectedRecord.claim_number,
+                                                    company: selectedRecord.company_name,
+                                                    policy: selectedRecord.policy_number,
+                                                    insuranceId: selectedRecord.insurance_id
+                                                });
+                                            }
+                                        } else if (type === 'policy') {
+                                            // 🔥 BIDIRECTIONAL LINKING: Selecting policy number updates company AND claim!
+                                            // Find the insurance record by policy number
+                                            const selectedRecord = window.currentInsuranceRecords.find(
+                                                rec => rec.policy_number === ins.number
+                                            );
+                                            
+                                            if (selectedRecord) {
+                                                // Update Policy Number field
+                                                inputElement.value = selectedRecord.policy_number;
+                                                inputElement.dataset.insuranceId = selectedRecord.insurance_id;
+                                                
+                                                // 🎯 AUTO-UPDATE linked Insurance Company field
+                                                const companyInput = document.querySelector('input[name="insurance_company"]');
+                                                if (companyInput && selectedRecord.company_name) {
+                                                    companyInput.value = selectedRecord.company_name;
+                                                    companyInput.dataset.insuranceId = selectedRecord.insurance_id;
+                                                    companyInput.dataset.companyId = selectedRecord.company_id;
+                                                    companyInput.classList.add('field-salesforce');
+                                                    companyInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                                }
+                                                
+                                                // 🎯 AUTO-UPDATE linked Claim Number field
+                                                const claimInput = document.querySelector('input[name="sf_claim_number"]');
+                                                if (claimInput && selectedRecord.claim_number) {
+                                                    claimInput.value = selectedRecord.claim_number;
+                                                    claimInput.dataset.insuranceId = selectedRecord.insurance_id;
+                                                    claimInput.classList.add('field-salesforce');
+                                                    claimInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                                }
+                                                
+                                                console.log('🔗 POLICY SELECTED - LINKED UPDATE:', {
+                                                    policy: selectedRecord.policy_number,
+                                                    company: selectedRecord.company_name,
+                                                    claim: selectedRecord.claim_number,
+                                                    insuranceId: selectedRecord.insurance_id
+                                                });
+                                            }
                                         } else {
+                                            // Fallback for any other type
                                             inputElement.value = ins.number;
                                             inputElement.dataset.insuranceId = ins.insurance_id;
                                         }
@@ -2008,28 +2169,52 @@
                             // 🔥 ADD DROPDOWNS TO RIGHT SIDE (Salesforce Insurance box)
                             // Users select from Salesforce insurance options on the RIGHT side
                             
-                            // 1. Insurance Company dropdown
+                            // 1. Insurance Company dropdown (MASTER dropdown - updates claim + policy when selected)
                             const insuranceCompanyInput = document.querySelector('input[name="insurance_company"]');
-                            if (insuranceCompanies.length > 0 && insuranceCompanyInput) {
-                                addInsuranceDropdown(insuranceCompanyInput, insuranceCompanies, 'company');
-                                console.log('✅ Added dropdown to RIGHT side Insurance Company');
+                            if (insuranceRecords.length > 0 && insuranceCompanyInput) {
+                                // Format records as dropdown items (show company name)
+                                const companyDropdownItems = insuranceRecords.map(rec => ({
+                                    name: rec.company_name,
+                                    insurance_id: rec.insurance_id,
+                                    company_id: rec.company_id
+                                }));
+                                addInsuranceDropdown(insuranceCompanyInput, companyDropdownItems, 'company');
+                                console.log('✅ Added LINKED dropdown to RIGHT side Insurance Company');
                             }
                             
-                            // 2. SF Claim Number dropdown
+                            // 2. SF Claim Number dropdown (Read-only display - updated by company selection)
                             const sfClaimNumberInput = document.querySelector('input[name="sf_claim_number"]');
-                            if (claimNumbers.length > 0 && sfClaimNumberInput) {
-                                addInsuranceDropdown(sfClaimNumberInput, claimNumbers, 'claim');
-                                console.log('✅ Added dropdown to RIGHT side SF Claim Number');
+                            if (insuranceRecords.length > 0 && sfClaimNumberInput) {
+                                // Extract all claim numbers for dropdown
+                                const claimDropdownItems = insuranceRecords
+                                    .filter(rec => rec.claim_number)
+                                    .map(rec => ({
+                                        number: rec.claim_number,
+                                        insurance_id: rec.insurance_id
+                                    }));
+                                if (claimDropdownItems.length > 0) {
+                                    addInsuranceDropdown(sfClaimNumberInput, claimDropdownItems, 'claim');
+                                    console.log('✅ Added dropdown to RIGHT side SF Claim Number');
+                                }
                             }
                             
-                            // 3. SF Policy Number dropdown
+                            // 3. SF Policy Number dropdown (Read-only display - updated by company selection)
                             const sfPolicyNumberInput = document.querySelector('input[name="sf_policy_number"]');
-                            if (policyNumbers.length > 0 && sfPolicyNumberInput) {
-                                addInsuranceDropdown(sfPolicyNumberInput, policyNumbers, 'policy');
-                                console.log('✅ Added dropdown to RIGHT side SF Policy Number');
+                            if (insuranceRecords.length > 0 && sfPolicyNumberInput) {
+                                // Extract all policy numbers for dropdown
+                                const policyDropdownItems = insuranceRecords
+                                    .filter(rec => rec.policy_number)
+                                    .map(rec => ({
+                                        number: rec.policy_number,
+                                        insurance_id: rec.insurance_id
+                                    }));
+                                if (policyDropdownItems.length > 0) {
+                                    addInsuranceDropdown(sfPolicyNumberInput, policyDropdownItems, 'policy');
+                                    console.log('✅ Added dropdown to RIGHT side SF Policy Number');
+                                }
                             }
                             
-                            console.log('✅ All insurance dropdowns added to RIGHT SIDE Salesforce Insurance box');
+                            console.log('✅ All LINKED insurance dropdowns added to RIGHT SIDE Salesforce Insurance box');
 
                         } else {
                             console.log('ℹ️ No insurance numbers found from Salesforce');
