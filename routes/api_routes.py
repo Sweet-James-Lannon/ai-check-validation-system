@@ -723,8 +723,11 @@ def salesforce_search_claimants():
                 if insurance_numbers:
                     api_logger.info(f"💼 Insurance found for {claimant_name}: {insurance_numbers}")
 
-                # Only add unique claimants with complete data
-                if claimant_name and claimant_name not in seen:
+                # 🔥 SHOW ALL UNIQUE MATTERS - Use matter_id as unique key instead of claimant_name
+                # This allows multiple matters for the same person (e.g., multiple cases for Donald Pierre Sr)
+                unique_key = matter_id or f"{claimant_name}_{matter_name}"  # Fallback if no matter_id
+                
+                if claimant_name and unique_key not in seen:
                     results.append({
                         'claimant': claimant_name,
                         'matter_name': matter_name,
@@ -734,7 +737,7 @@ def salesforce_search_claimants():
                         'stage': stage,
                         'insurance_numbers': insurance_numbers  # Array of insurance objects
                     })
-                    seen.add(claimant_name)
+                    seen.add(unique_key)
         
         api_logger.info(f"✅ Found {len(results)} Salesforce matches for '{search_query}'")
         
