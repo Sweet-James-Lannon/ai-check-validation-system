@@ -131,6 +131,10 @@ def approve_check(check_id):
 
         # Prepare update data with all current form values
         update_data = {}
+        
+        # 🔥 CHECK TYPE SELECTION - Use provider OR insurance data, not both!
+        check_type_selection = data.get('check_type_selection', '').strip()
+        api_logger.info(f"Check type selection: '{check_type_selection}'")
 
         # Map form fields to database fields - Aligned with actual schema
         field_mapping = {
@@ -157,13 +161,30 @@ def approve_check(check_id):
             'reference_number': 'reference_number',
             'date_of_loss': 'date_of_loss',
             'bank_name': 'bank_name',
-            'extraction_notes': 'extraction_notes'
+            'extraction_notes': 'extraction_notes',
+            # 🔥 SALESFORCE INSURANCE FIELDS (from right side box)
+            'sf_claim_number': 'claim_number',  # Maps to same DB field as provider claim_number
+            'sf_policy_number': 'policy_number'  # Maps to same DB field as provider policy_number
         }
         
         # Process form fields
         for form_field, db_field in field_mapping.items():
             if form_field in data and data[form_field] is not None:
                 value = data[form_field]
+                
+                # 🔥 SKIP PROVIDER FIELDS if insurance was selected
+                if check_type_selection == 'insurance':
+                    if form_field in ['provider_name', 'claim_number', 'policy_number']:
+                        api_logger.info(f"Skipping provider field '{form_field}' because insurance was selected")
+                        update_data[db_field] = None  # Clear provider data
+                        continue
+                
+                # 🔥 SKIP SALESFORCE INSURANCE FIELDS if provider was selected
+                if check_type_selection == 'provider':
+                    if form_field in ['insurance_company', 'insurance_id', 'sf_claim_number', 'sf_policy_number']:
+                        api_logger.info(f"Skipping insurance field '{form_field}' because provider was selected")
+                        update_data[db_field] = None  # Clear insurance data
+                        continue
                 
                 # Handle amount conversion
                 if form_field == 'amount':
