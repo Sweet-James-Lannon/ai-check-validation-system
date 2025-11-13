@@ -521,19 +521,26 @@ def salesforce_claimant_lookup():
                 for insurance in insurances:
                     claim_num = insurance.get('ClaimNumber')
                     policy_num = insurance.get('PolicyNumber')
+                    insurance_id = insurance.get('InsuranceId', '')
+                    insurance_company_name = insurance.get('Insurance Company Name', '')
+                    insurance_company_id = insurance.get('Insurance Company Id', '')
 
                     if claim_num:
                         insurance_numbers.append({
                             'type': 'claim',
                             'number': claim_num,
-                            'insurance_id': insurance.get('InsuranceId', '')
+                            'insurance_id': insurance_id,
+                            'insurance_company_name': insurance_company_name,
+                            'insurance_company_id': insurance_company_id
                         })
 
                     if policy_num:
                         insurance_numbers.append({
                             'type': 'policy',
                             'number': policy_num,
-                            'insurance_id': insurance.get('InsuranceId', '')
+                            'insurance_id': insurance_id,
+                            'insurance_company_name': insurance_company_name,
+                            'insurance_company_id': insurance_company_id
                         })
 
             return jsonify({
@@ -703,20 +710,28 @@ def salesforce_search_claimants():
                         api_logger.info(f"🔍 Processing insurance item: {insurance}")
                         claim_num = insurance.get('ClaimNumber')
                         policy_num = insurance.get('PolicyNumber')
-                        api_logger.info(f"🔍 Extracted - Claim: {claim_num}, Policy: {policy_num}")
+                        insurance_id = insurance.get('InsuranceId', '')
+                        insurance_company_name = insurance.get('Insurance Company Name', '')
+                        insurance_company_id = insurance.get('Insurance Company Id', '')
+                        
+                        api_logger.info(f"🔍 Extracted - Claim: {claim_num}, Policy: {policy_num}, Company: {insurance_company_name}, InsuranceId: {insurance_id}")
 
                         if claim_num:
                             insurance_numbers.append({
                                 'type': 'claim',
                                 'number': claim_num,
-                                'insurance_id': insurance.get('InsuranceId', '')
+                                'insurance_id': insurance_id,
+                                'insurance_company_name': insurance_company_name,
+                                'insurance_company_id': insurance_company_id
                             })
 
                         if policy_num:
                             insurance_numbers.append({
                                 'type': 'policy',
                                 'number': policy_num,
-                                'insurance_id': insurance.get('InsuranceId', '')
+                                'insurance_id': insurance_id,
+                                'insurance_company_name': insurance_company_name,
+                                'insurance_company_id': insurance_company_id
                             })
 
                 # 🔍 DEBUG: Log insurance values

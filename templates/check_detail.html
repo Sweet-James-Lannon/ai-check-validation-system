@@ -1810,15 +1810,26 @@
                             const claimNumbers = insuranceNumbers.filter(ins => ins.type === 'claim');
                             const policyNumbers = insuranceNumbers.filter(ins => ins.type === 'policy');
 
-                            // 🔥 POPULATE RIGHT SIDE SALESFORCE FIELDS
-                            // Insurance Company - Get from first insurance record if available
-                            const insuranceCompanyInput = document.querySelector('input[name="insurance_company"]');
-                            if (insuranceCompanyInput && insuranceNumbers[0]) {
-                                // You can extract insurance company name from Salesforce data if available
-                                // For now, we'll populate it if the data includes it
-                                insuranceCompanyInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                insuranceCompanyInput.classList.add('field-salesforce');
-                            }
+                            // 🔥 Extract unique Insurance Companies
+                            // Build array of {name, id, insuranceId} objects
+                            const insuranceCompaniesMap = new Map();
+                            insuranceNumbers.forEach(ins => {
+                                const companyName = ins.insurance_company_name;
+                                const companyId = ins.insurance_company_id;
+                                const insuranceId = ins.insurance_id;
+                                
+                                if (companyName && !insuranceCompaniesMap.has(insuranceId)) {
+                                    insuranceCompaniesMap.set(insuranceId, {
+                                        type: 'company',
+                                        name: companyName,
+                                        company_id: companyId,
+                                        insurance_id: insuranceId
+                                    });
+                                }
+                            });
+                            
+                            const insuranceCompanies = Array.from(insuranceCompaniesMap.values());
+                            console.log('🏢 Extracted insurance companies:', insuranceCompanies);
 
                             // 🎯 NO AUTO-POPULATION - We'll add DROPDOWNS to RIGHT side instead!
                             // Users select from dropdown on the Salesforce Insurance box
@@ -1902,7 +1913,8 @@
 
                                 // Add header
                                 const header = document.createElement('div');
-                                header.textContent = `Salesforce ${type} numbers (view only)`;
+                                const headerText = type === 'company' ? 'Insurance Companies' : `Salesforce ${type} numbers`;
+                                header.textContent = headerText;
                                 header.style.padding = '8px 12px';
                                 header.style.background = '#f1f5f9';
                                 header.style.borderBottom = '1px solid #cbd5e1';
@@ -1911,14 +1923,24 @@
                                 header.style.color = '#475569';
                                 dropdownList.appendChild(header);
 
-                                // Add insurance numbers
+                                // Add insurance items (numbers or companies)
                                 numbers.forEach(ins => {
                                     const item = document.createElement('div');
-                                    item.textContent = ins.number;
+                                    
+                                    // Display name based on type
+                                    if (type === 'company') {
+                                        item.textContent = ins.name; // Show company name
+                                        item.dataset.insuranceId = ins.insurance_id; // Store InsuranceId
+                                        item.dataset.companyId = ins.company_id; // Store Company Id
+                                    } else {
+                                        item.textContent = ins.number; // Show claim/policy number
+                                        item.dataset.insuranceId = ins.insurance_id;
+                                    }
+                                    
                                     item.style.padding = '8px 12px';
                                     item.style.fontSize = '13px';
                                     item.style.borderBottom = '1px solid #f1f5f9';
-                                    item.style.cursor = 'default';
+                                    item.style.cursor = 'pointer';
                                     item.style.transition = 'background 0.15s';
 
                                     item.addEventListener('mouseenter', () => {
@@ -1926,6 +1948,23 @@
                                     });
                                     item.addEventListener('mouseleave', () => {
                                         item.style.background = 'white';
+                                    });
+                                    
+                                    // Click to select
+                                    item.addEventListener('click', () => {
+                                        if (type === 'company') {
+                                            inputElement.value = ins.name;
+                                            // Store InsuranceId in a hidden field or data attribute
+                                            inputElement.dataset.insuranceId = ins.insurance_id;
+                                        } else {
+                                            inputElement.value = ins.number;
+                                            inputElement.dataset.insuranceId = ins.insurance_id;
+                                        }
+                                        inputElement.dispatchEvent(new Event('change', { bubbles: true }));
+                                        inputElement.classList.add('field-salesforce');
+                                        dropdownList.style.display = 'none';
+                                        dropdownBtn.innerHTML = chevronDown;
+                                        console.log(`✅ Selected ${type}:`, inputElement.value, 'InsuranceId:', ins.insurance_id);
                                     });
 
                                     dropdownList.appendChild(item);
@@ -1968,20 +2007,29 @@
 
                             // 🔥 ADD DROPDOWNS TO RIGHT SIDE (Salesforce Insurance box)
                             // Users select from Salesforce insurance options on the RIGHT side
-                            const sfClaimNumberInput = document.querySelector('input[name="sf_claim_number"]');
-                            const sfPolicyNumberInput = document.querySelector('input[name="sf_policy_number"]');
                             
+                            // 1. Insurance Company dropdown
+                            const insuranceCompanyInput = document.querySelector('input[name="insurance_company"]');
+                            if (insuranceCompanies.length > 0 && insuranceCompanyInput) {
+                                addInsuranceDropdown(insuranceCompanyInput, insuranceCompanies, 'company');
+                                console.log('✅ Added dropdown to RIGHT side Insurance Company');
+                            }
+                            
+                            // 2. SF Claim Number dropdown
+                            const sfClaimNumberInput = document.querySelector('input[name="sf_claim_number"]');
                             if (claimNumbers.length > 0 && sfClaimNumberInput) {
                                 addInsuranceDropdown(sfClaimNumberInput, claimNumbers, 'claim');
                                 console.log('✅ Added dropdown to RIGHT side SF Claim Number');
                             }
                             
+                            // 3. SF Policy Number dropdown
+                            const sfPolicyNumberInput = document.querySelector('input[name="sf_policy_number"]');
                             if (policyNumbers.length > 0 && sfPolicyNumberInput) {
                                 addInsuranceDropdown(sfPolicyNumberInput, policyNumbers, 'policy');
                                 console.log('✅ Added dropdown to RIGHT side SF Policy Number');
                             }
                             
-                            console.log('✅ Insurance dropdowns added to RIGHT SIDE Salesforce Insurance box');
+                            console.log('✅ All insurance dropdowns added to RIGHT SIDE Salesforce Insurance box');
 
                         } else {
                             console.log('ℹ️ No insurance numbers found from Salesforce');
