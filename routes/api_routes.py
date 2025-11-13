@@ -277,6 +277,43 @@ def undo_approval(check_id):
         api_logger.error(traceback.format_exc())
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
 
+@api_bp.route("/api/checks/delete/<check_id>", methods=["DELETE"])
+@login_required
+def delete_check(check_id):
+    """
+    Delete a check from the database
+    Permanently removes the check record from Supabase
+    """
+    try:
+        user = session.get("user")
+        if not user:
+            return jsonify({"status": "error", "message": "User not authenticated"}), 401
+
+        api_logger.info(f"Deleting check {check_id} by {user.get('preferred_username')}")
+
+        # Delete the check from Supabase
+        response = supabase_service.client.table('checks')\
+            .delete()\
+            .eq('id', check_id)\
+            .execute()
+
+        # Check if deletion was successful
+        if response.data or not response.data:  # Supabase returns empty array on successful delete
+            api_logger.info(f"Successfully deleted check {check_id}")
+            return jsonify({
+                "status": "success",
+                "message": "Check deleted successfully"
+            })
+        else:
+            api_logger.error(f"Failed to delete check {check_id}")
+            return jsonify({"status": "error", "message": "Failed to delete check"}), 500
+
+    except Exception as e:
+        api_logger.error(f"Error deleting check {check_id}: {str(e)}")
+        import traceback
+        api_logger.error(traceback.format_exc())
+        return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
+
 @api_bp.route("/api/checks/needs-review/<check_id>", methods=["POST"])
 @login_required
 def flag_needs_review(check_id):

@@ -709,7 +709,7 @@
                     </div>
                     
                     <!-- Right Side - Validation Actions -->
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3" style="overflow: visible;">
                         <button id="quickApprove" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
                             <i class="fa-solid fa-check w-4 h-4"></i>
                             Quick Approve
@@ -722,6 +722,22 @@
                             <i class="fa-solid fa-magnifying-glass w-4 h-4"></i>
                             Needs Review
                         </button>
+
+                        <!-- Three Dot Menu -->
+                        <div class="relative inline-block" id="moreActionsMenu" style="z-index: 10;">
+                            <button type="button" id="moreActionsBtn" onclick="toggleMoreActionsMenu(event)" class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors" style="cursor: pointer; pointer-events: auto;">
+                                <i class="fa-solid fa-ellipsis-vertical w-4 h-4"></i>
+                            </button>
+                            <!-- Dropdown Menu -->
+                            <div id="moreActionsDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200" style="z-index: 9999;">
+                                <div class="py-1">
+                                    <button type="button" id="deleteCheck" onclick="deleteCheckHandler()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors">
+                                        <i class="fa-solid fa-trash w-4 h-4"></i>
+                                        Delete Check
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                         <!-- DISABLED: Save Progress button - needs fixing before re-enabling -->
                         <!-- <button id="saveProgress" class="bg-slate-500 hover:bg-slate-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
                             <i class="fa-solid fa-save w-4 h-4"></i>
@@ -2923,6 +2939,70 @@
                 this.innerHTML = '<i class="fa-solid fa-rotate-left w-4 h-4"></i> Undo Approval';
             }
         });
+
+        // Three-dot menu toggle - GLOBAL FUNCTION
+        window.toggleMoreActionsMenu = function(event) {
+            event.stopPropagation();
+            event.preventDefault();
+            console.log('🔥 More actions button clicked!');
+            const dropdown = document.getElementById('moreActionsDropdown');
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+                console.log('Dropdown toggled. Now:', dropdown.classList.contains('hidden') ? 'hidden' : 'visible');
+            }
+        };
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('moreActionsDropdown');
+            const menuButton = document.getElementById('moreActionsBtn');
+
+            if (dropdown && !dropdown.classList.contains('hidden') &&
+                !dropdown.contains(event.target) &&
+                !menuButton.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // Delete check handler - GLOBAL FUNCTION
+        window.deleteCheckHandler = async function() {
+            if (!confirm('Are you sure you want to delete this check?\n\nThis action cannot be undone. The check will be permanently removed from the database.')) {
+                return;
+            }
+
+            const checkId = '{{ check.id }}';
+            const deleteBtn = document.getElementById('deleteCheck');
+
+            try {
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin w-4 h-4 mr-2"></i>Deleting...';
+
+                const response = await fetch(`/api/checks/delete/${checkId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showNotification('Check deleted successfully! Redirecting to queue...', 'success');
+
+                    // Redirect to check queue after a brief delay
+                    setTimeout(() => {
+                        window.location.href = '/checks/queue';
+                    }, 1500);
+                } else {
+                    showNotification(result.message || 'Failed to delete check', 'error');
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = '<i class="fa-solid fa-trash w-4 h-4"></i> Delete Check';
+                }
+            } catch (error) {
+                console.error('Error deleting check:', error);
+                showNotification('Error deleting check', 'error');
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="fa-solid fa-trash w-4 h-4"></i> Delete Check';
+            }
+        };
 
         function showApprovedBanner(validatedAt, validatedByName) {
             // Remove any existing banner
