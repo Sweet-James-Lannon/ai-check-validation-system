@@ -521,6 +521,113 @@
         }
 
         /* ===================================================================== */
+        /* 🔥 CHECK TYPE TOGGLE BUTTONS - Insurance vs Provider Selection */
+        /* ===================================================================== */
+        
+        /* Icon-only button - matches the page's minimal aesthetic */
+        .check-type-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            background: white;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 6px;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+
+        .check-type-btn:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            color: #475569;
+            transform: scale(1.08);
+        }
+
+        /* Active state - subtle green glow matching approval button */
+        .check-type-btn.active {
+            background: #10b981;
+            border-color: #10b981;
+            color: white;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+
+        .check-type-btn.active:hover {
+            background: #059669;
+            border-color: #059669;
+            transform: scale(1.08);
+        }
+
+        /* Undo button - minimal design */
+        .check-type-undo-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            background: white;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 6px;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+        }
+
+        .check-type-undo-btn:hover {
+            background: #fef2f2;
+            border-color: #fca5a5;
+            color: #dc2626;
+            transform: rotate(-15deg) scale(1.08);
+        }
+
+        .check-type-undo-btn.hidden {
+            display: none;
+        }
+
+        /* Disabled state for boxes - more subtle overlay */
+        .box-disabled {
+            opacity: 0.35;
+            pointer-events: none;
+            background: #f9fafb !important;
+            position: relative;
+        }
+
+        .box-disabled::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: rgba(71, 85, 105, 0.08);
+            border: 2px solid rgba(71, 85, 105, 0.15);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .box-disabled::before {
+            content: '✕';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #94a3b8;
+            font-size: 32px;
+            font-weight: 300;
+            pointer-events: none;
+            z-index: 11;
+            opacity: 0.6;
+        }
+
+        /* ===================================================================== */
         /* L-SHAPED CORNER MARKERS - Precisely Aligned to Document Edges */
         /* ===================================================================== */
         
@@ -857,6 +964,9 @@
                         <form id="checkDetailsForm">
                             <!-- Hidden field for insurance_id -->
                             <input type="hidden" name="insurance_id" value="{{ check.insurance_id or '' }}">
+                            
+                            <!-- 🔥 Hidden field to store check type selection (insurance vs provider) -->
+                            <input type="hidden" id="checkTypeSelection" name="check_type_selection" value="">
 
                             <!-- Extracted Fields Grid -->
                             <div class="space-y-3">
@@ -914,10 +1024,20 @@
                                 <!-- 🔥 TWO-COLUMN LAYOUT: Provider & Claims + Salesforce Insurance -->
                                 <div class="grid grid-cols-2 gap-3">
                                     <!-- LEFT: Provider & Claims Information -->
-                                    <div class="space-y-3 bg-white border border-gray-300 p-3 rounded-lg">
-                                        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
-                                            <i class="fa-solid fa-shield-halved mr-2 text-gray-700"></i>Provider & Claims
-                                        </h3>
+                                    <div id="providerClaimsBox" class="space-y-3 bg-white border border-gray-300 p-3 rounded-lg transition-all duration-300">
+                                        <div class="flex items-center justify-between border-b border-gray-200 pb-2">
+                                            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                                                <i class="fa-solid fa-shield-halved mr-2 text-gray-700"></i>Extracted Provider & Claims
+                                            </h3>
+                                            <div class="flex items-center gap-1.5">
+                                                <button type="button" id="useProviderBtn" class="check-type-btn" title="Mark as Provider/Third Party Check">
+                                                    <i class="fa-solid fa-check"></i>
+                                                </button>
+                                                <button type="button" id="undoProviderBtn" class="check-type-undo-btn hidden" title="Clear selection">
+                                                    <i class="fa-solid fa-xmark"></i>
+                                                </button>
+                                            </div>
+                                        </div>
                                         
                                         <div class="grid grid-cols-1 gap-3">
                                             <div class="field-container">
@@ -956,10 +1076,20 @@
                                     </div>
 
                                     <!-- RIGHT: Salesforce Insurance Data -->
-                                    <div class="space-y-3 bg-white border border-gray-300 p-3 rounded-lg">
-                                        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-200 pb-2">
-                                            <i class="fa-solid fa-building-columns mr-2 text-gray-700"></i>Salesforce Insurance
-                                        </h3>
+                                    <div id="salesforceInsuranceBox" class="space-y-3 bg-white border border-gray-300 p-3 rounded-lg transition-all duration-300">
+                                        <div class="flex items-center justify-between border-b border-gray-200 pb-2">
+                                            <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                                                <i class="fa-solid fa-building-columns mr-2 text-gray-700"></i>Salesforce Insurance
+                                            </h3>
+                                            <div class="flex items-center gap-1.5">
+                                                <button type="button" id="useInsuranceBtn" class="check-type-btn" title="Mark as Insurance Check">
+                                                    <i class="fa-solid fa-check"></i>
+                                                </button>
+                                                <button type="button" id="undoInsuranceBtn" class="check-type-undo-btn hidden" title="Clear selection">
+                                                    <i class="fa-solid fa-xmark"></i>
+                                                </button>
+                                            </div>
+                                        </div>
                                         
                                         <div class="grid grid-cols-1 gap-3">
                                             <div class="field-container">
@@ -1247,6 +1377,119 @@
             // Batch Images Setup
             const batchImages = {{ check.batch_images|tojson if check.batch_images else '[]' }};
             let currentImageIndex = 0;
+            
+            // ============================================================================
+            // 🔥 CHECK TYPE TOGGLE SYSTEM - Insurance vs Provider Selection
+            // ============================================================================
+            
+            const providerBox = document.getElementById('providerClaimsBox');
+            const insuranceBox = document.getElementById('salesforceInsuranceBox');
+            const useProviderBtn = document.getElementById('useProviderBtn');
+            const useInsuranceBtn = document.getElementById('useInsuranceBtn');
+            const undoProviderBtn = document.getElementById('undoProviderBtn');
+            const undoInsuranceBtn = document.getElementById('undoInsuranceBtn');
+            const checkTypeInput = document.getElementById('checkTypeSelection');
+            
+            // Function to enable Provider & disable Insurance
+            function selectProvider() {
+                console.log('🔥 CHECK TYPE: Provider & Claims selected');
+                
+                // Activate Provider button
+                useProviderBtn.classList.add('active');
+                undoProviderBtn.classList.remove('hidden');
+                
+                // Deactivate Insurance button
+                useInsuranceBtn.classList.remove('active');
+                undoInsuranceBtn.classList.add('hidden');
+                
+                // Grey out Insurance box
+                insuranceBox.classList.add('box-disabled');
+                providerBox.classList.remove('box-disabled');
+                
+                // Disable Insurance fields
+                const insuranceFields = insuranceBox.querySelectorAll('input');
+                insuranceFields.forEach(field => {
+                    field.disabled = true;
+                    field.classList.add('bg-gray-100', 'cursor-not-allowed');
+                });
+                
+                // Enable Provider fields
+                const providerFields = providerBox.querySelectorAll('input');
+                providerFields.forEach(field => {
+                    field.disabled = false;
+                    field.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                });
+                
+                // Store selection in hidden field
+                checkTypeInput.value = 'provider';
+            }
+            
+            // Function to enable Insurance & disable Provider
+            function selectInsurance() {
+                console.log('🔥 CHECK TYPE: Salesforce Insurance selected');
+                
+                // Activate Insurance button
+                useInsuranceBtn.classList.add('active');
+                undoInsuranceBtn.classList.remove('hidden');
+                
+                // Deactivate Provider button
+                useProviderBtn.classList.remove('active');
+                undoProviderBtn.classList.add('hidden');
+                
+                // Grey out Provider box
+                providerBox.classList.add('box-disabled');
+                insuranceBox.classList.remove('box-disabled');
+                
+                // Disable Provider fields
+                const providerFields = providerBox.querySelectorAll('input');
+                providerFields.forEach(field => {
+                    field.disabled = true;
+                    field.classList.add('bg-gray-100', 'cursor-not-allowed');
+                });
+                
+                // Enable Insurance fields
+                const insuranceFields = insuranceBox.querySelectorAll('input');
+                insuranceFields.forEach(field => {
+                    field.disabled = false;
+                    field.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                });
+                
+                // Store selection in hidden field
+                checkTypeInput.value = 'insurance';
+            }
+            
+            // Function to clear selection (undo)
+            function clearSelection() {
+                console.log('🔄 CHECK TYPE: Selection cleared');
+                
+                // Deactivate both buttons
+                useProviderBtn.classList.remove('active');
+                useInsuranceBtn.classList.remove('active');
+                undoProviderBtn.classList.add('hidden');
+                undoInsuranceBtn.classList.add('hidden');
+                
+                // Remove disabled state from both boxes
+                providerBox.classList.remove('box-disabled');
+                insuranceBox.classList.remove('box-disabled');
+                
+                // Enable all fields
+                const allFields = document.querySelectorAll('#providerClaimsBox input, #salesforceInsuranceBox input');
+                allFields.forEach(field => {
+                    field.disabled = false;
+                    field.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                });
+                
+                // Clear hidden field
+                checkTypeInput.value = '';
+            }
+            
+            // Event listeners
+            useProviderBtn.addEventListener('click', selectProvider);
+            useInsuranceBtn.addEventListener('click', selectInsurance);
+            undoProviderBtn.addEventListener('click', clearSelection);
+            undoInsuranceBtn.addEventListener('click', clearSelection);
+            
+            console.log('✅ Check type toggle system initialized');
             
             // ============================================================================
             // SEARCHABLE DROPDOWN SYSTEM - FIRE! 🔥🔍
