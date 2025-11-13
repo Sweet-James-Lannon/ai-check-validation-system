@@ -310,10 +310,11 @@
         }
 
         .dropdown-select .results-table td {
-            padding: 10px 12px;
+            padding: 12px 12px;
             font-size: 12px;
             color: #374151;
-            line-height: 1.4;
+            line-height: 1.5;
+            vertical-align: top;
         }
 
         .dropdown-select .results-table td:first-child {
@@ -1589,6 +1590,7 @@
                                 <th>Date of Birth</th>
                                 <th>Stage</th>
                                 <th>Claim Numbers</th>
+                                <th>Policy Numbers</th>
                             </tr>
                         `;
                         table.appendChild(thead);
@@ -1617,17 +1619,31 @@
                                     .map(ins => ins.number);
                                 
                                 if (claimNumbers.length > 0) {
-                                    // Join with commas - all on one line
+                                    // Join with commas - wraps to multiple rows
                                     claimNumbersText = claimNumbers.join(', ');
                                 }
                             }
 
-                            // Create table cells
+                            // 🔥 Extract ALL policy numbers from insurance_numbers array
+                            let policyNumbersText = '-';
+                            if (item.insurance_numbers && item.insurance_numbers.length > 0) {
+                                const policyNumbers = item.insurance_numbers
+                                    .filter(ins => ins.type === 'policy' && ins.number)
+                                    .map(ins => ins.number);
+                                
+                                if (policyNumbers.length > 0) {
+                                    // Join with commas - wraps to multiple rows
+                                    policyNumbersText = policyNumbers.join(', ');
+                                }
+                            }
+
+                            // Create table cells with wrapping for claim/policy numbers
                             tr.innerHTML = `
                                 <td style="font-weight: 500; font-size: 12.5px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 20px;" title="${item.matter_name || '-'}">${item.matter_name || '-'}</td>
                                 <td class="text-gray">${item.date_of_birth || '-'}</td>
                                 <td class="text-gray">${item.stage || '-'}</td>
-                                <td class="text-gray" style="font-size: 12px; font-weight: 500;">${claimNumbersText}</td>
+                                <td class="text-gray" style="font-size: 12px; font-weight: 500; white-space: normal; word-wrap: break-word; max-width: 200px; line-height: 1.5;">${claimNumbersText}</td>
+                                <td class="text-gray" style="font-size: 12px; font-weight: 500; white-space: normal; word-wrap: break-word; max-width: 200px; line-height: 1.5;">${policyNumbersText}</td>
                             `;
 
                             tbody.appendChild(tr);
@@ -1742,9 +1758,11 @@
 
                     if (rightPanel && listElement && dropdown.classList.contains('open')) {
                         const rect = rightPanel.getBoundingClientRect();
-                        listElement.style.width = rect.width + 'px';
-                        listElement.style.left = rect.left + 'px';
-                        listElement.style.top = (rect.top - 4) + 'px'; // Scoot up by 2px
+                        // 🔥 Account for 2px left border on right panel
+                        const borderWidth = 8;
+                        listElement.style.width = (rect.width - borderWidth) + 'px';
+                        listElement.style.left = (rect.left + borderWidth) + 'px'; // Move right by border width
+                        listElement.style.top = (rect.top - 4) + 'px';
                         listElement.style.maxHeight = rect.height + 'px';
                     }
                 };
