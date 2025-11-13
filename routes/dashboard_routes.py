@@ -179,6 +179,10 @@ def check_queue(batch_id=None):
     try:
         user = session.get("user")
         
+        # Check for batch parameter in query string if not in URL path
+        if not batch_id:
+            batch_id = request.args.get('batch')
+        
         if batch_id:
             # Level 2: Show checks for specific batch
             api_logger.info(f"Loading checks for batch: {batch_id}")
