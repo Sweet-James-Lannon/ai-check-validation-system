@@ -3832,9 +3832,28 @@
 
         function disableFormEditing() {
             document.querySelectorAll('#checkDetailsForm input, #checkDetailsForm textarea').forEach(field => {
-                field.disabled = true;
-                field.classList.add('bg-gray-100', 'text-gray-600');
+                // Keep Matter ID field enabled so users can click the Salesforce link
+                if (field.name !== 'matter_id') {
+                    field.disabled = true;
+                    field.classList.add('bg-gray-100', 'text-gray-600');
+                }
             });
+
+            // Ensure Matter ID field stays clickable and maintains its styling
+            const matterIdField = document.querySelector('input[name="matter_id"]');
+            if (matterIdField) {
+                matterIdField.disabled = false;
+                matterIdField.classList.remove('bg-gray-100', 'text-gray-600');
+                // Keep it readonly so it can't be edited, but can be clicked
+                matterIdField.setAttribute('readonly', 'readonly');
+                
+                // Ensure it maintains its clickable styling if it has a URL
+                if (matterIdField.getAttribute('data-matter-url')) {
+                    matterIdField.style.cursor = 'pointer';
+                    matterIdField.style.color = '#3b82f6';
+                    matterIdField.style.textDecoration = 'underline';
+                }
+            }
 
             // Disable all action buttons (with null checks)
             const saveBtn = document.getElementById('saveProgress');
