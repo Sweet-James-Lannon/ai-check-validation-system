@@ -1123,10 +1123,12 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         {% if check.matter_url %}
-                                            <a href="{{ check.matter_url }}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 hover:underline max-w-xs truncate inline-block" title="Open in Salesforce" onclick="event.stopPropagation();">
-                                                {{ check.matter_name or '-' }}
-                                                <i class="fa-solid fa-external-link-alt ml-1 text-xs"></i>
-                                            </a>
+                                            <button onclick="window.open('{{ check.matter_url }}', '_blank'); event.stopPropagation();" 
+                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-colors duration-200 max-w-xs truncate" 
+                                                    title="Open in Salesforce">
+                                                <i class="fa-solid fa-external-link-alt mr-1.5"></i>
+                                                <span class="truncate">{{ check.matter_name or '-' }}</span>
+                                            </button>
                                         {% else %}
                                             <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.matter_name or '-' }}</div>
                                         {% endif %}
@@ -1237,10 +1239,12 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         {% if check.matter_url %}
-                                            <a href="{{ check.matter_url }}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 hover:underline max-w-xs truncate inline-block" title="Open in Salesforce" onclick="event.stopPropagation();">
-                                                {{ check.matter_name or '-' }}
-                                                <i class="fa-solid fa-external-link-alt ml-1 text-xs"></i>
-                                            </a>
+                                            <button onclick="window.open('{{ check.matter_url }}', '_blank'); event.stopPropagation();" 
+                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-colors duration-200 max-w-xs truncate" 
+                                                    title="Open in Salesforce">
+                                                <i class="fa-solid fa-external-link-alt mr-1.5"></i>
+                                                <span class="truncate">{{ check.matter_name or '-' }}</span>
+                                            </button>
                                         {% else %}
                                             <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.matter_name or '-' }}</div>
                                         {% endif %}
@@ -1693,10 +1697,12 @@
                 </td>
                 <td class="px-6 py-4">
                     ${check.matter_url ? 
-                        `<a href="${check.matter_url}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 hover:underline max-w-xs truncate inline-block" title="Open in Salesforce" onclick="event.stopPropagation();">
-                            ${check.matter_name || '-'}
-                            <i class="fa-solid fa-external-link-alt ml-1 text-xs"></i>
-                        </a>` 
+                        `<button onclick="window.open('${check.matter_url}', '_blank'); event.stopPropagation();" 
+                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-colors duration-200 max-w-xs truncate" 
+                                title="Open in Salesforce">
+                            <i class="fa-solid fa-external-link-alt mr-1.5"></i>
+                            <span class="truncate">${check.matter_name || '-'}</span>
+                        </button>` 
                         : 
                         `<div class="text-sm text-gray-900 max-w-xs truncate">${check.matter_name || '-'}</div>`
                     }
@@ -1782,10 +1788,12 @@
                 </td>
                 <td class="px-6 py-4">
                     ${check.matter_url ? 
-                        `<a href="${check.matter_url}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 hover:underline max-w-xs truncate inline-block" title="Open in Salesforce" onclick="event.stopPropagation();">
-                            ${check.matter_name || '-'}
-                            <i class="fa-solid fa-external-link-alt ml-1 text-xs"></i>
-                        </a>` 
+                        `<button onclick="window.open('${check.matter_url}', '_blank'); event.stopPropagation();" 
+                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-colors duration-200 max-w-xs truncate" 
+                                title="Open in Salesforce">
+                            <i class="fa-solid fa-external-link-alt mr-1.5"></i>
+                            <span class="truncate">${check.matter_name || '-'}</span>
+                        </button>` 
                         : 
                         `<div class="text-sm text-gray-900 max-w-xs truncate">${check.matter_name || '-'}</div>`
                     }
@@ -1843,10 +1851,12 @@
                 </td>
                 <td class="px-6 py-4">
                     ${check.matter_url ? 
-                        `<a href="${check.matter_url}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 hover:underline max-w-xs truncate inline-block" title="Open in Salesforce" onclick="event.stopPropagation();">
-                            ${check.matter_name || '-'}
-                            <i class="fa-solid fa-external-link-alt ml-1 text-xs"></i>
-                        </a>` 
+                        `<button onclick="window.open('${check.matter_url}', '_blank'); event.stopPropagation();" 
+                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-colors duration-200 max-w-xs truncate" 
+                                title="Open in Salesforce">
+                            <i class="fa-solid fa-external-link-alt mr-1.5"></i>
+                            <span class="truncate">${check.matter_name || '-'}</span>
+                        </button>` 
                         : 
                         `<div class="text-sm text-gray-900 max-w-xs truncate">${check.matter_name || '-'}</div>`
                     }
