@@ -490,7 +490,7 @@ def salesforce_claimant_lookup():
         # =============================================================================
         
         # Jai's Salesforce endpoint
-        salesforce_url = "https://sweetjames.my.salesforce-sites.com/SmartAgent/services/apexrest/AI_Flask_App_Fetch_Claim_Number"
+        salesforce_url = "https://sweetjames.my.salesforce-sites.com/SmartAgent/services/apexrest/AI_Flask_App_Fetch_Matter"
         salesforce_token = "00D5f000000JpstEAC"
         
         # =============================================================================
@@ -665,7 +665,7 @@ def salesforce_search_claimants():
         api_logger.info(f"🔍 Real-time Salesforce search: '{search_query}'")
         
         # Salesforce configuration
-        salesforce_url = "https://sweetjames.my.salesforce-sites.com/SmartAgent/services/apexrest/AI_Flask_App_Fetch_Claim_Number"
+        salesforce_url = "https://sweetjames.my.salesforce-sites.com/SmartAgent/services/apexrest/AI_Flask_App_Fetch_Matter"
         salesforce_token = "00D5f000000JpstEAC"
         
         # Call Salesforce
