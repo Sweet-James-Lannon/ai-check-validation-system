@@ -4170,6 +4170,188 @@
         // Run auto-search after a short delay to ensure all fields are loaded
         setTimeout(performAutoSearchOnLoad, 500);
         
+        // ============================================================================
+        // AUTOMATIC CLAIMANT SEARCH - Duplicate Detection 🔍
+        // ============================================================================
+        async function performClaimantAutoSearchOnLoad() {
+            console.log('🔍 CLAIMANT AUTO-SEARCH: Starting...');
+            
+            // Get the claimant name from the form
+            const claimantInput = document.querySelector('input[name="claimant"]');
+            
+            if (!claimantInput || !claimantInput.value) {
+                console.log('⏭️ Skipping claimant auto-search: no claimant name found');
+                return;
+            }
+            
+            const claimantName = claimantInput.value.trim();
+            
+            // Skip placeholder values
+            const placeholders = ['none', 'null', 'n/a', 'na', 'unknown', '-'];
+            if (placeholders.includes(claimantName.toLowerCase())) {
+                console.log('⏭️ Skipping claimant auto-search: placeholder value');
+                return;
+            }
+            
+            console.log('✨ CLAIMANT AUTO-SEARCH TRIGGERED!');
+            console.log('   Claimant Name:', claimantName);
+            
+            try {
+                // Pre-populate the search box
+                const searchBox = document.getElementById('matterNameSearchBox');
+                if (searchBox) {
+                    searchBox.value = claimantName;
+                    console.log('📝 Search box pre-populated with claimant name');
+                }
+                
+                // Get the dropdown element
+                const dropdown = document.querySelector('.dropdown-select');
+                const listElement = document.getElementById('matterNameList');
+                
+                if (!dropdown || !listElement) {
+                    console.log('⚠️ Dropdown elements not found');
+                    return;
+                }
+                
+                // Show loading state
+                listElement.innerHTML = '<div class="loading-message" style="padding: 20px; text-align: center; color: #6B7280;">Searching for claimant...</div>';
+                
+                // Open the dropdown
+                dropdown.classList.add('open');
+                console.log('📂 Dropdown opened');
+                
+                // Position the dropdown correctly
+                const rightPanel = document.querySelector('.right-panel');
+                if (rightPanel) {
+                    const rect = rightPanel.getBoundingClientRect();
+                    const borderWidth = 2;
+                    listElement.style.width = (rect.width - borderWidth) + 'px';
+                    listElement.style.left = (rect.left + borderWidth) + 'px';
+                    listElement.style.top = (rect.top - 4) + 'px';
+                    listElement.style.maxHeight = '500px';
+                    listElement.style.overflowY = 'auto';
+                }
+                
+                // Perform the Salesforce search
+                const response = await fetch(`/api/salesforce/search?q=${encodeURIComponent(claimantName)}`);
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.results && data.results.length > 0) {
+                    console.log(`✅ Found ${data.results.length} matters for claimant: ${claimantName}`);
+                    
+                    // Build the results table
+                    const table = document.createElement('table');
+                    table.className = 'results-table';
+                    table.style.width = '100%';
+                    table.style.borderCollapse = 'collapse';
+                    
+                    const thead = document.createElement('thead');
+                    thead.innerHTML = `
+                        <tr>
+                            <th>Matter Name</th>
+                            <th>Date of Birth</th>
+                            <th>Stage</th>
+                            <th>Claim Numbers</th>
+                            <th>Policy Numbers</th>
+                        </tr>
+                    `;
+                    table.appendChild(thead);
+                    
+                    const tbody = document.createElement('tbody');
+                    
+                    data.results.forEach((item) => {
+                        const tr = document.createElement('tr');
+                        tr.style.cursor = 'pointer';
+                        
+                        // Extract claim numbers
+                        const claimNumbers = item.insurance_numbers
+                            .filter(ins => ins.type === 'claim' && ins.number)
+                            .map(ins => ins.number);
+                        const claimNumbersText = claimNumbers.length > 0 ? claimNumbers.join(', ') : '-';
+                        
+                        // Extract policy numbers
+                        const policyNumbers = item.insurance_numbers
+                            .filter(ins => ins.type === 'policy' && ins.number)
+                            .map(ins => ins.number);
+                        const policyNumbersText = policyNumbers.length > 0 ? policyNumbers.join(', ') : '-';
+                        
+                        tr.innerHTML = `
+                            <td style="font-weight: 500; font-size: 12.5px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 20px;" title="${item.matter_name || '-'}">${item.matter_name || '-'}</td>
+                            <td style="font-size: 12px; white-space: nowrap;">${item.date_of_birth || '-'}</td>
+                            <td style="font-size: 12px; white-space: nowrap;">${item.stage || '-'}</td>
+                            <td class="text-gray" style="font-size: 12px; font-weight: 500; white-space: normal; word-wrap: break-word; max-width: 200px; line-height: 1.5;">${claimNumbersText}</td>
+                            <td class="text-gray" style="font-size: 12px; font-weight: 500; white-space: normal; word-wrap: break-word; max-width: 200px; line-height: 1.5;">${policyNumbersText}</td>
+                        `;
+                        
+                        // Make row clickable
+                        tr.addEventListener('click', () => {
+                            handleMatterSelection(item);
+                            dropdown.classList.remove('open');
+                        });
+                        
+                        tbody.appendChild(tr);
+                    });
+                    
+                    table.appendChild(tbody);
+                    listElement.innerHTML = '';
+                    listElement.appendChild(table);
+                    
+                    // Show notification
+                    const notification = document.createElement('div');
+                    notification.textContent = `Found ${data.results.length} matter${data.results.length !== 1 ? 's' : ''} for "${claimantName}"`;
+                    notification.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #10B981;
+                        color: white;
+                        padding: 12px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        font-weight: 500;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        z-index: 10000;
+                        animation: slideIn 0.3s ease-out;
+                    `;
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        notification.style.animation = 'slideOut 0.3s ease-out';
+                        setTimeout(() => notification.remove(), 300);
+                    }, 4000);
+                    
+                    console.log('✅ Claimant auto-search completed successfully!');
+                    
+                } else {
+                    // No results found
+                    listElement.innerHTML = `
+                        <div style="padding: 20px; text-align: center; color: #6B7280;">
+                            <p style="font-weight: 500; margin-bottom: 8px;">No matters found</p>
+                            <p style="font-size: 13px;">No existing matters for "${claimantName}"</p>
+                        </div>
+                    `;
+                    console.log('ℹ️ No results found for claimant search');
+                }
+                
+            } catch (error) {
+                console.error('❌ Claimant auto-search error:', error);
+                
+                const listElement = document.getElementById('matterNameList');
+                if (listElement) {
+                    listElement.innerHTML = `
+                        <div style="padding: 20px; text-align: center; color: #EF4444;">
+                            <p style="font-weight: 500;">Search failed</p>
+                            <p style="font-size: 13px; margin-top: 4px;">Please try searching manually</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // Run claimant auto-search after dropdown is fully initialized
+        // Delay longer than matter_id auto-search to avoid conflicts
+        setTimeout(performClaimantAutoSearchOnLoad, 800);
+        
         });
     </script>
 </body>
