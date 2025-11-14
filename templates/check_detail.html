@@ -1310,6 +1310,283 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // ============================================================================
+            // 🔥 GLOBAL INSURANCE DROPDOWN FUNCTION
+            // Must be defined globally so both manual search AND auto-search can use it!
+            // ============================================================================
+            
+            window.addInsuranceDropdown = (inputElement, numbers, type) => {
+                if (!inputElement || numbers.length === 0) return;
+
+                // Remove any existing wrapper
+                const existingWrapper = inputElement.parentElement.classList.contains('insurance-dropdown-wrapper')
+                    ? inputElement.parentElement
+                    : null;
+
+                if (existingWrapper) {
+                    const parent = existingWrapper.parentElement;
+                    parent.insertBefore(inputElement, existingWrapper);
+                    existingWrapper.remove();
+                }
+
+                // Create wrapper container
+                const wrapper = document.createElement('div');
+                wrapper.className = 'insurance-dropdown-wrapper';
+                wrapper.style.position = 'relative';
+                wrapper.style.width = '100%';
+
+                // Wrap the input
+                inputElement.parentNode.insertBefore(wrapper, inputElement);
+                wrapper.appendChild(inputElement);
+
+                // Modify input to make room for dropdown button
+                inputElement.style.paddingRight = '35px';
+
+                // Create dropdown button/icon
+                const dropdownBtn = document.createElement('button');
+                dropdownBtn.type = 'button';
+                dropdownBtn.className = 'insurance-dropdown-btn';
+                dropdownBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>';
+                dropdownBtn.title = `View ${numbers.length} Salesforce ${type} number${numbers.length > 1 ? 's' : ''}`;
+                dropdownBtn.style.position = 'absolute';
+                dropdownBtn.style.right = '8px';
+                dropdownBtn.style.top = '50%';
+                dropdownBtn.style.transform = 'translateY(-50%)';
+                dropdownBtn.style.background = 'transparent';
+                dropdownBtn.style.color = '#64748b';
+                dropdownBtn.style.border = 'none';
+                dropdownBtn.style.borderRadius = '4px';
+                dropdownBtn.style.width = '22px';
+                dropdownBtn.style.height = '22px';
+                dropdownBtn.style.cursor = 'pointer';
+                dropdownBtn.style.display = 'flex';
+                dropdownBtn.style.alignItems = 'center';
+                dropdownBtn.style.justifyContent = 'center';
+                dropdownBtn.style.zIndex = '10';
+                dropdownBtn.style.transition = 'all 0.2s';
+
+                // Hover effect
+                dropdownBtn.addEventListener('mouseenter', () => {
+                    dropdownBtn.style.background = '#f1f5f9';
+                    dropdownBtn.style.color = '#3b82f6';
+                });
+                dropdownBtn.addEventListener('mouseleave', () => {
+                    dropdownBtn.style.background = 'transparent';
+                    dropdownBtn.style.color = '#64748b';
+                });
+
+                // Create dropdown list
+                const dropdownList = document.createElement('div');
+                dropdownList.className = 'insurance-dropdown-list';
+                dropdownList.style.position = 'absolute';
+                dropdownList.style.top = 'calc(100% + 4px)';
+                dropdownList.style.left = '0';
+                dropdownList.style.right = '0';
+                dropdownList.style.background = 'white';
+                dropdownList.style.border = '1px solid #cbd5e1';
+                dropdownList.style.borderRadius = '6px';
+                dropdownList.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                dropdownList.style.maxHeight = '200px';
+                dropdownList.style.overflowY = 'auto';
+                dropdownList.style.zIndex = '1000';
+                dropdownList.style.display = 'none';
+
+                // Add header
+                const header = document.createElement('div');
+                const headerText = type === 'company' ? 'Insurance Companies' : `Salesforce ${type} numbers`;
+                header.textContent = headerText;
+                header.style.padding = '8px 12px';
+                header.style.background = '#f1f5f9';
+                header.style.borderBottom = '1px solid #cbd5e1';
+                header.style.fontWeight = 'bold';
+                header.style.fontSize = '12px';
+                header.style.color = '#475569';
+                dropdownList.appendChild(header);
+
+                // Add insurance items (numbers or companies)
+                numbers.forEach(ins => {
+                    const item = document.createElement('div');
+                    
+                    // Display name based on type
+                    if (type === 'company') {
+                        item.textContent = ins.name; // Show company name
+                        item.dataset.insuranceId = ins.insurance_id; // Store InsuranceId
+                        item.dataset.companyId = ins.company_id; // Store Company Id
+                    } else {
+                        item.textContent = ins.number; // Show claim/policy number
+                        item.dataset.insuranceId = ins.insurance_id;
+                    }
+                    
+                    item.style.padding = '8px 12px';
+                    item.style.fontSize = '13px';
+                    item.style.borderBottom = '1px solid #f1f5f9';
+                    item.style.cursor = 'pointer';
+                    item.style.transition = 'background 0.15s';
+
+                    item.addEventListener('mouseenter', () => {
+                        item.style.background = '#f8fafc';
+                    });
+                    item.addEventListener('mouseleave', () => {
+                        item.style.background = 'white';
+                    });
+                    
+                    // Click to select
+                    item.addEventListener('click', () => {
+                        // 🔥 CRITICAL FIX: Use the data directly from 'ins' object (already has all linked fields)
+                        // No need to search window.currentInsuranceRecords anymore!
+                        
+                        console.log('🔍 Dropdown item clicked:', { type, ins });
+                        
+                        if (type === 'company') {
+                            // 🔥 LINKED SELECTION: Selecting company updates claim AND policy numbers!
+                            // Update Insurance Company field
+                            inputElement.value = ins.company_name || ins.name;
+                            inputElement.dataset.insuranceId = ins.insurance_id;
+                            inputElement.dataset.companyId = ins.company_id;
+                            inputElement.classList.add('field-salesforce');
+                            
+                            // 🎯 AUTO-UPDATE linked Claim Number field
+                            const claimInput = document.querySelector('input[name="sf_claim_number"]');
+                            if (claimInput && ins.claim_number) {
+                                claimInput.value = ins.claim_number;
+                                claimInput.dataset.insuranceId = ins.insurance_id;
+                                claimInput.classList.add('field-salesforce');
+                                claimInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                            
+                            // 🎯 AUTO-UPDATE linked Policy Number field
+                            const policyInput = document.querySelector('input[name="sf_policy_number"]');
+                            if (policyInput && ins.policy_number) {
+                                policyInput.value = ins.policy_number;
+                                policyInput.dataset.insuranceId = ins.insurance_id;
+                                policyInput.classList.add('field-salesforce');
+                                policyInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                            
+                            console.log('🔗 COMPANY SELECTED - LINKED UPDATE:', {
+                                company: ins.company_name || ins.name,
+                                claim: ins.claim_number,
+                                policy: ins.policy_number,
+                                insuranceId: ins.insurance_id
+                            });
+                            
+                        } else if (type === 'claim') {
+                            // 🔥 BIDIRECTIONAL LINKING: Selecting claim number updates company AND policy!
+                            // Update Claim Number field
+                            inputElement.value = ins.claim_number || ins.number;
+                            inputElement.dataset.insuranceId = ins.insurance_id;
+                            inputElement.classList.add('field-salesforce');
+                            
+                            // 🎯 AUTO-UPDATE linked Insurance Company field
+                            const companyInput = document.querySelector('input[name="insurance_company"]');
+                            if (companyInput && ins.company_name) {
+                                companyInput.value = ins.company_name;
+                                companyInput.dataset.insuranceId = ins.insurance_id;
+                                companyInput.dataset.companyId = ins.company_id;
+                                companyInput.classList.add('field-salesforce');
+                                companyInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                            
+                            // 🎯 AUTO-UPDATE linked Policy Number field
+                            const policyInput = document.querySelector('input[name="sf_policy_number"]');
+                            if (policyInput && ins.policy_number) {
+                                policyInput.value = ins.policy_number;
+                                policyInput.dataset.insuranceId = ins.insurance_id;
+                                policyInput.classList.add('field-salesforce');
+                                policyInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                            
+                            console.log('🔗 CLAIM SELECTED - LINKED UPDATE:', {
+                                claim: ins.claim_number || ins.number,
+                                company: ins.company_name,
+                                policy: ins.policy_number,
+                                insuranceId: ins.insurance_id
+                            });
+                            
+                        } else if (type === 'policy') {
+                            // 🔥 BIDIRECTIONAL LINKING: Selecting policy number updates company AND claim!
+                            // Update Policy Number field
+                            inputElement.value = ins.policy_number || ins.number;
+                            inputElement.dataset.insuranceId = ins.insurance_id;
+                            inputElement.classList.add('field-salesforce');
+                            
+                            // 🎯 AUTO-UPDATE linked Insurance Company field
+                            const companyInput = document.querySelector('input[name="insurance_company"]');
+                            if (companyInput && ins.company_name) {
+                                companyInput.value = ins.company_name;
+                                companyInput.dataset.insuranceId = ins.insurance_id;
+                                companyInput.dataset.companyId = ins.company_id;
+                                companyInput.classList.add('field-salesforce');
+                                companyInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                            
+                            // 🎯 AUTO-UPDATE linked Claim Number field
+                            const claimInput = document.querySelector('input[name="sf_claim_number"]');
+                            if (claimInput && ins.claim_number) {
+                                claimInput.value = ins.claim_number;
+                                claimInput.dataset.insuranceId = ins.insurance_id;
+                                claimInput.classList.add('field-salesforce');
+                                claimInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                            
+                            console.log('🔗 POLICY SELECTED - LINKED UPDATE:', {
+                                policy: ins.policy_number || ins.number,
+                                company: ins.company_name,
+                                claim: ins.claim_number,
+                                insuranceId: ins.insurance_id
+                            });
+                            
+                        } else {
+                            // Fallback for any other type
+                            inputElement.value = ins.number || ins.name;
+                            inputElement.dataset.insuranceId = ins.insurance_id;
+                            inputElement.classList.add('field-salesforce');
+                        }
+                        
+                        inputElement.dispatchEvent(new Event('change', { bubbles: true }));
+                        dropdownList.style.display = 'none';
+                        dropdownBtn.innerHTML = chevronDown;
+                        console.log(`✅ Selected ${type}:`, inputElement.value, 'InsuranceId:', ins.insurance_id);
+                    });
+
+                    dropdownList.appendChild(item);
+                });
+
+                wrapper.appendChild(dropdownBtn);
+                wrapper.appendChild(dropdownList);
+
+                // Toggle dropdown on button click
+                const chevronDown = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>';
+                const chevronUp = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/></svg>';
+
+                dropdownBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = dropdownList.style.display === 'block';
+
+                    // Close all other insurance dropdowns
+                    document.querySelectorAll('.insurance-dropdown-list').forEach(dl => {
+                        dl.style.display = 'none';
+                    });
+                    document.querySelectorAll('.insurance-dropdown-btn').forEach(btn => {
+                        btn.innerHTML = chevronDown;
+                    });
+
+                    dropdownList.style.display = isOpen ? 'none' : 'block';
+                    dropdownBtn.innerHTML = isOpen ? chevronDown : chevronUp;
+                });
+
+                // Close dropdown when clicking outside
+                const chevronDownSvg = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>';
+                document.addEventListener('click', (e) => {
+                    if (!wrapper.contains(e.target)) {
+                        dropdownList.style.display = 'none';
+                        dropdownBtn.innerHTML = chevronDownSvg;
+                    }
+                });
+
+                console.log(`✅ Created ${type} dropdown with ${numbers.length} options`);
+            };
+
+            // ============================================================================
             // 🔥 DRAGGABLE PANEL DIVIDER - Resize left/right panels
             // ============================================================================
 
@@ -2190,278 +2467,7 @@
                             // 🎯 NO AUTO-POPULATION - We'll add DROPDOWNS to RIGHT side instead!
                             // Users select from dropdown on the Salesforce Insurance box
 
-                            // Function to add dropdown wrapper to input (for LEFT side Provider & Claims if still needed)
-                            const addInsuranceDropdown = (inputElement, numbers, type) => {
-                                if (!inputElement || numbers.length === 0) return;
-
-                                // Remove any existing wrapper
-                                const existingWrapper = inputElement.parentElement.classList.contains('insurance-dropdown-wrapper')
-                                    ? inputElement.parentElement
-                                    : null;
-
-                                if (existingWrapper) {
-                                    const parent = existingWrapper.parentElement;
-                                    parent.insertBefore(inputElement, existingWrapper);
-                                    existingWrapper.remove();
-                                }
-
-                                // Create wrapper container
-                                const wrapper = document.createElement('div');
-                                wrapper.className = 'insurance-dropdown-wrapper';
-                                wrapper.style.position = 'relative';
-                                wrapper.style.width = '100%';
-
-                                // Wrap the input
-                                inputElement.parentNode.insertBefore(wrapper, inputElement);
-                                wrapper.appendChild(inputElement);
-
-                                // Modify input to make room for dropdown button
-                                inputElement.style.paddingRight = '35px';
-
-                                // Create dropdown button/icon
-                                const dropdownBtn = document.createElement('button');
-                                dropdownBtn.type = 'button';
-                                dropdownBtn.className = 'insurance-dropdown-btn';
-                                dropdownBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>';
-                                dropdownBtn.title = `View ${numbers.length} Salesforce ${type} number${numbers.length > 1 ? 's' : ''}`;
-                                dropdownBtn.style.position = 'absolute';
-                                dropdownBtn.style.right = '8px';
-                                dropdownBtn.style.top = '50%';
-                                dropdownBtn.style.transform = 'translateY(-50%)';
-                                dropdownBtn.style.background = 'transparent';
-                                dropdownBtn.style.color = '#64748b';
-                                dropdownBtn.style.border = 'none';
-                                dropdownBtn.style.borderRadius = '4px';
-                                dropdownBtn.style.width = '22px';
-                                dropdownBtn.style.height = '22px';
-                                dropdownBtn.style.cursor = 'pointer';
-                                dropdownBtn.style.display = 'flex';
-                                dropdownBtn.style.alignItems = 'center';
-                                dropdownBtn.style.justifyContent = 'center';
-                                dropdownBtn.style.zIndex = '10';
-                                dropdownBtn.style.transition = 'all 0.2s';
-
-                                // Hover effect
-                                dropdownBtn.addEventListener('mouseenter', () => {
-                                    dropdownBtn.style.background = '#f1f5f9';
-                                    dropdownBtn.style.color = '#3b82f6';
-                                });
-                                dropdownBtn.addEventListener('mouseleave', () => {
-                                    dropdownBtn.style.background = 'transparent';
-                                    dropdownBtn.style.color = '#64748b';
-                                });
-
-                                // Create dropdown list
-                                const dropdownList = document.createElement('div');
-                                dropdownList.className = 'insurance-dropdown-list';
-                                dropdownList.style.position = 'absolute';
-                                dropdownList.style.top = 'calc(100% + 4px)';
-                                dropdownList.style.left = '0';
-                                dropdownList.style.right = '0';
-                                dropdownList.style.background = 'white';
-                                dropdownList.style.border = '1px solid #cbd5e1';
-                                dropdownList.style.borderRadius = '6px';
-                                dropdownList.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-                                dropdownList.style.maxHeight = '200px';
-                                dropdownList.style.overflowY = 'auto';
-                                dropdownList.style.zIndex = '1000';
-                                dropdownList.style.display = 'none';
-
-                                // Add header
-                                const header = document.createElement('div');
-                                const headerText = type === 'company' ? 'Insurance Companies' : `Salesforce ${type} numbers`;
-                                header.textContent = headerText;
-                                header.style.padding = '8px 12px';
-                                header.style.background = '#f1f5f9';
-                                header.style.borderBottom = '1px solid #cbd5e1';
-                                header.style.fontWeight = 'bold';
-                                header.style.fontSize = '12px';
-                                header.style.color = '#475569';
-                                dropdownList.appendChild(header);
-
-                                // Add insurance items (numbers or companies)
-                                numbers.forEach(ins => {
-                                    const item = document.createElement('div');
-                                    
-                                    // Display name based on type
-                                    if (type === 'company') {
-                                        item.textContent = ins.name; // Show company name
-                                        item.dataset.insuranceId = ins.insurance_id; // Store InsuranceId
-                                        item.dataset.companyId = ins.company_id; // Store Company Id
-                                    } else {
-                                        item.textContent = ins.number; // Show claim/policy number
-                                        item.dataset.insuranceId = ins.insurance_id;
-                                    }
-                                    
-                                    item.style.padding = '8px 12px';
-                                    item.style.fontSize = '13px';
-                                    item.style.borderBottom = '1px solid #f1f5f9';
-                                    item.style.cursor = 'pointer';
-                                    item.style.transition = 'background 0.15s';
-
-                                    item.addEventListener('mouseenter', () => {
-                                        item.style.background = '#f8fafc';
-                                    });
-                                    item.addEventListener('mouseleave', () => {
-                                        item.style.background = 'white';
-                                    });
-                                    
-                                    // Click to select
-                                    item.addEventListener('click', () => {
-                                        // 🔥 CRITICAL FIX: Use the data directly from 'ins' object (already has all linked fields)
-                                        // No need to search window.currentInsuranceRecords anymore!
-                                        
-                                        console.log('🔍 Dropdown item clicked:', { type, ins });
-                                        
-                                        if (type === 'company') {
-                                            // 🔥 LINKED SELECTION: Selecting company updates claim AND policy numbers!
-                                            // Update Insurance Company field
-                                            inputElement.value = ins.company_name || ins.name;
-                                            inputElement.dataset.insuranceId = ins.insurance_id;
-                                            inputElement.dataset.companyId = ins.company_id;
-                                            inputElement.classList.add('field-salesforce');
-                                            
-                                            // 🎯 AUTO-UPDATE linked Claim Number field
-                                            const claimInput = document.querySelector('input[name="sf_claim_number"]');
-                                            if (claimInput && ins.claim_number) {
-                                                claimInput.value = ins.claim_number;
-                                                claimInput.dataset.insuranceId = ins.insurance_id;
-                                                claimInput.classList.add('field-salesforce');
-                                                claimInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                            }
-                                            
-                                            // 🎯 AUTO-UPDATE linked Policy Number field
-                                            const policyInput = document.querySelector('input[name="sf_policy_number"]');
-                                            if (policyInput && ins.policy_number) {
-                                                policyInput.value = ins.policy_number;
-                                                policyInput.dataset.insuranceId = ins.insurance_id;
-                                                policyInput.classList.add('field-salesforce');
-                                                policyInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                            }
-                                            
-                                            console.log('🔗 COMPANY SELECTED - LINKED UPDATE:', {
-                                                company: ins.company_name || ins.name,
-                                                claim: ins.claim_number,
-                                                policy: ins.policy_number,
-                                                insuranceId: ins.insurance_id
-                                            });
-                                            
-                                        } else if (type === 'claim') {
-                                            // 🔥 BIDIRECTIONAL LINKING: Selecting claim number updates company AND policy!
-                                            // Update Claim Number field
-                                            inputElement.value = ins.claim_number || ins.number;
-                                            inputElement.dataset.insuranceId = ins.insurance_id;
-                                            inputElement.classList.add('field-salesforce');
-                                            
-                                            // 🎯 AUTO-UPDATE linked Insurance Company field
-                                            const companyInput = document.querySelector('input[name="insurance_company"]');
-                                            if (companyInput && ins.company_name) {
-                                                companyInput.value = ins.company_name;
-                                                companyInput.dataset.insuranceId = ins.insurance_id;
-                                                companyInput.dataset.companyId = ins.company_id;
-                                                companyInput.classList.add('field-salesforce');
-                                                companyInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                            }
-                                            
-                                            // 🎯 AUTO-UPDATE linked Policy Number field
-                                            const policyInput = document.querySelector('input[name="sf_policy_number"]');
-                                            if (policyInput && ins.policy_number) {
-                                                policyInput.value = ins.policy_number;
-                                                policyInput.dataset.insuranceId = ins.insurance_id;
-                                                policyInput.classList.add('field-salesforce');
-                                                policyInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                            }
-                                            
-                                            console.log('🔗 CLAIM SELECTED - LINKED UPDATE:', {
-                                                claim: ins.claim_number || ins.number,
-                                                company: ins.company_name,
-                                                policy: ins.policy_number,
-                                                insuranceId: ins.insurance_id
-                                            });
-                                            
-                                        } else if (type === 'policy') {
-                                            // 🔥 BIDIRECTIONAL LINKING: Selecting policy number updates company AND claim!
-                                            // Update Policy Number field
-                                            inputElement.value = ins.policy_number || ins.number;
-                                            inputElement.dataset.insuranceId = ins.insurance_id;
-                                            inputElement.classList.add('field-salesforce');
-                                            
-                                            // 🎯 AUTO-UPDATE linked Insurance Company field
-                                            const companyInput = document.querySelector('input[name="insurance_company"]');
-                                            if (companyInput && ins.company_name) {
-                                                companyInput.value = ins.company_name;
-                                                companyInput.dataset.insuranceId = ins.insurance_id;
-                                                companyInput.dataset.companyId = ins.company_id;
-                                                companyInput.classList.add('field-salesforce');
-                                                companyInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                            }
-                                            
-                                            // 🎯 AUTO-UPDATE linked Claim Number field
-                                            const claimInput = document.querySelector('input[name="sf_claim_number"]');
-                                            if (claimInput && ins.claim_number) {
-                                                claimInput.value = ins.claim_number;
-                                                claimInput.dataset.insuranceId = ins.insurance_id;
-                                                claimInput.classList.add('field-salesforce');
-                                                claimInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                            }
-                                            
-                                            console.log('🔗 POLICY SELECTED - LINKED UPDATE:', {
-                                                policy: ins.policy_number || ins.number,
-                                                company: ins.company_name,
-                                                claim: ins.claim_number,
-                                                insuranceId: ins.insurance_id
-                                            });
-                                            
-                                        } else {
-                                            // Fallback for any other type
-                                            inputElement.value = ins.number || ins.name;
-                                            inputElement.dataset.insuranceId = ins.insurance_id;
-                                            inputElement.classList.add('field-salesforce');
-                                        }
-                                        
-                                        inputElement.dispatchEvent(new Event('change', { bubbles: true }));
-                                        dropdownList.style.display = 'none';
-                                        dropdownBtn.innerHTML = chevronDown;
-                                        console.log(`✅ Selected ${type}:`, inputElement.value, 'InsuranceId:', ins.insurance_id);
-                                    });
-
-                                    dropdownList.appendChild(item);
-                                });
-
-                                wrapper.appendChild(dropdownBtn);
-                                wrapper.appendChild(dropdownList);
-
-                                // Toggle dropdown on button click
-                                const chevronDown = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>';
-                                const chevronUp = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/></svg>';
-
-                                dropdownBtn.addEventListener('click', (e) => {
-                                    e.stopPropagation();
-                                    const isOpen = dropdownList.style.display === 'block';
-
-                                    // Close all other insurance dropdowns
-                                    document.querySelectorAll('.insurance-dropdown-list').forEach(dl => {
-                                        dl.style.display = 'none';
-                                    });
-                                    document.querySelectorAll('.insurance-dropdown-btn').forEach(btn => {
-                                        btn.innerHTML = chevronDown;
-                                    });
-
-                                    dropdownList.style.display = isOpen ? 'none' : 'block';
-                                    dropdownBtn.innerHTML = isOpen ? chevronDown : chevronUp;
-                                });
-
-                                // Close dropdown when clicking outside
-                                const chevronDownSvg = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>';
-                                document.addEventListener('click', (e) => {
-                                    if (!wrapper.contains(e.target)) {
-                                        dropdownList.style.display = 'none';
-                                        dropdownBtn.innerHTML = chevronDownSvg;
-                                    }
-                                });
-
-                                console.log(`✅ ${type} number Salesforce view dropdown integrated`);
-                            };
+                            // 🔥 Use the globally-defined addInsuranceDropdown function (defined at top of script)
 
                             // 🔥 ADD DROPDOWNS TO RIGHT SIDE (Salesforce Insurance box)
                             // Users select from Salesforce insurance options on the RIGHT side
@@ -3867,6 +3873,175 @@
                 setTimeout(() => toast.remove(), 300);
             }, 4000);
         }
+        
+        // ============================================================================
+        // 🔥 HELPER FUNCTION - EXACT COPY of dropdown creation from manual search
+        // ============================================================================
+        
+        function createInsuranceDropdowns(matchedResult) {
+            console.log('🎨 Creating insurance dropdowns (AUTO-LOAD):', matchedResult);
+            
+            const insuranceNumbers = matchedResult.insurance_numbers || [];
+            
+            if (insuranceNumbers.length === 0) {
+                console.log('⚠️ No insurance numbers to create dropdowns');
+                return;
+            }
+            
+            // Group insurance data by InsuranceId (EXACT same as manual - line 2157)
+            const insuranceRecordsMap = new Map();
+            
+            insuranceNumbers.forEach(ins => {
+                const insuranceId = ins.insurance_id;
+                const companyName = ins.insurance_company_name;
+                const companyId = ins.insurance_company_id;
+                
+                if (!insuranceRecordsMap.has(insuranceId)) {
+                    insuranceRecordsMap.set(insuranceId, {
+                        insurance_id: insuranceId,
+                        company_name: companyName,
+                        company_id: companyId,
+                        claim_number: null,
+                        policy_number: null
+                    });
+                }
+                
+                const record = insuranceRecordsMap.get(insuranceId);
+                if (ins.type === 'claim' && ins.number) {
+                    record.claim_number = ins.number;
+                } else if (ins.type === 'policy' && ins.number) {
+                    record.policy_number = ins.number;
+                }
+            });
+            
+            const insuranceRecords = Array.from(insuranceRecordsMap.values());
+            console.log('🏢 Grouped insurance records (AUTO-LOAD):', insuranceRecords);
+            
+            // Store globally (same as manual - line 2191)
+            window.currentInsuranceRecords = insuranceRecords;
+            
+            // 🔥 Use the globally-defined addInsuranceDropdown function
+            // Now call it EXACTLY like manual search does (lines 2482-2530)
+            const insuranceCompanyInput = document.querySelector('input[name="insurance_company"]');
+            const sfClaimNumberInput = document.querySelector('input[name="sf_claim_number"]');
+            const sfPolicyNumberInput = document.querySelector('input[name="sf_policy_number"]');
+            
+            if (insuranceRecords.length > 0 && insuranceCompanyInput) {
+                const companyDropdownItems = insuranceRecords.map(rec => ({
+                    name: rec.company_name,
+                    insurance_id: rec.insurance_id,
+                    company_id: rec.company_id,
+                    claim_number: rec.claim_number,
+                    policy_number: rec.policy_number,
+                    company_name: rec.company_name
+                }));
+                window.addInsuranceDropdown(insuranceCompanyInput, companyDropdownItems, 'company');
+                console.log('✅ Added LINKED dropdown (AUTO-LOAD) to Insurance Company');
+            }
+            
+            if (insuranceRecords.length > 0 && sfClaimNumberInput) {
+                const claimDropdownItems = insuranceRecords
+                    .filter(rec => rec.claim_number)
+                    .map(rec => ({
+                        number: rec.claim_number,
+                        insurance_id: rec.insurance_id,
+                        claim_number: rec.claim_number,
+                        policy_number: rec.policy_number,
+                        company_name: rec.company_name,
+                        company_id: rec.company_id
+                    }));
+                if (claimDropdownItems.length > 0) {
+                    window.addInsuranceDropdown(sfClaimNumberInput, claimDropdownItems, 'claim');
+                    console.log('✅ Added dropdown (AUTO-LOAD) to SF Claim Number');
+                }
+            }
+            
+            if (insuranceRecords.length > 0 && sfPolicyNumberInput) {
+                const policyDropdownItems = insuranceRecords
+                    .filter(rec => rec.policy_number)
+                    .map(rec => ({
+                        number: rec.policy_number,
+                        insurance_id: rec.insurance_id,
+                        claim_number: rec.claim_number,
+                        policy_number: rec.policy_number,
+                        company_name: rec.company_name,
+                        company_id: rec.company_id
+                    }));
+                if (policyDropdownItems.length > 0) {
+                    window.addInsuranceDropdown(sfPolicyNumberInput, policyDropdownItems, 'policy');
+                    console.log('✅ Added dropdown (AUTO-LOAD) to SF Policy Number');
+                }
+            }
+            
+            console.log('✅ All insurance dropdowns created (AUTO-LOAD)!');
+        }
+        
+        // ============================================================================
+        // 🔥 AUTO-SEARCH ON PAGE LOAD - If matter_id and matter_name exist
+        // ============================================================================
+        
+        async function performAutoSearchOnLoad() {
+            const matterIdInput = document.querySelector('input[name="matter_id"]');
+            const matterNameInput = document.querySelector('select[name="matter_name"]');  // ← FIX: It's a SELECT, not input!
+            
+            console.log('🔍 AUTO-SEARCH DEBUG:');
+            console.log('   matterIdInput:', matterIdInput);
+            console.log('   matterIdInput.value:', matterIdInput?.value);
+            console.log('   matterNameInput:', matterNameInput);
+            console.log('   matterNameInput.value:', matterNameInput?.value);
+            
+            // Only auto-search if we have both matter_id and matter_name
+            if (!matterIdInput || !matterIdInput.value || !matterNameInput || !matterNameInput.value) {
+                console.log('⏭️ Skipping auto-search: missing matter_id or matter_name');
+                return;
+            }
+            
+            const existingMatterId = matterIdInput.value.trim();
+            const existingMatterName = matterNameInput.value.trim();
+            
+            console.log('🔍 AUTO-SEARCH TRIGGERED!');
+            console.log('   Matter ID:', existingMatterId);
+            console.log('   Matter Name:', existingMatterName);
+            
+            try {
+                // Search for the exact matter name
+                const response = await fetch(`/api/salesforce/search?q=${encodeURIComponent(existingMatterName)}`);
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.results && data.results.length > 0) {
+                    // Find exact match by matter_name (not matter_id)
+                    const exactMatch = data.results.find(r => r.matter_name === existingMatterName);
+                    
+                    if (exactMatch) {
+                        console.log('✅ EXACT MATCH FOUND by matter_name!', exactMatch);
+                        
+                        // Trigger insurance dropdowns by simulating user selection
+                        // This calls the EXISTING click handler which creates the dropdowns
+                        const insuranceNumbers = exactMatch.insurance_numbers || [];
+                        
+                        if (insuranceNumbers.length > 0) {
+                            console.log(`💼 Found ${insuranceNumbers.length} insurance records - creating dropdowns!`);
+                            
+                            // Pass the entire matched result to trigger dropdown creation
+                            createInsuranceDropdowns(exactMatch);
+                            console.log('✅ Insurance dropdowns triggered via simulated click!');
+                        } else {
+                            console.log('ℹ️ No insurance records found for this matter');
+                        }
+                    } else {
+                        console.log('⚠️ No exact match found by matter_name');
+                    }
+                } else {
+                    console.log('⚠️ No search results found');
+                }
+            } catch (error) {
+                console.error('❌ Auto-search error:', error);
+            }
+        }
+        
+        // Run auto-search after a short delay to ensure all fields are loaded
+        setTimeout(performAutoSearchOnLoad, 500);
+        
         });
     </script>
 </body>
