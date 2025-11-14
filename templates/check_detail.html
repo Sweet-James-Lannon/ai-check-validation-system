@@ -1821,6 +1821,48 @@
             console.log('✅ Check type toggle system initialized');
             
             // ============================================================================
+            // AMOUNT FIELD CURRENCY FORMATTING - Always show $ format! 💵
+            // ============================================================================
+            
+            const amountField = document.getElementById('amountField');
+            if (amountField) {
+                // Format on blur (when user leaves the field)
+                amountField.addEventListener('blur', function() {
+                    const currentValue = this.value.trim();
+                    if (currentValue) {
+                        this.value = formatCurrency(currentValue);
+                    }
+                });
+                
+                // Store cursor position and allow typing numbers
+                amountField.addEventListener('input', function(e) {
+                    // Allow user to type freely, but strip non-numeric chars except decimal
+                    let value = this.value;
+                    
+                    // Remove everything except digits and decimal point
+                    let numericOnly = value.replace(/[^\d.]/g, '');
+                    
+                    // Ensure only one decimal point
+                    const parts = numericOnly.split('.');
+                    if (parts.length > 2) {
+                        numericOnly = parts[0] + '.' + parts.slice(1).join('');
+                    }
+                    
+                    // Update field with cleaned value (no formatting while typing)
+                    if (numericOnly !== value.replace(/[$,]/g, '')) {
+                        this.value = numericOnly ? '$' + numericOnly : '';
+                    }
+                });
+                
+                // Ensure the field starts with formatted currency
+                if (amountField.value && !amountField.value.startsWith('$')) {
+                    amountField.value = formatCurrency(amountField.value);
+                }
+            }
+            
+            console.log('✅ Amount field currency formatting initialized');
+            
+            // ============================================================================
             // SEARCHABLE DROPDOWN SYSTEM - FIRE! 🔥🔍
             // ============================================================================
             
@@ -2773,6 +2815,30 @@
             const pdfCache = new Map();
             let preloadAbortController = null;
             
+            // Currency formatting helper function
+            function formatCurrency(value) {
+                if (!value) return '$0.00';
+                // Remove any existing formatting (dollar signs, commas)
+                const numericValue = typeof value === 'string' 
+                    ? parseFloat(value.replace(/[$,]/g, ''))
+                    : parseFloat(value);
+                
+                if (isNaN(numericValue)) return '$0.00';
+                
+                // Format with dollar sign and commas
+                return '$' + numericValue.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+            
+            // Get numeric value from formatted currency string (for form submission)
+            function getNumericAmount(formattedValue) {
+                if (!formattedValue) return null;
+                const numericValue = formattedValue.replace(/[$,]/g, '');
+                return parseFloat(numericValue) || null;
+            }
+            
             // Update form fields with extracted data - GLOBAL FUNCTION
             function updateFormWithExtractedData(extractedData) {
                 const fieldMappings = {
@@ -2793,7 +2859,12 @@
                 Object.entries(fieldMappings).forEach(([fieldName, value]) => {
                     const field = document.querySelector(`[name="${fieldName}"]`);
                     if (field && value) {
-                        field.value = value;
+                        // Special handling for amount field - always format as currency
+                        if (fieldName === 'amount') {
+                            field.value = formatCurrency(value);
+                        } else {
+                            field.value = value;
+                        }
                     }
                 });
             }
@@ -3468,7 +3539,12 @@
             
             const data = {};
             for (let [key, value] of formData.entries()) {
-                data[key] = value;
+                // Convert amount from currency format to numeric for Salesforce
+                if (key === 'amount') {
+                    data[key] = getNumericAmount(value);
+                } else {
+                    data[key] = value;
+                }
             }
             
             try {
@@ -3510,7 +3586,12 @@
             
             const data = {};
             for (let [key, value] of formData.entries()) {
-                data[key] = value;
+                // Convert amount from currency format to numeric for Salesforce
+                if (key === 'amount') {
+                    data[key] = getNumericAmount(value);
+                } else {
+                    data[key] = value;
+                }
             }
             
             try {
@@ -3548,7 +3629,12 @@
             
             const data = {};
             for (let [key, value] of formData.entries()) {
-                data[key] = value;
+                // Convert amount from currency format to numeric for Salesforce
+                if (key === 'amount') {
+                    data[key] = getNumericAmount(value);
+                } else {
+                    data[key] = value;
+                }
             }
             
             try {
