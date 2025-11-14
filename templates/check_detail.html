@@ -710,6 +710,21 @@
             opacity: 0.3;
             transition: opacity 0.2s ease;
         }
+        
+        /* ===================================================================== */
+        /* COMPACT RIGHT PANEL - Reduce vertical spacing for tighter layout */
+        /* ===================================================================== */
+        #rightPanel input[type="text"],
+        #rightPanel input[type="email"],
+        #rightPanel input[type="number"],
+        #rightPanel textarea,
+        #rightPanel select {
+            padding: 0.375rem 0.75rem !important; /* py-1.5 px-3 - reduced from py-2 */
+        }
+        
+        #rightPanel label {
+            margin-bottom: 0.25rem !important; /* mb-1 - slightly reduced */
+        }
     </style>
 </head>
 <body>
@@ -976,14 +991,14 @@
                             <input type="hidden" id="checkTypeSelection" name="check_type_selection" value="">
 
                             <!-- Extracted Fields Grid -->
-                            <div class="space-y-3">
+                            <div class="space-y-2">
                                 <!-- Case Information - MOVED TO TOP -->
-                                <div class="space-y-3 bg-slate-50 border-2 border-slate-300 p-3 rounded-lg">
-                                    <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide border-b-2 border-slate-400 pb-2">
+                                <div class="space-y-2 bg-slate-50 border-2 border-slate-300 p-2.5 rounded-lg">
+                                    <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide border-b-2 border-slate-400 pb-1.5">
                                         <i class="fa-solid fa-briefcase mr-2 text-slate-700"></i>Case Information
                                     </h3>
                                     
-                                    <div class="grid grid-cols-1 gap-3">
+                                    <div class="grid grid-cols-1 gap-2">
                                         <!-- 🔥 MATTER NAME - NOW THE SEARCHABLE DROPDOWN! -->
                                         <div class="field-container">
                                             <label class="block text-xs font-medium text-gray-600 mb-1">
@@ -1001,7 +1016,7 @@
                                             </div>
                                         </div>
                                         
-                                        <div class="grid grid-cols-2 gap-3">
+                                        <div class="grid grid-cols-2 gap-2">
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Matter ID</label>
                                                 <input type="text" value="{{ check.matter_id or '' }}" 
@@ -1029,10 +1044,10 @@
                                 </div>
 
                                 <!-- 🔥 TWO-COLUMN LAYOUT: Provider & Claims + Salesforce Insurance -->
-                                <div class="grid grid-cols-2 gap-3">
+                                <div class="grid grid-cols-2 gap-2">
                                     <!-- LEFT: Provider & Claims Information -->
-                                    <div id="providerClaimsBox" class="space-y-3 bg-slate-50 border-2 border-gray-300 p-3 rounded-lg transition-all duration-300">
-                                        <div class="flex items-center justify-between border-b-2 border-gray-300 pb-2">
+                                    <div id="providerClaimsBox" class="space-y-2 bg-slate-50 border-2 border-gray-300 p-2.5 rounded-lg transition-all duration-300">
+                                        <div class="flex items-center justify-between border-b-2 border-gray-300 pb-1.5">
                                             <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">
                                                 <i class="fa-solid fa-shield-halved mr-2 text-gray-700"></i>Extracted Provider & Claims
                                             </h3>
@@ -1046,7 +1061,7 @@
                                             </div>
                                         </div>
                                         
-                                        <div class="grid grid-cols-1 gap-3">
+                                        <div class="grid grid-cols-1 gap-2">
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Provider Name</label>
                                                 <input type="text" value="{{ check.provider_name if check.provider_name and check.provider_name != 'None' else '' }}" 
@@ -1083,8 +1098,8 @@
                                     </div>
 
                                     <!-- RIGHT: Salesforce Insurance Data -->
-                                    <div id="salesforceInsuranceBox" class="space-y-3 bg-slate-50 border-2 border-gray-300 p-3 rounded-lg transition-all duration-300">
-                                        <div class="flex items-center justify-between border-b-2 border-gray-300 pb-2">
+                                    <div id="salesforceInsuranceBox" class="space-y-2 bg-slate-50 border-2 border-gray-300 p-2.5 rounded-lg transition-all duration-300">
+                                        <div class="flex items-center justify-between border-b-2 border-gray-300 pb-1.5">
                                             <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">
                                                 <i class="fa-solid fa-building-columns mr-2 text-gray-700"></i>Salesforce Insurance
                                             </h3>
@@ -1098,7 +1113,7 @@
                                             </div>
                                         </div>
                                         
-                                        <div class="grid grid-cols-1 gap-3">
+                                        <div class="grid grid-cols-1 gap-2">
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Insurance Company</label>
                                                 <input type="text" value="{{ check.insurance_company if check.insurance_company and check.insurance_company != 'None' else '' }}" 
@@ -1136,13 +1151,13 @@
                                 </div>
 
                                 <!-- Amount & Date -->
-                                <div class="space-y-3 bg-slate-50 border-2 border-gray-300 p-3 rounded-lg">
-                                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide border-b-2 border-gray-300 pb-2">
+                                <div class="space-y-2 bg-slate-50 border-2 border-gray-300 p-2.5 rounded-lg">
+                                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide border-b-2 border-gray-300 pb-1.5">
                                         <i class="fa-solid fa-dollar-sign mr-2 text-gray-700"></i>Amount & Date
                                     </h3>
                                     
-                                    <div class="grid grid-cols-1 gap-3">
-                                        <div class="grid grid-cols-2 gap-3">
+                                    <div class="grid grid-cols-1 gap-2">
+                                        <div class="grid grid-cols-2 gap-2">
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Amount</label>
                                                 <input type="text" id="amountField"
@@ -1168,7 +1183,7 @@
                                             </div>
                                         </div>
                                         
-                                        <div class="grid grid-cols-2 gap-3">
+                                        <div class="grid grid-cols-2 gap-2">
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Check Issue Date</label>
                                                 <input type="text" 
@@ -1208,13 +1223,13 @@
                                 </div>
 
                                 <!-- Banking & Additional Information -->
-                                <div class="space-y-3 bg-slate-50 border-2 border-gray-300 p-3 rounded-lg">
-                                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide border-b-2 border-gray-300 pb-2">
+                                <div class="space-y-2 bg-slate-50 border-2 border-gray-300 p-2.5 rounded-lg">
+                                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide border-b-2 border-gray-300 pb-1.5">
                                         <i class="fa-solid fa-university mr-2 text-gray-700"></i>Banking & Additional Information
                                     </h3>
                                     
-                                    <div class="grid grid-cols-1 gap-3">
-                                        <div class="grid grid-cols-2 gap-3">
+                                    <div class="grid grid-cols-1 gap-2">
+                                        <div class="grid grid-cols-2 gap-2">
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">Routing Number</label>
                                                 <input type="text" value="{{ check.routing_number if check.routing_number and check.routing_number != 'None' else '' }}" 
@@ -1249,7 +1264,7 @@
                                             </div>
                                         </div>
                                         
-                                        <div class="grid grid-cols-2 gap-3">
+                                        <div class="grid grid-cols-2 gap-2">
                                             <div class="field-container">
                                                 <label class="block text-xs font-medium text-gray-600 mb-1">
                                                     <i class="fa-solid fa-truck mr-1"></i>Delivery Service
