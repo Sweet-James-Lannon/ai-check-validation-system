@@ -1122,7 +1122,14 @@
                                         <div class="text-sm text-gray-900">{{ check.check_issue_date }}</div>
                                     </td>
                                     <td class="px-6 py-4">
-                                        <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.matter_name or '-' }}</div>
+                                        {% if check.matter_url %}
+                                            <a href="{{ check.matter_url }}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 hover:underline max-w-xs truncate inline-block" title="Open in Salesforce" onclick="event.stopPropagation();">
+                                                {{ check.matter_name or '-' }}
+                                                <i class="fa-solid fa-external-link-alt ml-1 text-xs"></i>
+                                            </a>
+                                        {% else %}
+                                            <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.matter_name or '-' }}</div>
+                                        {% endif %}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center gap-2">
@@ -1229,7 +1236,14 @@
                                         <div class="text-sm text-gray-900">{{ check.check_issue_date }}</div>
                                     </td>
                                     <td class="px-6 py-4">
-                                        <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.matter_name or '-' }}</div>
+                                        {% if check.matter_url %}
+                                            <a href="{{ check.matter_url }}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 hover:underline max-w-xs truncate inline-block" title="Open in Salesforce" onclick="event.stopPropagation();">
+                                                {{ check.matter_name or '-' }}
+                                                <i class="fa-solid fa-external-link-alt ml-1 text-xs"></i>
+                                            </a>
+                                        {% else %}
+                                            <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.matter_name or '-' }}</div>
+                                        {% endif %}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center gap-2">
@@ -1678,7 +1692,14 @@
                     <div class="text-sm text-gray-900">${check.check_issue_date || 'N/A'}</div>
                 </td>
                 <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 max-w-xs truncate">${check.matter_name || '-'}</div>
+                    ${check.matter_url ? 
+                        `<a href="${check.matter_url}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 hover:underline max-w-xs truncate inline-block" title="Open in Salesforce" onclick="event.stopPropagation();">
+                            ${check.matter_name || '-'}
+                            <i class="fa-solid fa-external-link-alt ml-1 text-xs"></i>
+                        </a>` 
+                        : 
+                        `<div class="text-sm text-gray-900 max-w-xs truncate">${check.matter_name || '-'}</div>`
+                    }
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center gap-2">
@@ -1760,7 +1781,14 @@
                     <div class="text-sm text-gray-900">${check.check_issue_date || 'N/A'}</div>
                 </td>
                 <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 max-w-xs truncate">${check.matter_name || '-'}</div>
+                    ${check.matter_url ? 
+                        `<a href="${check.matter_url}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 hover:underline max-w-xs truncate inline-block" title="Open in Salesforce" onclick="event.stopPropagation();">
+                            ${check.matter_name || '-'}
+                            <i class="fa-solid fa-external-link-alt ml-1 text-xs"></i>
+                        </a>` 
+                        : 
+                        `<div class="text-sm text-gray-900 max-w-xs truncate">${check.matter_name || '-'}</div>`
+                    }
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center gap-2">
@@ -1814,7 +1842,14 @@
                     <div class="text-sm text-gray-900">${check.check_issue_date || 'N/A'}</div>
                 </td>
                 <td class="px-6 py-4">
-                    <div class="text-sm text-gray-900 max-w-xs truncate">${check.matter_name || '-'}</div>
+                    ${check.matter_url ? 
+                        `<a href="${check.matter_url}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 hover:underline max-w-xs truncate inline-block" title="Open in Salesforce" onclick="event.stopPropagation();">
+                            ${check.matter_name || '-'}
+                            <i class="fa-solid fa-external-link-alt ml-1 text-xs"></i>
+                        </a>` 
+                        : 
+                        `<div class="text-sm text-gray-900 max-w-xs truncate">${check.matter_name || '-'}</div>`
+                    }
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center gap-2">
