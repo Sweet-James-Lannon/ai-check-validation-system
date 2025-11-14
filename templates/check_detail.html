@@ -3269,6 +3269,48 @@
                         imageContainer.style.cursor = 'grab';
                     }
                 });
+                
+                // 🔍 DOUBLE-CLICK ZOOM FEATURE
+                // Double-click = Zoom In (1.3x) toward clicked point
+                // Shift + Double-click = Zoom Out (0.77x) from clicked point
+                imageContainer.addEventListener('dblclick', (e) => {
+                    e.preventDefault();
+                    
+                    // Get click position relative to container
+                    const rect = imageContainer.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const clickY = e.clientY - rect.top;
+                    
+                    // Calculate center of container
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    
+                    // Calculate offset from center (where the click is relative to center)
+                    const offsetX = clickX - centerX;
+                    const offsetY = clickY - centerY;
+                    
+                    // Determine zoom direction
+                    const zoomChange = e.shiftKey ? 0.77 : 1.3;
+                    const newZoom = Math.min(Math.max(currentZoom * zoomChange, 0.1), 5);
+                    
+                    if (newZoom !== currentZoom) {
+                        // Calculate how much to adjust pan to keep click point stationary
+                        // When zooming in, we need to pan toward the click point
+                        const zoomDelta = newZoom / currentZoom;
+                        
+                        // Adjust pan to zoom toward/from the clicked point
+                        panX = (panX - offsetX / currentZoom) * zoomDelta + offsetX / newZoom;
+                        panY = (panY - offsetY / currentZoom) * zoomDelta + offsetY / newZoom;
+                        
+                        currentZoom = newZoom;
+                        updateTransform();
+                        updateZoomLevel();
+                        
+                        console.log(e.shiftKey ? '🔽 Double-click zoom OUT' : '🔼 Double-click zoom IN', 
+                                    'at point:', {x: Math.round(clickX), y: Math.round(clickY)}, 
+                                    'new zoom:', Math.round(currentZoom * 100) + '%');
+                    }
+                });
             }
             
             // Touch events for mobile support
