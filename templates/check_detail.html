@@ -603,6 +603,7 @@
             pointer-events: none;
             background: #f9fafb !important;
             position: relative;
+            border-color: rgba(107, 114, 128, 0.25) !important; /* Much fainter border - from gray-500 to 25% opacity gray */
         }
 
         .box-disabled::after {
@@ -632,6 +633,11 @@
             pointer-events: none;
             z-index: 11;
             opacity: 0.6;
+        }
+        
+        /* Faint border for disabled state header underline */
+        .box-disabled h3 {
+            border-bottom-color: rgba(107, 114, 128, 0.2) !important;
         }
 
         /* ===================================================================== */
@@ -2142,6 +2148,8 @@
                         
                         if (insuranceNumbers && insuranceNumbers.length > 0) {
                             console.log('💼 Found insurance numbers:', insuranceNumbers);
+                            console.log('💼 Insurance numbers count:', insuranceNumbers.length);
+                            console.log('💼 Insurance numbers structure:', JSON.stringify(insuranceNumbers, null, 2));
 
                             // 🔥 Group insurance data by InsuranceId (each insurance record has claim + policy)
                             // This creates linked records: Company → Claim Number + Policy Number
@@ -2173,6 +2181,8 @@
                             // Convert to array for easier handling
                             const insuranceRecords = Array.from(insuranceRecordsMap.values());
                             console.log('🏢 Linked insurance records:', insuranceRecords);
+                            console.log('🏢 Linked insurance records count:', insuranceRecords.length);
+                            console.log('🏢 Expected 7, Got:', insuranceRecords.length);
                             
                             // Store globally so dropdown click handlers can access it
                             window.currentInsuranceRecords = insuranceRecords;
