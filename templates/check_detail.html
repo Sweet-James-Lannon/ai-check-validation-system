@@ -1444,28 +1444,36 @@
                             inputElement.dataset.companyId = ins.company_id;
                             inputElement.classList.add('field-salesforce');
                             
-                            // 🎯 AUTO-UPDATE linked Claim Number field
+                            // 🎯 AUTO-UPDATE linked Claim Number field (ALWAYS update, even if empty - CRITICAL FIX!)
                             const claimInput = document.querySelector('input[name="sf_claim_number"]');
-                            if (claimInput && ins.claim_number) {
-                                claimInput.value = ins.claim_number;
-                                claimInput.dataset.insuranceId = ins.insurance_id;
-                                claimInput.classList.add('field-salesforce');
+                            if (claimInput) {
+                                claimInput.value = ins.claim_number || '';
+                                claimInput.dataset.insuranceId = ins.insurance_id || '';
+                                if (ins.claim_number) {
+                                    claimInput.classList.add('field-salesforce');
+                                } else {
+                                    claimInput.classList.remove('field-salesforce');
+                                }
                                 claimInput.dispatchEvent(new Event('change', { bubbles: true }));
                             }
                             
-                            // 🎯 AUTO-UPDATE linked Policy Number field
+                            // 🎯 AUTO-UPDATE linked Policy Number field (ALWAYS update, even if empty - CRITICAL FIX!)
                             const policyInput = document.querySelector('input[name="sf_policy_number"]');
-                            if (policyInput && ins.policy_number) {
-                                policyInput.value = ins.policy_number;
-                                policyInput.dataset.insuranceId = ins.insurance_id;
-                                policyInput.classList.add('field-salesforce');
+                            if (policyInput) {
+                                policyInput.value = ins.policy_number || '';
+                                policyInput.dataset.insuranceId = ins.insurance_id || '';
+                                if (ins.policy_number) {
+                                    policyInput.classList.add('field-salesforce');
+                                } else {
+                                    policyInput.classList.remove('field-salesforce');
+                                }
                                 policyInput.dispatchEvent(new Event('change', { bubbles: true }));
                             }
                             
                             console.log('🔗 COMPANY SELECTED - LINKED UPDATE:', {
                                 company: ins.company_name || ins.name,
-                                claim: ins.claim_number,
-                                policy: ins.policy_number,
+                                claim: ins.claim_number || '(empty)',
+                                policy: ins.policy_number || '(empty)',
                                 insuranceId: ins.insurance_id
                             });
                             
@@ -1476,29 +1484,37 @@
                             inputElement.dataset.insuranceId = ins.insurance_id;
                             inputElement.classList.add('field-salesforce');
                             
-                            // 🎯 AUTO-UPDATE linked Insurance Company field
+                            // 🎯 AUTO-UPDATE linked Insurance Company field (ALWAYS update, even if empty)
                             const companyInput = document.querySelector('input[name="insurance_company"]');
-                            if (companyInput && ins.company_name) {
-                                companyInput.value = ins.company_name;
-                                companyInput.dataset.insuranceId = ins.insurance_id;
-                                companyInput.dataset.companyId = ins.company_id;
-                                companyInput.classList.add('field-salesforce');
+                            if (companyInput) {
+                                companyInput.value = ins.company_name || '';
+                                companyInput.dataset.insuranceId = ins.insurance_id || '';
+                                companyInput.dataset.companyId = ins.company_id || '';
+                                if (ins.company_name) {
+                                    companyInput.classList.add('field-salesforce');
+                                } else {
+                                    companyInput.classList.remove('field-salesforce');
+                                }
                                 companyInput.dispatchEvent(new Event('change', { bubbles: true }));
                             }
                             
-                            // 🎯 AUTO-UPDATE linked Policy Number field
+                            // 🎯 AUTO-UPDATE linked Policy Number field (ALWAYS update, even if empty - CRITICAL FIX!)
                             const policyInput = document.querySelector('input[name="sf_policy_number"]');
-                            if (policyInput && ins.policy_number) {
-                                policyInput.value = ins.policy_number;
-                                policyInput.dataset.insuranceId = ins.insurance_id;
-                                policyInput.classList.add('field-salesforce');
+                            if (policyInput) {
+                                policyInput.value = ins.policy_number || '';
+                                policyInput.dataset.insuranceId = ins.insurance_id || '';
+                                if (ins.policy_number) {
+                                    policyInput.classList.add('field-salesforce');
+                                } else {
+                                    policyInput.classList.remove('field-salesforce');
+                                }
                                 policyInput.dispatchEvent(new Event('change', { bubbles: true }));
                             }
                             
                             console.log('🔗 CLAIM SELECTED - LINKED UPDATE:', {
                                 claim: ins.claim_number || ins.number,
                                 company: ins.company_name,
-                                policy: ins.policy_number,
+                                policy: ins.policy_number || '(empty)',
                                 insuranceId: ins.insurance_id
                             });
                             
@@ -1509,29 +1525,37 @@
                             inputElement.dataset.insuranceId = ins.insurance_id;
                             inputElement.classList.add('field-salesforce');
                             
-                            // 🎯 AUTO-UPDATE linked Insurance Company field
+                            // 🎯 AUTO-UPDATE linked Insurance Company field (ALWAYS update, even if empty - CRITICAL FIX!)
                             const companyInput = document.querySelector('input[name="insurance_company"]');
-                            if (companyInput && ins.company_name) {
-                                companyInput.value = ins.company_name;
-                                companyInput.dataset.insuranceId = ins.insurance_id;
-                                companyInput.dataset.companyId = ins.company_id;
-                                companyInput.classList.add('field-salesforce');
+                            if (companyInput) {
+                                companyInput.value = ins.company_name || '';
+                                companyInput.dataset.insuranceId = ins.insurance_id || '';
+                                companyInput.dataset.companyId = ins.company_id || '';
+                                if (ins.company_name) {
+                                    companyInput.classList.add('field-salesforce');
+                                } else {
+                                    companyInput.classList.remove('field-salesforce');
+                                }
                                 companyInput.dispatchEvent(new Event('change', { bubbles: true }));
                             }
                             
-                            // 🎯 AUTO-UPDATE linked Claim Number field
+                            // 🎯 AUTO-UPDATE linked Claim Number field (ALWAYS update, even if empty - CRITICAL FIX!)
                             const claimInput = document.querySelector('input[name="sf_claim_number"]');
-                            if (claimInput && ins.claim_number) {
-                                claimInput.value = ins.claim_number;
-                                claimInput.dataset.insuranceId = ins.insurance_id;
-                                claimInput.classList.add('field-salesforce');
+                            if (claimInput) {
+                                claimInput.value = ins.claim_number || '';
+                                claimInput.dataset.insuranceId = ins.insurance_id || '';
+                                if (ins.claim_number) {
+                                    claimInput.classList.add('field-salesforce');
+                                } else {
+                                    claimInput.classList.remove('field-salesforce');
+                                }
                                 claimInput.dispatchEvent(new Event('change', { bubbles: true }));
                             }
                             
                             console.log('🔗 POLICY SELECTED - LINKED UPDATE:', {
-                                policy: ins.policy_number || ins.number,
-                                company: ins.company_name,
-                                claim: ins.claim_number,
+                                policy: ins.policy_number || ins.number || '(empty)',
+                                company: ins.company_name || '(empty)',
+                                claim: ins.claim_number || '(empty)',
                                 insuranceId: ins.insurance_id
                             });
                             
