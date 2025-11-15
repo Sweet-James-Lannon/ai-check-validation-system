@@ -492,13 +492,13 @@ def salesforce_claimant_lookup():
         # Jai's Salesforce endpoint
         salesforce_url = "https://sweetjames.my.salesforce-sites.com/SmartAgent/services/apexrest/AI_Flask_App_Fetch_Matter"
         salesforce_token = "00D5f000000JpstEAC"
-        
+            
         # =============================================================================
         # Call Salesforce API
         # =============================================================================
         
         # Payload format from Jai's specs (GET request with JSON body)
-        payload = {
+        payload = {  
             'searchKey': claimant_name,
             'token': salesforce_token
         }
@@ -508,7 +508,7 @@ def salesforce_claimant_lookup():
         }
         
         api_logger.info(f"Calling Salesforce API with searchKey: {claimant_name}")
-        
+             
         # Note: GET request with JSON body (unusual but that's what Salesforce wants)
         response = requests.request(
             'GET',
