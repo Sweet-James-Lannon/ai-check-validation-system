@@ -1956,15 +1956,68 @@
                     
                     const response = await fetch(`/api/salesforce/search?q=${encodeURIComponent(query)}`);
                     const data = await response.json();
-                    
+                    console.log('🔥🔥🔥🔥🔥🔥  Salesforce search response:', data);
+
+                    // 🐛 DEBUG: Transform raw_salesforce_response if results array is empty
+                    if ((!data.results || data.results.length === 0) && data.raw_salesforce_response?.jsonResponse) {
+                        console.log('🔧 TRANSFORMING: Backend returned raw Salesforce format - converting to results array...');
+                        console.log('Raw records count:', data.raw_salesforce_response.jsonResponse.length);
+
+                        // Transform raw Salesforce records into standardized format
+                        data.results = data.raw_salesforce_response.jsonResponse.map(record => {
+                            console.log('═══════════════════════════════════════════');
+                            console.log('📋 Processing raw Salesforce record:');
+                            console.log('Available fields:', Object.keys(record));
+                            console.log('Full record:', record);
+
+                            // Build insurance_numbers array from ClaimNumber and PolicyNumber
+                            const insurance_numbers = [];
+                            if (record.ClaimNumber) {
+                                insurance_numbers.push({ type: 'claim', number: record.ClaimNumber });
+                            }
+                            if (record.PolicyNumber) {
+                                insurance_numbers.push({ type: 'policy', number: record.PolicyNumber });
+                            }
+
+                            const transformedRecord = {
+                                matter_id: record.MatterId,
+                                matter_name: record.MatterName,
+                                matter_url: record.MatterUrl,
+                                claimant: record.ClaimantName || '',
+                                date_of_birth: record.DOB || '',
+                                stage: record.Stage || '',
+                                insurance_numbers: insurance_numbers
+                            };
+
+                            // 🐛 Warn about missing critical fields
+                            const missingFields = [];
+                            if (!record.ClaimantName) missingFields.push('ClaimantName');
+                            if (!record.DOB) missingFields.push('DOB');
+                            if (!record.Stage) missingFields.push('Stage');
+                            if (!record.ClaimNumber && !record.PolicyNumber) missingFields.push('Insurance Numbers');
+
+                            if (missingFields.length > 0) {
+                                console.warn('⚠️ WARNING: Backend missing fields:', missingFields.join(', '));
+                                console.warn('   This is a BACKEND issue - the Salesforce query needs to return complete data');
+                            }
+
+                            console.log('✅ Transformed to:', transformedRecord);
+                            console.log('───────────────────────────────────────────');
+                            return transformedRecord;
+                        });
+
+                        data.total = data.results.length;
+                        console.log(`🎉 Transformation complete! Created ${data.total} results`);
+                    }
+
                     // 📊 CLEAN TABLE VIEW - All Salesforce fields
                     if (data.raw_salesforce_response && data.raw_salesforce_response.length > 0) {
                         console.table(data.raw_salesforce_response);
                     }
-                    
+
                     // Clear the list
                     ul.innerHTML = '';
-                    
+
                     if (data.status === 'success' && data.results && data.results.length > 0) {
                         console.log(`✅ Found ${data.total} matches from ${data.source}!`);
 
