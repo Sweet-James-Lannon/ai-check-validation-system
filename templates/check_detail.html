@@ -1957,7 +1957,7 @@
                     const response = await fetch(`/api/salesforce/search?q=${encodeURIComponent(query)}`);
                     const data = await response.json();
                     console.log('🔥🔥🔥🔥🔥🔥  Salesforce search response:', data);
-
+                    
                     // 🐛 DEBUG: Transform raw_salesforce_response if results array is empty
                     if ((!data.results || data.results.length === 0) && data.raw_salesforce_response?.jsonResponse) {
                         console.log('🔧 TRANSFORMING: Backend returned raw Salesforce format - converting to results array...');
@@ -1970,13 +1970,60 @@
                             console.log('Available fields:', Object.keys(record));
                             console.log('Full record:', record);
 
-                            // Build insurance_numbers array from ClaimNumber and PolicyNumber
+                            // Build insurance_numbers array from Insurances array or fallback to flat ClaimNumber/PolicyNumber
                             const insurance_numbers = [];
-                            if (record.ClaimNumber) {
-                                insurance_numbers.push({ type: 'claim', number: record.ClaimNumber });
+
+                            // Check if record has Insurances array (richer data structure)
+                            if (record.Insurances && Array.isArray(record.Insurances)) {
+                                console.log('📦 Found Insurances array with', record.Insurances.length, 'items');
+
+                                record.Insurances.forEach((insurance, idx) => {
+                                    console.log(`  Insurance[${idx}]:`, insurance);
+
+                                    if (insurance.ClaimNumber) {
+                                        insurance_numbers.push({
+                                            type: 'claim',
+                                            number: insurance.ClaimNumber,
+                                            insurance_id: insurance.InsuranceId,
+                                            company_name: insurance.InsuranceCompanyName,
+                                            company_id: insurance.InsuranceCompanyId
+                                        });
+                                    }
+
+                                    if (insurance.PolicyNumber) {
+                                        insurance_numbers.push({
+                                            type: 'policy',
+                                            number: insurance.PolicyNumber,
+                                            insurance_id: insurance.InsuranceId,
+                                            company_name: insurance.InsuranceCompanyName,
+                                            company_id: insurance.InsuranceCompanyId
+                                        });
+                                    }
+                                });
                             }
-                            if (record.PolicyNumber) {
-                                insurance_numbers.push({ type: 'policy', number: record.PolicyNumber });
+                            // Fallback to flat ClaimNumber/PolicyNumber (claim number search results)
+                            else {
+                                console.log('📦 Using flat ClaimNumber/PolicyNumber fields (claim number search)');
+                                if (record.ClaimNumber) {
+                                    console.log('  ✅ ClaimNumber:', record.ClaimNumber);
+                                    insurance_numbers.push({
+                                        type: 'claim',
+                                        number: record.ClaimNumber,
+                                        insurance_id: record.InsuranceId,
+                                        company_name: record.InsuranceCompanyName,
+                                        company_id: record.InsuranceCompanyId
+                                    });
+                                }
+                                if (record.PolicyNumber) {
+                                    console.log('  ✅ PolicyNumber:', record.PolicyNumber);
+                                    insurance_numbers.push({
+                                        type: 'policy',
+                                        number: record.PolicyNumber,
+                                        insurance_id: record.InsuranceId,
+                                        company_name: record.InsuranceCompanyName,
+                                        company_id: record.InsuranceCompanyId
+                                    });
+                                }
                             }
 
                             const transformedRecord = {
@@ -1992,9 +2039,11 @@
                             // 🐛 Warn about missing critical fields
                             const missingFields = [];
                             if (!record.ClaimantName) missingFields.push('ClaimantName');
-                            if (!record.DOB) missingFields.push('DOB');
+                            if (!record.DOB || record.DOB === '//') missingFields.push('DOB');
                             if (!record.Stage) missingFields.push('Stage');
-                            if (!record.ClaimNumber && !record.PolicyNumber) missingFields.push('Insurance Numbers');
+                            if (!record.Insurances && !record.ClaimNumber && !record.PolicyNumber) {
+                                missingFields.push('Insurance Numbers');
+                            }
 
                             if (missingFields.length > 0) {
                                 console.warn('⚠️ WARNING: Backend missing fields:', missingFields.join(', '));
@@ -2002,6 +2051,10 @@
                             }
 
                             console.log('✅ Transformed to:', transformedRecord);
+                            console.log('📊 Insurance Numbers Count:', insurance_numbers.length);
+                            if (insurance_numbers.length > 0) {
+                                console.log('📋 Insurance Numbers:', insurance_numbers);
+                            }
                             console.log('───────────────────────────────────────────');
                             return transformedRecord;
                         });
