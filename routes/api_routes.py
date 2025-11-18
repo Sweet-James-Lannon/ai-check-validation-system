@@ -362,30 +362,86 @@ def split_check(check_id):
         api_logger.info(f"Current file_name: {current_file_name}")
 
         # Parse the check number from file_name
-        # Format is typically: {batch}-{check_num}.pdf or {batch}-{check_num}-{page}.pdf
+        # Format is typically: {batch}-{check_num}.pdf or {batch}-{check_num}-{split_num}.pdf
         check_num = None
+        current_split_num = None
         if current_file_name:
             # Remove .pdf and COMPLETE suffix
             clean_name = current_file_name.replace('.pdf', '').replace('-COMPLETE', '')
             parts = clean_name.split('-')
             if len(parts) >= 2:
                 # Get the second part (check number)
-                check_num = parts[1]  # e.g., "001", "002", "003"
+                check_num = parts[1]  # e.g., "001", "002", "003", "005"
+            if len(parts) >= 3:
+                # Check if there's already a split number
+                try:
+                    current_split_num = int(parts[2])
+                    api_logger.info(f"Current check already has split number: {current_split_num}")
+                except ValueError:
+                    # Third part is not a number (maybe "-COMPLETE" or something else)
+                    pass
 
-        api_logger.info(f"Extracted check number: {check_num}")
+        api_logger.info(f"Extracted check number: {check_num}, current split: {current_split_num}")
 
-        # Generate split identifier by appending split count
-        # Find how many splits already exist for this check
-        # Count existing splits by looking for {check_num}-2, {check_num}-3, etc.
-        split_count = 2  # Start with -2 for first split
+        # Determine batch prefix for searching existing splits
+        batch_prefix = current_file_name.split('-')[0] if '-' in current_file_name else ''
+
+        # Find how many splits already exist for this check number
+        # Query for existing checks with the same check number pattern
+        split_count = 1
+        if check_num and batch_prefix:
+            # Search for existing splits with pattern: {batch}-{check_num}-{split_num}
+            # e.g., "156-005-1", "156-005-2", "156-005-3"
+            search_pattern = f"{batch_prefix}-{check_num}-%"
+            try:
+                existing_splits_response = supabase_service.client.table('checks')\
+                    .select('file_name')\
+                    .like('file_name', search_pattern)\
+                    .execute()
+
+                if existing_splits_response.data:
+                    # Extract split numbers from existing splits
+                    split_numbers = []
+                    for check in existing_splits_response.data:
+                        fn = check.get('file_name', '')
+                        # Extract the split number (e.g., "156-005-2.pdf" -> 2)
+                        parts = fn.replace('.pdf', '').replace('-COMPLETE', '').split('-')
+                        if len(parts) >= 3:
+                            try:
+                                split_num = int(parts[2])
+                                split_numbers.append(split_num)
+                            except ValueError:
+                                pass
+
+                    if split_numbers:
+                        # Use the highest split number + 1
+                        split_count = max(split_numbers) + 1
+                        api_logger.info(f"Found existing splits: {split_numbers}, using split count: {split_count}")
+                    else:
+                        # First split - original becomes -1, new becomes -2
+                        split_count = 2
+                else:
+                    # First split - original becomes -1, new becomes -2
+                    split_count = 2
+            except Exception as query_error:
+                api_logger.warning(f"Error querying existing splits: {query_error}, defaulting to split count 2")
+                split_count = 2
+
+        # Generate the new split check number
         if check_num:
-            # Query for existing splits (this is optional - for now just use -2)
-            split_suffix = f"-{split_count}"
-            new_check_num = f"{check_num}{split_suffix}"  # e.g., "001-2", "001-3"
+            new_check_num = f"{check_num}-{split_count}"  # e.g., "005-2", "005-3"
+            # Only rename the original if it doesn't already have a split number
+            if current_split_num is None:
+                original_check_num = f"{check_num}-1"  # Original becomes "005-1"
+            else:
+                # Keep the current split number (e.g., if splitting "005-1", it stays "005-1")
+                original_check_num = f"{check_num}-{current_split_num}"
         else:
             # Fallback if no check number found
             new_check_num = "SPLIT"
+            original_check_num = check_num
 
+        api_logger.info(f"Original check will be renamed to: {original_check_num}")
         api_logger.info(f"New split check number: {new_check_num}")
 
         # Create new check record (only copy safe fields to avoid schema errors)
@@ -450,14 +506,23 @@ def split_check(check_id):
         new_check = new_check_response.data[0]
         new_check_id = new_check['id']
 
-        api_logger.info(f"✅ New check created: {new_check_id} ({new_identifier})")
+        api_logger.info(f"✅ New check created: {new_check_id} ({new_check_num})")
 
-        # Update current check - remove split pages
+        # Update current check - remove split pages and rename to -1 suffix if needed
         update_data = {
             'batch_images': remaining_images,
             'page_count': len(remaining_images),
             'updated_at': datetime.utcnow().isoformat()
         }
+
+        # Rename the original check to include -1 suffix only if it doesn't already have a split number
+        # (e.g., "156-005.pdf" -> "156-005-1.pdf", but "156-005-1.pdf" stays "156-005-1.pdf")
+        if check_num and batch_prefix and original_check_num and current_split_num is None:
+            original_file_name = f"{batch_prefix}-{original_check_num}.pdf"
+            update_data['file_name'] = original_file_name
+            api_logger.info(f"Renaming original check to: {original_file_name}")
+        elif current_split_num is not None:
+            api_logger.info(f"Original check already has split number {current_split_num}, keeping file_name unchanged")
 
         api_logger.info(f"Updating current check {check_id} with {len(remaining_images)} remaining pages...")
         update_response = supabase_service.client.table('checks').update(update_data).eq('id', check_id).execute()
@@ -554,10 +619,17 @@ def flag_needs_review(check_id):
             'updated_at': timestamp
         }
         
-        # Include any form field updates (but exclude reason as it's not a database column)
+        # Include any form field updates (but exclude form-only fields that don't exist in database)
+        # Date fields that need special handling (empty string -> None)
+        date_fields = ['check_issue_date', 'date_of_loss']
+
         for field, value in form_data.items():
-            if field not in ['status', 'updated_at', 'reason']:
-                update_data[field] = value
+            if field not in ['status', 'updated_at', 'reason', 'check_type_selection', 'sf_claim_number', 'sf_policy_number']:
+                # Convert empty strings to None for date fields
+                if field in date_fields and value == '':
+                    update_data[field] = None
+                else:
+                    update_data[field] = value
         
         response = supabase_service.client.table('checks').update(update_data).eq('id', check_id).execute()
         

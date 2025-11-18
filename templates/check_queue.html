@@ -941,6 +941,7 @@
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Check Number</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider Name</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pages</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matter</th>
@@ -973,6 +974,9 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.provider_name or '-' }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <span class="text-sm text-gray-600">{{ check.page_count or '-' }}</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-semibold text-green-600">${{ "{:,.2f}".format(check.amount | float) if check.amount else "0.00" }}</div>
@@ -1108,6 +1112,7 @@
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Check Number</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider Name</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pages</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matter</th>
@@ -1140,6 +1145,9 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.provider_name or '-' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <span class="text-sm text-gray-600">{{ check.page_count or '-' }}</span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-semibold text-green-600">${{ "{:,.2f}".format(check.amount | float) if check.amount else "0.00" }}</div>
@@ -1233,6 +1241,7 @@
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Check Number</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider Name</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Pages</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matter</th>
@@ -1265,6 +1274,9 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="text-sm text-gray-900 max-w-xs truncate">{{ check.provider_name or '-' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <span class="text-sm text-gray-600">{{ check.page_count or '-' }}</span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-semibold text-green-600">${{ "{:,.2f}".format(check.amount | float) if check.amount else "0.00" }}</div>
@@ -1693,8 +1705,17 @@
                 <td class="px-6 py-4 whitespace-nowrap text-center">
                     <span class="text-sm font-medium text-slate-500">${rowCount}</span>
                 </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    ${check.file_name ? (() => {
+                        const parts = check.file_name.replace('.pdf', '').replace('-COMPLETE', '').split('-');
+                        return parts.length >= 2 ? `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>` : '<span class="text-sm text-gray-400">-</span>';
+                    })() : '<span class="text-sm text-gray-400">-</span>'}
+                </td>
                 <td class="px-6 py-4">
                     <div class="text-sm text-gray-900 max-w-xs truncate">${check.provider_name || '-'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <span class="text-sm text-gray-600">${check.page_count || '-'}</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-green-600">$${check.amount ? parseFloat(check.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</div>
@@ -1785,8 +1806,17 @@
                 <td class="px-6 py-4 whitespace-nowrap text-center">
                     <span class="text-sm font-medium text-slate-500">${rowCount}</span>
                 </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    ${check.file_name ? (() => {
+                        const parts = check.file_name.replace('.pdf', '').replace('-COMPLETE', '').split('-');
+                        return parts.length >= 2 ? `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>` : '<span class="text-sm text-gray-400">-</span>';
+                    })() : '<span class="text-sm text-gray-400">-</span>'}
+                </td>
                 <td class="px-6 py-4">
                     <div class="text-sm text-gray-900 max-w-xs truncate">${check.provider_name || '-'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <span class="text-sm text-gray-600">${check.page_count || '-'}</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-green-600">$${check.amount ? parseFloat(check.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</div>
@@ -1848,8 +1878,17 @@
                 <td class="px-6 py-4 whitespace-nowrap text-center">
                     <span class="text-sm font-medium text-slate-500">${rowCount}</span>
                 </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    ${check.file_name ? (() => {
+                        const parts = check.file_name.replace('.pdf', '').replace('-COMPLETE', '').split('-');
+                        return parts.length >= 2 ? `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>` : '<span class="text-sm text-gray-400">-</span>';
+                    })() : '<span class="text-sm text-gray-400">-</span>'}
+                </td>
                 <td class="px-6 py-4">
                     <div class="text-sm text-gray-900 max-w-xs truncate">${check.provider_name || '-'}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                    <span class="text-sm text-gray-600">${check.page_count || '-'}</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-semibold text-green-600">$${check.amount ? parseFloat(check.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</div>
