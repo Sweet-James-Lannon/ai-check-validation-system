@@ -395,11 +395,13 @@ def split_check(check_id):
             if len(parts) >= 3:
                 # Check if there's already a suffix (main, 2, 3, etc.)
                 current_suffix = parts[2]
-                # MIGRATION: Convert old "-1" suffix to "main" for consistency
+                # 🔥 TREAT "-1" AS NO SUFFIX (it's from old upload convention)
+                # When splitting a "-1" check, rename it to "-main" like any unsplit check
                 if current_suffix == "1":
-                    current_suffix = "main"
-                    api_logger.info(f"Migrating old '-1' suffix to '-main' for consistency")
-                api_logger.info(f"Current check already has suffix: {current_suffix}")
+                    api_logger.info(f"Found '-1' suffix (old upload convention), treating as unsplit check")
+                    current_suffix = None  # Treat as if it has no suffix
+                else:
+                    api_logger.info(f"Current check already has suffix: {current_suffix}")
 
         api_logger.info(f"Extracted check number: {check_num}, current suffix: {current_suffix}")
 
@@ -467,10 +469,11 @@ def split_check(check_id):
         api_logger.info(f"New split check number: {new_check_num}")
 
         # Create new check record (only copy safe fields to avoid schema errors)
-        # Fields to explicitly exclude (timestamps, validation, system fields, and form-only fields)
+        # Fields to explicitly exclude (timestamps, validation, system fields, form-only fields, and batch_images)
         exclude_fields = {
             'id', 'created_at', 'updated_at', 'validated_at', 'validated_by',
-            'reviewed_at', 'reviewed_by', 'n8n_sync_enabled', 'check_type_selection'
+            'reviewed_at', 'reviewed_by', 'n8n_sync_enabled', 'check_type_selection',
+            'batch_images', 'amount'  # Exclude batch_images (will set filtered version) and amount (will reset to 0)
         }
 
         new_check_data = {
@@ -480,8 +483,9 @@ def split_check(check_id):
 
         # Update fields for new check
         new_check_data.update({
-            'batch_images': split_images,
+            'batch_images': split_images,  # Use filtered images for selected pages only
             'page_count': len(split_images),
+            'amount': 0.0,  # Reset amount so user can fill it in
             'status': 'pending',
             'created_at': datetime.utcnow().isoformat(),
             'updated_at': datetime.utcnow().isoformat(),

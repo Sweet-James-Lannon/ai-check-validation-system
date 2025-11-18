@@ -964,7 +964,12 @@
                                     {% if check.file_name %}
                                         {% set parts = check.file_name.replace('.pdf', '').replace('-COMPLETE', '').split('-') %}
                                         {% if parts|length >= 3 %}
-                                            <span class="text-sm font-bold text-blue-600">{{ parts[1] }}-{{ parts[2] }}</span>
+                                            {# Hide "-1" suffix (old upload convention), show all others #}
+                                            {% if parts[2] == '1' %}
+                                                <span class="text-sm font-bold text-blue-600">{{ parts[1] }}</span>
+                                            {% else %}
+                                                <span class="text-sm font-bold text-blue-600">{{ parts[1] }}-{{ parts[2] }}</span>
+                                            {% endif %}
                                         {% elif parts|length >= 2 %}
                                             <span class="text-sm font-bold text-blue-600">{{ parts[1] }}</span>
                                         {% else %}
@@ -1711,8 +1716,13 @@
                     ${check.file_name ? (() => {
                         const parts = check.file_name.replace('.pdf', '').replace('-COMPLETE', '').split('-');
                         if (parts.length >= 3) {
-                            // Split document: show check_num-split_num (e.g., "018-1", "018-2")
+                            // Hide "-1" suffix (old upload convention), show all others
+                            if (parts[2] === '1') {
+                                return `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>`;
+                            } else {
+                                // Split document: show check_num-split_num (e.g., "018-1", "018-2")
                             return `<span class="text-sm font-bold text-blue-600">${parts[1]}-${parts[2]}</span>`;
+                            }
                         } else if (parts.length >= 2) {
                             // Regular document: show just check_num (e.g., "018")
                             return `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>`;
@@ -1819,8 +1829,13 @@
                     ${check.file_name ? (() => {
                         const parts = check.file_name.replace('.pdf', '').replace('-COMPLETE', '').split('-');
                         if (parts.length >= 3) {
-                            // Split document: show check_num-split_num (e.g., "018-1", "018-2")
+                            // Hide "-1" suffix (old upload convention), show all others
+                            if (parts[2] === '1') {
+                                return `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>`;
+                            } else {
+                                // Split document: show check_num-split_num (e.g., "018-1", "018-2")
                             return `<span class="text-sm font-bold text-blue-600">${parts[1]}-${parts[2]}</span>`;
+                            }
                         } else if (parts.length >= 2) {
                             // Regular document: show just check_num (e.g., "018")
                             return `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>`;
@@ -1898,8 +1913,13 @@
                     ${check.file_name ? (() => {
                         const parts = check.file_name.replace('.pdf', '').replace('-COMPLETE', '').split('-');
                         if (parts.length >= 3) {
-                            // Split document: show check_num-split_num (e.g., "018-1", "018-2")
+                            // Hide "-1" suffix (old upload convention), show all others
+                            if (parts[2] === '1') {
+                                return `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>`;
+                            } else {
+                                // Split document: show check_num-split_num (e.g., "018-1", "018-2")
                             return `<span class="text-sm font-bold text-blue-600">${parts[1]}-${parts[2]}</span>`;
+                            }
                         } else if (parts.length >= 2) {
                             // Regular document: show just check_num (e.g., "018")
                             return `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>`;
