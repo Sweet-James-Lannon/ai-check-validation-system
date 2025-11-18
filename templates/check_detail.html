@@ -4761,16 +4761,29 @@
                 const containerWidth = container.offsetWidth;
                 const containerHeight = container.offsetHeight;
                 
+                // 🔥 HIGH QUALITY RENDERING - Use 2x device pixel ratio for crisp images
+                const devicePixelRatio = window.devicePixelRatio || 1;
+                const qualityMultiplier = 2; // Render at 2x resolution for sharpness
+                
                 const viewport = page.getViewport({ scale: 1.0 });
                 
                 // Calculate scale to fit within container while maintaining aspect ratio
                 const scaleX = containerWidth / viewport.width;
                 const scaleY = containerHeight / viewport.height;
-                const scale = Math.min(scaleX, scaleY);
+                const baseScale = Math.min(scaleX, scaleY);
                 
-                const scaledViewport = page.getViewport({ scale: scale });
+                // Apply quality multiplier for sharper rendering
+                const highQualityScale = baseScale * qualityMultiplier * devicePixelRatio;
+                
+                const scaledViewport = page.getViewport({ scale: highQualityScale });
+                
+                // Set canvas size to high resolution
                 canvas.width = scaledViewport.width;
                 canvas.height = scaledViewport.height;
+                
+                // Scale canvas display size back to fit container (CSS pixels)
+                canvas.style.width = containerWidth + 'px';
+                canvas.style.height = containerHeight + 'px';
 
                 const renderContext = {
                     canvasContext: ctx,
@@ -4778,18 +4791,12 @@
                 };
 
                 await page.render(renderContext).promise;
-                console.log(`✅ Thumbnail rendered for page ${pageIndex + 1} at scale ${scale.toFixed(2)}`);
+                console.log(`✅ Thumbnail rendered for page ${pageIndex + 1} at high quality (${qualityMultiplier}x)`);
 
             } catch (error) {
                 console.error(`❌ Error rendering thumbnail for page ${pageIndex}:`, error);
-                const canvas = document.getElementById(`thumbnailCanvas${pageIndex}`);
-                if (canvas) {
-                    const ctx = canvas.getContext('2d');
-                    ctx.font = '14px Arial';
-                    ctx.fillStyle = '#999';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('Failed to load', canvas.width / 2, canvas.height / 2);
-                }
+                // Don't show "Failed to load" - just log the error
+                // The canvas will remain with gray background from CSS
             }
         }
 
