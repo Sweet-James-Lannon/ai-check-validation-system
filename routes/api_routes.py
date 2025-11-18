@@ -1011,94 +1011,21 @@ def salesforce_search_claimants():
         import json
         api_logger.info(f"   Complete JSON:\n{json.dumps(result, indent=2)}")
         
-        # Extract full matter data with unique claimant names
+        # 🔥 Extract from jsonResponse array
+        # Salesforce returns: {jsonResponse: [{...data...}]}
         results = []
-        seen = set()
+        if isinstance(result, dict) and 'jsonResponse' in result:
+            json_response = result.get('jsonResponse', [])
+            if isinstance(json_response, list) and len(json_response) > 0:
+                results = json_response  # Array of Salesforce records
         
-        if isinstance(result, list):
-            for item in result:
-                # 🔍 DEBUG: Log all available keys in the Salesforce response
-                if result.index(item) == 0:  # Only log first item to avoid spam
-                    api_logger.info(f"📋 Available Salesforce fields: {list(item.keys())}")
-
-                # Handle None values by converting to empty string first
-                claimant_name = (item.get('ClaimentName') or '').strip()
-                matter_name = (item.get('MatterName') or '').strip()
-                matter_id = (item.get('MatterId') or '').strip()
-                matter_url = (item.get('matterUrl') or '').strip()  # Field name is 'matterUrl' (camelCase)
-                date_of_birth = (item.get('DOB') or '').strip()  # Field name is DOB (uppercase)
-                stage = (item.get('Stage') or '').strip()
-
-                # 🔍 DEBUG: Log MatterURL value
-                if result.index(item) == 0:
-                    api_logger.info(f"🔗 matterUrl from Salesforce: '{matter_url}' (length: {len(matter_url)})")
-
-                # Extract insurance numbers from Insurances array
-                insurances = item.get('Insurances', [])
-                insurance_numbers = []
-
-                # 🔍 DEBUG: Log what we got from Insurances
-                api_logger.info(f"🔍 Insurances field type: {type(insurances)}, value: {insurances}")
-
-                if isinstance(insurances, list):
-                    api_logger.info(f"🔍 Insurances is a list with {len(insurances)} items")
-                    for insurance in insurances:
-                        api_logger.info(f"🔍 Processing insurance item: {insurance}")
-                        api_logger.info(f"🔑 Available keys in insurance object: {list(insurance.keys())}")
-                        claim_num = insurance.get('ClaimNumber')
-                        policy_num = insurance.get('PolicyNumber')
-                        insurance_id = insurance.get('InsuranceId', '')
-                        insurance_company_name = insurance.get('InsuranceCompanyName', '')
-                        insurance_company_id = insurance.get('InsuranceCompanyId', '')
-
-                        api_logger.info(f"🔍 Extracted - Claim: {claim_num}, Policy: {policy_num}, Company: {insurance_company_name}, InsuranceId: {insurance_id}")
-
-                        if claim_num:
-                            insurance_numbers.append({
-                                'type': 'claim',
-                                'number': claim_num,
-                                'insurance_id': insurance_id,
-                                'insurance_company_name': insurance_company_name,
-                                'insurance_company_id': insurance_company_id
-                            })
-
-                        if policy_num:
-                            insurance_numbers.append({
-                                'type': 'policy',
-                                'number': policy_num,
-                                'insurance_id': insurance_id,
-                                'insurance_company_name': insurance_company_name,
-                                'insurance_company_id': insurance_company_id
-                            })
-
-                # 🔍 DEBUG: Log insurance values
-                if insurance_numbers:
-                    api_logger.info(f"💼 Insurance found for {claimant_name}: {insurance_numbers}")
-
-                # 🔥 SHOW ALL UNIQUE MATTERS - Use matter_id as unique key instead of claimant_name
-                # This allows multiple matters for the same person (e.g., multiple cases for Donald Pierre Sr)
-                unique_key = matter_id or f"{claimant_name}_{matter_name}"  # Fallback if no matter_id
-                
-                if claimant_name and unique_key not in seen:
-                    results.append({
-                        'claimant': claimant_name,
-                        'matter_name': matter_name,
-                        'matter_id': matter_id,
-                        'matter_url': matter_url,  # Salesforce URL for the matter
-                        'date_of_birth': date_of_birth,
-                        'stage': stage,
-                        'insurance_numbers': insurance_numbers  # Array of insurance objects
-                    })
-                    seen.add(unique_key)
-        
-        api_logger.info(f"✅ Found {len(results)} Salesforce matches for '{search_query}'")
+        api_logger.info(f"✅ Returning {len(results)} Salesforce records for '{search_query}'")
         
         return jsonify({
             "status": "success",
             "results": results,
             "total": len(results),
-            "source": "salesforce",
-            "raw_salesforce_response": result  # 📦 DEBUG: Full Salesforce payload
+            "source": "salesforce"
         })
         
     except Exception as e:

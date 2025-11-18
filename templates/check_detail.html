@@ -2053,132 +2053,21 @@
                     
                     const response = await fetch(`/api/salesforce/search?q=${encodeURIComponent(query)}`);
                     const data = await response.json();
-                    console.log('🔥🔥🔥🔥🔥🔥  Salesforce search response:', data);
+                    console.log('Salesforce search response:', data);
                     
-                    // 🐛 DEBUG: Transform raw_salesforce_response if results array is empty
-                    if ((!data.results || data.results.length === 0) && data.raw_salesforce_response?.jsonResponse) {
-                        console.log('🔧 TRANSFORMING: Backend returned raw Salesforce format - converting to results array...');
-                        console.log('Raw records count:', data.raw_salesforce_response.jsonResponse.length);
-
-                        // Transform raw Salesforce records into standardized format
-                        data.results = data.raw_salesforce_response.jsonResponse.map(record => {
-                            console.log('═══════════════════════════════════════════');
-                            console.log('📋 Processing raw Salesforce record:');
-                            console.log('Available fields:', Object.keys(record));
-                            console.log('Full record:', record);
-
-                            // Build insurance_numbers array from Insurances array or fallback to flat ClaimNumber/PolicyNumber
-                            const insurance_numbers = [];
-
-                            // Check if record has Insurances array (richer data structure)
-                            if (record.Insurances && Array.isArray(record.Insurances)) {
-                                console.log('📦 Found Insurances array with', record.Insurances.length, 'items');
-
-                                record.Insurances.forEach((insurance, idx) => {
-                                    console.log(`  Insurance[${idx}]:`, insurance);
-
-                                    if (insurance.ClaimNumber) {
-                                        insurance_numbers.push({
-                                            type: 'claim',
-                                            number: insurance.ClaimNumber,
-                                            insurance_id: insurance.InsuranceId,
-                                            company_name: insurance.InsuranceCompanyName,
-                                            company_id: insurance.InsuranceCompanyId
-                                        });
-                                    }
-
-                                    if (insurance.PolicyNumber) {
-                                        insurance_numbers.push({
-                                            type: 'policy',
-                                            number: insurance.PolicyNumber,
-                                            insurance_id: insurance.InsuranceId,
-                                            company_name: insurance.InsuranceCompanyName,
-                                            company_id: insurance.InsuranceCompanyId
-                                        });
-                                    }
-                                });
-                            }
-                            // Fallback to flat ClaimNumber/PolicyNumber (claim number search results)
-                            else {
-                                console.log('📦 Using flat ClaimNumber/PolicyNumber fields (claim number search)');
-                                if (record.ClaimNumber) {
-                                    console.log('  ✅ ClaimNumber:', record.ClaimNumber);
-                                    insurance_numbers.push({
-                                        type: 'claim',
-                                        number: record.ClaimNumber,
-                                        insurance_id: record.InsuranceId,
-                                        company_name: record.InsuranceCompanyName,
-                                        company_id: record.InsuranceCompanyId
-                                    });
-                                }
-                                if (record.PolicyNumber) {
-                                    console.log('  ✅ PolicyNumber:', record.PolicyNumber);
-                                    insurance_numbers.push({
-                                        type: 'policy',
-                                        number: record.PolicyNumber,
-                                        insurance_id: record.InsuranceId,
-                                        company_name: record.InsuranceCompanyName,
-                                        company_id: record.InsuranceCompanyId
-                                    });
-                                }
-                            }
-
-                            const transformedRecord = {
-                                matter_id: record.MatterId,
-                                matter_name: record.MatterName,
-                                matter_url: record.MatterUrl,
-                                claimant: record.ClaimantName || '',
-                                date_of_birth: record.DOB || '',
-                                stage: record.Stage || '',
-                                insurance_numbers: insurance_numbers
-                            };
-
-                            // 🐛 Warn about missing critical fields
-                            const missingFields = [];
-                            if (!record.ClaimantName) missingFields.push('ClaimantName');
-                            if (!record.DOB || record.DOB === '//') missingFields.push('DOB');
-                            if (!record.Stage) missingFields.push('Stage');
-                            if (!record.Insurances && !record.ClaimNumber && !record.PolicyNumber) {
-                                missingFields.push('Insurance Numbers');
-                            }
-
-                            if (missingFields.length > 0) {
-                                console.warn('⚠️ WARNING: Backend missing fields:', missingFields.join(', '));
-                                console.warn('   This is a BACKEND issue - the Salesforce query needs to return complete data');
-                            }
-
-                            console.log('✅ Transformed to:', transformedRecord);
-                            console.log('📊 Insurance Numbers Count:', insurance_numbers.length);
-                            if (insurance_numbers.length > 0) {
-                                console.log('📋 Insurance Numbers:', insurance_numbers);
-                            }
-                            console.log('───────────────────────────────────────────');
-                            return transformedRecord;
-                        });
-
-                        data.total = data.results.length;
-                        console.log(`🎉 Transformation complete! Created ${data.total} results`);
-                    }
-
-                    // 📊 CLEAN TABLE VIEW - All Salesforce fields
-                    if (data.raw_salesforce_response && data.raw_salesforce_response.length > 0) {
-                        console.table(data.raw_salesforce_response);
-                    }
-
                     // Clear the list
                     ul.innerHTML = '';
 
                     if (data.status === 'success' && data.results && data.results.length > 0) {
-                        console.log(`✅ Found ${data.total} matches from ${data.source}!`);
+                        console.log(`Found ${data.results.length} results`);
+                        console.log('First record structure:', data.results[0]);
+                        console.log('First record Insurances:', data.results[0].Insurances);
 
-                        // =============================================================================
-                        // 🔥 TABLE VIEW - Clean, scannable results
-                        // =============================================================================
+                        // Build table
                         const table = document.createElement('table');
                         table.className = 'results-table';
-                        table.style.fontSize = '12px'; // 🔥 Smaller font for better readability
+                        table.style.fontSize = '12px';
 
-                        // Table header
                         const thead = document.createElement('thead');
                         thead.innerHTML = `
                             <tr>
@@ -2191,53 +2080,55 @@
                         `;
                         table.appendChild(thead);
 
-                        // Table body with results
                         const tbody = document.createElement('tbody');
-                        data.results.forEach(item => {
+                        data.results.forEach((record, index) => {
+                            console.log(`Processing record ${index}:`, record);
+                            
+                            // 🔥 Data is nested in SearchedFor object!
+                            const recordData = record.SearchedFor || record;
+                            
+                            // 🔥 IT'S "Insurance" (SINGULAR) NOT "Insurances" (PLURAL)!
+                            const insurances = record.Insurance || [];
+                            
                             const tr = document.createElement('tr');
                             tr.className = 'table-row-option';
 
-                            // Store ALL data for auto-population
-                            tr.setAttribute('data-value', item.matter_name);
-                            tr.setAttribute('data-claimant', item.claimant || '');
-                            tr.setAttribute('data-matter-id', item.matter_id || '');
-                            tr.setAttribute('data-matter-url', item.matter_url || '');  // Salesforce URL
-                            tr.setAttribute('data-date-of-birth', item.date_of_birth || '');
-                            tr.setAttribute('data-stage', item.stage || '');
-                            // Store insurance numbers as JSON string
-                            tr.setAttribute('data-insurance-numbers', JSON.stringify(item.insurance_numbers || []));
+                            // Store raw Salesforce data (from SearchedFor)
+                            tr.setAttribute('data-value', recordData.MatterName);
+                            tr.setAttribute('data-claimant', recordData.ClaimantName || '');
+                            tr.setAttribute('data-matter-id', recordData.MatterId || '');
+                            tr.setAttribute('data-matter-url', recordData.MatterUrl || '');
+                            tr.setAttribute('data-date-of-birth', recordData.DOB || '');
+                            tr.setAttribute('data-stage', recordData.Stage || '');
+                            // Store Insurance array (SINGULAR!) for dropdown linking
+                            tr.setAttribute('data-insurances', JSON.stringify(insurances));
 
-                            // 🔥 Extract ALL claim numbers from insurance_numbers array
+                            // Extract claim numbers - comma separated
                             let claimNumbersText = '-';
-                            if (item.insurance_numbers && item.insurance_numbers.length > 0) {
-                                const claimNumbers = item.insurance_numbers
-                                    .filter(ins => ins.type === 'claim' && ins.number)
-                                    .map(ins => ins.number);
-                                
+                            if (insurances && Array.isArray(insurances)) {
+                                const claimNumbers = insurances
+                                    .map(ins => ins.ClaimNumber)
+                                    .filter(num => num);
                                 if (claimNumbers.length > 0) {
-                                    // Join with commas - wraps to multiple rows
                                     claimNumbersText = claimNumbers.join(', ');
                                 }
                             }
 
-                            // 🔥 Extract ALL policy numbers from insurance_numbers array
+                            // Extract policy numbers - comma separated
                             let policyNumbersText = '-';
-                            if (item.insurance_numbers && item.insurance_numbers.length > 0) {
-                                const policyNumbers = item.insurance_numbers
-                                    .filter(ins => ins.type === 'policy' && ins.number)
-                                    .map(ins => ins.number);
-                                
+                            if (insurances && Array.isArray(insurances)) {
+                                const policyNumbers = insurances
+                                    .map(ins => ins.PolicyNumber)
+                                    .filter(num => num);
                                 if (policyNumbers.length > 0) {
-                                    // Join with commas - wraps to multiple rows
                                     policyNumbersText = policyNumbers.join(', ');
                                 }
                             }
 
-                            // Create table cells with wrapping for claim/policy numbers
                             tr.innerHTML = `
-                                <td style="font-weight: 500; font-size: 12.5px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 20px;" title="${item.matter_name || '-'}">${item.matter_name || '-'}</td>
-                                <td class="text-gray">${item.date_of_birth || '-'}</td>
-                                <td class="text-gray">${item.stage || '-'}</td>
+                                <td style="font-weight: 500; font-size: 12.5px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 20px;" title="${recordData.MatterName || '-'}">${recordData.MatterName || '-'}</td>
+                                <td class="text-gray">${recordData.DOB || '-'}</td>
+                                <td class="text-gray">${recordData.Stage || '-'}</td>
                                 <td class="text-gray" style="font-size: 12px; font-weight: 500; white-space: normal; word-wrap: break-word; max-width: 200px; line-height: 1.5;">${claimNumbersText}</td>
                                 <td class="text-gray" style="font-size: 12px; font-weight: 500; white-space: normal; word-wrap: break-word; max-width: 200px; line-height: 1.5;">${policyNumbersText}</td>
                             `;
@@ -2247,19 +2138,15 @@
                         table.appendChild(tbody);
 
                         ul.appendChild(table);
-                        console.log('📋 Results displayed in table format!');
 
-                        // 🔥 Make search box match table width for proper scrolling
+                        // Make search box match table width
                         setTimeout(() => {
                             const searchBox = dropdown.querySelector('.dd-searchbox');
                             if (searchBox && table) {
-                                const tableWidth = table.scrollWidth;
-                                searchBox.style.width = tableWidth + 'px';
-                                console.log('Search box width set to:', tableWidth + 'px');
+                                searchBox.style.width = table.scrollWidth + 'px';
                             }
                         }, 50);
                     } else {
-                        // No results found
                         const noResults = document.createElement('li');
                         noResults.className = 'option no-results';
                         noResults.innerHTML = `<i class="fa-solid fa-search"></i> No matters found matching "${query}"`;
@@ -2267,8 +2154,6 @@
                     }
                 } catch (error) {
                     console.error('Salesforce search failed:', error);
-                    
-                    // Show error state
                     ul.innerHTML = '';
                     const errorLi = document.createElement('li');
                     errorLi.className = 'option no-results';
@@ -2563,14 +2448,14 @@
                         const matterId = clickedElement.getAttribute('data-matter-id');
                         const matterUrl = clickedElement.getAttribute('data-matter-url');
 
-                        // Parse insurance numbers from JSON string
-                        let insuranceNumbers = [];
+                        // Parse Insurances array from JSON string
+                        let insurances = [];
                         try {
-                            const insuranceData = clickedElement.getAttribute('data-insurance-numbers');
-                            insuranceNumbers = insuranceData ? JSON.parse(insuranceData) : [];
+                            const insurancesData = clickedElement.getAttribute('data-insurances');
+                            insurances = insurancesData ? JSON.parse(insurancesData) : [];
                         } catch (e) {
-                            console.error('Failed to parse insurance numbers:', e);
-                            insuranceNumbers = [];
+                            console.error('Failed to parse insurances:', e);
+                            insurances = [];
                         }
 
                         // Update display
@@ -2721,44 +2606,27 @@
                         // Always clear first before processing new data
                         clearSalesforceInsuranceFields();
                         
-                        if (insuranceNumbers && insuranceNumbers.length > 0) {
-                            console.log('💼 Found insurance numbers:', insuranceNumbers);
-                            console.log('💼 Insurance numbers count:', insuranceNumbers.length);
-                            console.log('💼 Insurance numbers structure:', JSON.stringify(insuranceNumbers, null, 2));
+                        if (insurances && insurances.length > 0) {
+                            console.log('💼 Found insurances:', insurances);
 
-                            // 🔥 Group insurance data by InsuranceId (each insurance record has claim + policy)
-                            // This creates linked records: Company → Claim Number + Policy Number
+                            // Group by InsuranceId - each record already has claim + policy together
                             const insuranceRecordsMap = new Map();
                             
-                            insuranceNumbers.forEach(ins => {
-                                const insuranceId = ins.insurance_id || ins.InsuranceId;
-                                // Try multiple possible field names for company data
-                                const companyName = ins.company_name || ins.insurance_company_name || ins.InsuranceCompanyName;
-                                const companyId = ins.company_id || ins.insurance_company_id || ins.InsuranceCompanyId;
-
+                            insurances.forEach(ins => {
+                                const insuranceId = ins.InsuranceId;
                                 if (!insuranceRecordsMap.has(insuranceId)) {
                                     insuranceRecordsMap.set(insuranceId, {
                                         insurance_id: insuranceId,
-                                        company_name: companyName,
-                                        company_id: companyId,
-                                        claim_number: null,
-                                        policy_number: null
+                                        company_name: ins.InsuranceCompanyName,
+                                        company_id: ins.InsuranceCompanyId,
+                                        claim_number: ins.ClaimNumber,
+                                        policy_number: ins.PolicyNumber
                                     });
-                                }
-                                
-                                const record = insuranceRecordsMap.get(insuranceId);
-                                if (ins.type === 'claim' && ins.number) {
-                                    record.claim_number = ins.number;
-                                } else if (ins.type === 'policy' && ins.number) {
-                                    record.policy_number = ins.number;
                                 }
                             });
                             
-                            // Convert to array for easier handling
                             const insuranceRecords = Array.from(insuranceRecordsMap.values());
-                            console.log('🏢 Linked insurance records:', insuranceRecords);
-                            console.log('🏢 Linked insurance records count:', insuranceRecords.length);
-                            console.log('🏢 Expected 7, Got:', insuranceRecords.length);
+                            console.log('🏢 Insurance records:', insuranceRecords);
                             
                             // Store globally so dropdown click handlers can access it
                             window.currentInsuranceRecords = insuranceRecords;
