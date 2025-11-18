@@ -498,6 +498,12 @@ def split_check(check_id):
             if 'batch_id' in current_check:
                 minimal_data['batch_id'] = current_check['batch_id']
 
+            # Set the file_name for the new split check
+            if check_num and batch_prefix:
+                new_file_name = f"{batch_prefix}-{new_check_num}.pdf"
+                minimal_data['file_name'] = new_file_name
+                api_logger.info(f"Minimal data - New check file_name: {new_file_name}")
+
             new_check_response = supabase_service.client.table('checks').insert(minimal_data).execute()
 
         if not new_check_response.data:

@@ -963,7 +963,9 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     {% if check.file_name %}
                                         {% set parts = check.file_name.replace('.pdf', '').replace('-COMPLETE', '').split('-') %}
-                                        {% if parts|length >= 2 %}
+                                        {% if parts|length >= 3 %}
+                                            <span class="text-sm font-bold text-blue-600">{{ parts[1] }}-{{ parts[2] }}</span>
+                                        {% elif parts|length >= 2 %}
                                             <span class="text-sm font-bold text-blue-600">{{ parts[1] }}</span>
                                         {% else %}
                                             <span class="text-sm text-gray-400">-</span>
@@ -1708,7 +1710,14 @@
                 <td class="px-6 py-4 whitespace-nowrap text-center">
                     ${check.file_name ? (() => {
                         const parts = check.file_name.replace('.pdf', '').replace('-COMPLETE', '').split('-');
-                        return parts.length >= 2 ? `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>` : '<span class="text-sm text-gray-400">-</span>';
+                        if (parts.length >= 3) {
+                            // Split document: show check_num-split_num (e.g., "018-1", "018-2")
+                            return `<span class="text-sm font-bold text-blue-600">${parts[1]}-${parts[2]}</span>`;
+                        } else if (parts.length >= 2) {
+                            // Regular document: show just check_num (e.g., "018")
+                            return `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>`;
+                        }
+                        return '<span class="text-sm text-gray-400">-</span>';
                     })() : '<span class="text-sm text-gray-400">-</span>'}
                 </td>
                 <td class="px-6 py-4">
@@ -1809,7 +1818,14 @@
                 <td class="px-6 py-4 whitespace-nowrap text-center">
                     ${check.file_name ? (() => {
                         const parts = check.file_name.replace('.pdf', '').replace('-COMPLETE', '').split('-');
-                        return parts.length >= 2 ? `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>` : '<span class="text-sm text-gray-400">-</span>';
+                        if (parts.length >= 3) {
+                            // Split document: show check_num-split_num (e.g., "018-1", "018-2")
+                            return `<span class="text-sm font-bold text-blue-600">${parts[1]}-${parts[2]}</span>`;
+                        } else if (parts.length >= 2) {
+                            // Regular document: show just check_num (e.g., "018")
+                            return `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>`;
+                        }
+                        return '<span class="text-sm text-gray-400">-</span>';
                     })() : '<span class="text-sm text-gray-400">-</span>'}
                 </td>
                 <td class="px-6 py-4">
@@ -1881,7 +1897,14 @@
                 <td class="px-6 py-4 whitespace-nowrap text-center">
                     ${check.file_name ? (() => {
                         const parts = check.file_name.replace('.pdf', '').replace('-COMPLETE', '').split('-');
-                        return parts.length >= 2 ? `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>` : '<span class="text-sm text-gray-400">-</span>';
+                        if (parts.length >= 3) {
+                            // Split document: show check_num-split_num (e.g., "018-1", "018-2")
+                            return `<span class="text-sm font-bold text-blue-600">${parts[1]}-${parts[2]}</span>`;
+                        } else if (parts.length >= 2) {
+                            // Regular document: show just check_num (e.g., "018")
+                            return `<span class="text-sm font-bold text-blue-600">${parts[1]}</span>`;
+                        }
+                        return '<span class="text-sm text-gray-400">-</span>';
                     })() : '<span class="text-sm text-gray-400">-</span>'}
                 </td>
                 <td class="px-6 py-4">
