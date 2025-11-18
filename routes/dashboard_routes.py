@@ -66,7 +66,7 @@ def debug_check_data(check_id):
     
     # Get raw check data
     response = supabase_service.client.table('checks')\
-        .select('*')\
+        .select('id,file_name,batch_id,batch_id_fk,provider_name,insurance_company,claim_number,policy_number,amount,check_number,check_issue_date,pay_to,routing_number,account_number,memo,matter_name,matter_id,matter_url,case_type,delivery_service,tracking_number,claimant,insured_name,status,confidence_score,flags,validated_at,validated_by,reviewed_at,reviewed_by,created_at,updated_at,batch_images,page_count,check_type,n8n_sync_enabled,image_data,image_mime_type')\
         .eq('id', check_id)\
         .single()\
         .execute()
@@ -99,7 +99,7 @@ def main_dashboard():
     try:
         # Get all checks (regardless of batch selection)
         checks_response = supabase_service.client.table('checks')\
-            .select('*, provider_name, pay_to, claimant')\
+            .select('id,file_name,batch_id,batch_id_fk,provider_name,insurance_company,claim_number,policy_number,amount,check_number,check_issue_date,pay_to,routing_number,account_number,memo,matter_name,matter_id,matter_url,case_type,delivery_service,tracking_number,claimant,insured_name,status,confidence_score,flags,validated_at,validated_by,reviewed_at,reviewed_by,created_at,updated_at,batch_images,page_count')\
             .order('created_at', desc=True)\
             .execute()
         
@@ -187,8 +187,9 @@ def check_queue(batch_id=None):
             # Level 2: Show checks for specific batch
             api_logger.info(f"Loading checks for batch: {batch_id}")
             
+            # Select specific fields to avoid schema cache issues with non-existent columns
             checks_response = supabase_service.client.table('checks')\
-                .select('*')\
+                .select('id,file_name,batch_id,batch_id_fk,provider_name,insurance_company,claim_number,policy_number,amount,check_number,check_issue_date,pay_to,routing_number,account_number,memo,matter_name,matter_id,matter_url,case_type,delivery_service,tracking_number,claimant,insured_name,status,confidence_score,flags,validated_at,validated_by,reviewed_at,reviewed_by,created_at,updated_at,batch_images,page_count')\
                 .eq('batch_id', batch_id)\
                 .order('created_at', desc=True)\
                 .execute()
@@ -282,8 +283,8 @@ def check_detail(check_id):
     try:
         user = session.get("user")
         
-        # Get specific check from Supabase
-        response = supabase_service.client.table('checks').select('*, provider_name, pay_to, claimant').eq('id', check_id).single().execute()
+        # Get specific check from Supabase (explicit fields to avoid schema cache issues)
+        response = supabase_service.client.table('checks').select('id,file_name,batch_id,batch_id_fk,provider_name,insurance_company,claim_number,policy_number,amount,check_number,check_issue_date,pay_to,routing_number,account_number,memo,matter_name,matter_id,matter_url,case_type,delivery_service,tracking_number,claimant,insured_name,status,confidence_score,flags,validated_at,validated_by,reviewed_at,reviewed_by,created_at,updated_at,batch_images,page_count,check_type,n8n_sync_enabled,image_data,image_mime_type').eq('id', check_id).single().execute()
         
         if not response.data:
             api_logger.warning(f"Check {check_id} not found")

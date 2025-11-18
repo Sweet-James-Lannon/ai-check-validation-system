@@ -246,7 +246,7 @@ def undo_approval(check_id):
 
         # Get the current check data
         current_check_response = supabase_service.client.table('checks')\
-            .select('*')\
+            .select('id,file_name,batch_id,batch_id_fk,provider_name,insurance_company,claim_number,policy_number,amount,check_number,check_issue_date,pay_to,routing_number,account_number,memo,matter_name,matter_id,matter_url,case_type,delivery_service,tracking_number,claimant,insured_name,status,confidence_score,flags,validated_at,validated_by,reviewed_at,reviewed_by,created_at,updated_at,batch_images,page_count,check_type,n8n_sync_enabled,image_data,image_mime_type')\
             .eq('id', check_id)\
             .single()\
             .execute()
@@ -294,6 +294,202 @@ def undo_approval(check_id):
 
     except Exception as e:
         api_logger.error(f"Error undoing approval for check {check_id}: {str(e)}")
+        import traceback
+        api_logger.error(traceback.format_exc())
+        return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
+
+@api_bp.route("/api/checks/split/<check_id>", methods=["POST"])
+@login_required
+def split_check(check_id):
+    """
+    Split a check into two separate records by moving selected pages to a new check
+
+    Request body: {
+        "selected_page_indices": [0, 1, 2]  # Array of page indices to move to new check
+    }
+
+    Returns: {
+        "status": "success",
+        "new_check_id": "uuid",
+        "new_check_identifier": "156-D",
+        "remaining_pages": 3,
+        "split_pages": 2
+    }
+    """
+    try:
+        user = session.get("user")
+        if not user:
+            return jsonify({"status": "error", "message": "User not authenticated"}), 401
+
+        # Get selected page indices from request
+        data = request.json
+        selected_indices = data.get('selected_page_indices', [])
+
+        if not selected_indices:
+            return jsonify({"status": "error", "message": "No pages selected for split"}), 400
+
+        api_logger.info(f"Splitting check {check_id} - moving {len(selected_indices)} pages")
+        api_logger.info(f"Selected page indices: {selected_indices}")
+
+        # Fetch current check
+        response = supabase_service.client.table('checks').select('id,file_name,batch_id,batch_id_fk,provider_name,insurance_company,claim_number,policy_number,amount,check_number,check_issue_date,pay_to,routing_number,account_number,memo,matter_name,matter_id,matter_url,case_type,delivery_service,tracking_number,claimant,insured_name,status,confidence_score,flags,validated_at,validated_by,reviewed_at,reviewed_by,created_at,updated_at,batch_images,page_count,check_type,n8n_sync_enabled,image_data,image_mime_type').eq('id', check_id).single().execute()
+
+        if not response.data:
+            return jsonify({"status": "error", "message": "Check not found"}), 404
+
+        current_check = response.data
+        batch_images = current_check.get('batch_images', [])
+
+        # Validate selection
+        if not batch_images:
+            return jsonify({"status": "error", "message": "No pages found in current check"}), 400
+
+        if len(selected_indices) >= len(batch_images):
+            return jsonify({"status": "error", "message": "Cannot split all pages - at least one page must remain"}), 400
+
+        # Validate all indices are valid
+        if any(idx < 0 or idx >= len(batch_images) for idx in selected_indices):
+            return jsonify({"status": "error", "message": "Invalid page index selected"}), 400
+
+        # Split batch_images array
+        split_images = [batch_images[i] for i in selected_indices]
+        remaining_images = [img for i, img in enumerate(batch_images) if i not in selected_indices]
+
+        api_logger.info(f"Split: {len(split_images)} pages, Remaining: {len(remaining_images)} pages")
+
+        # Extract check number from file_name (e.g., "156-001.pdf" -> "001")
+        current_file_name = current_check.get('file_name', '')
+        api_logger.info(f"Current file_name: {current_file_name}")
+
+        # Parse the check number from file_name
+        # Format is typically: {batch}-{check_num}.pdf or {batch}-{check_num}-{page}.pdf
+        check_num = None
+        if current_file_name:
+            # Remove .pdf and COMPLETE suffix
+            clean_name = current_file_name.replace('.pdf', '').replace('-COMPLETE', '')
+            parts = clean_name.split('-')
+            if len(parts) >= 2:
+                # Get the second part (check number)
+                check_num = parts[1]  # e.g., "001", "002", "003"
+
+        api_logger.info(f"Extracted check number: {check_num}")
+
+        # Generate split identifier by appending split count
+        # Find how many splits already exist for this check
+        # Count existing splits by looking for {check_num}-2, {check_num}-3, etc.
+        split_count = 2  # Start with -2 for first split
+        if check_num:
+            # Query for existing splits (this is optional - for now just use -2)
+            split_suffix = f"-{split_count}"
+            new_check_num = f"{check_num}{split_suffix}"  # e.g., "001-2", "001-3"
+        else:
+            # Fallback if no check number found
+            new_check_num = "SPLIT"
+
+        api_logger.info(f"New split check number: {new_check_num}")
+
+        # Create new check record (only copy safe fields to avoid schema errors)
+        # Fields to explicitly exclude (timestamps, validation, system fields, and form-only fields)
+        exclude_fields = {
+            'id', 'created_at', 'updated_at', 'validated_at', 'validated_by',
+            'reviewed_at', 'reviewed_by', 'n8n_sync_enabled', 'check_type_selection'
+        }
+
+        new_check_data = {
+            key: value for key, value in current_check.items()
+            if key not in exclude_fields
+        }
+
+        # Update fields for new check
+        new_check_data.update({
+            'batch_images': split_images,
+            'page_count': len(split_images),
+            'status': 'pending',
+            'created_at': datetime.utcnow().isoformat(),
+            'updated_at': datetime.utcnow().isoformat(),
+            'n8n_sync_enabled': False
+        })
+
+        # Set the split file_name (e.g., "156-001-2.pdf" for a split from "156-001.pdf")
+        if check_num and current_file_name:
+            # Generate new file_name with split suffix
+            batch_part = current_file_name.split('-')[0] if '-' in current_file_name else ''
+            new_file_name = f"{batch_part}-{new_check_num}.pdf" if batch_part else f"{new_check_num}.pdf"
+            new_check_data['file_name'] = new_file_name
+            api_logger.info(f"New check file_name: {new_file_name}")
+
+        # Insert new check
+        api_logger.info(f"Inserting new check record...")
+        api_logger.info(f"New check data keys: {list(new_check_data.keys())}")
+
+        try:
+            new_check_response = supabase_service.client.table('checks').insert(new_check_data).execute()
+        except Exception as insert_error:
+            api_logger.error(f"Insert error: {str(insert_error)}")
+            # If insert fails due to schema, try with minimal fields
+            api_logger.info("Retrying with minimal field set...")
+            minimal_data = {
+                'batch_images': split_images,
+                'page_count': len(split_images),
+                'status': 'pending',
+                'batch_id_fk': current_check.get('batch_id_fk'),
+                'created_at': datetime.utcnow().isoformat(),
+                'updated_at': datetime.utcnow().isoformat()
+            }
+            # Add optional fields if they exist
+            if 'check_letter' in current_check:
+                minimal_data['check_letter'] = next_letter
+            if 'batch_id' in current_check:
+                minimal_data['batch_id'] = current_check['batch_id']
+
+            new_check_response = supabase_service.client.table('checks').insert(minimal_data).execute()
+
+        if not new_check_response.data:
+            return jsonify({"status": "error", "message": "Failed to create new check"}), 500
+
+        new_check = new_check_response.data[0]
+        new_check_id = new_check['id']
+
+        api_logger.info(f"✅ New check created: {new_check_id} ({new_identifier})")
+
+        # Update current check - remove split pages
+        update_data = {
+            'batch_images': remaining_images,
+            'page_count': len(remaining_images),
+            'updated_at': datetime.utcnow().isoformat()
+        }
+
+        api_logger.info(f"Updating current check {check_id} with {len(remaining_images)} remaining pages...")
+        update_response = supabase_service.client.table('checks').update(update_data).eq('id', check_id).execute()
+
+        if not update_response.data:
+            # Rollback - delete the new check we just created
+            api_logger.error(f"Failed to update current check - rolling back")
+            supabase_service.client.table('checks').delete().eq('id', new_check_id).execute()
+            return jsonify({"status": "error", "message": "Failed to update current check"}), 500
+
+        api_logger.info(f"✅ Current check updated successfully")
+
+        # Get the actual identifier from the created check
+        # Prefer file_name over check_identifier for display
+        display_name = new_check.get('file_name', new_check_num)
+        if display_name:
+            # Clean up for display (remove .pdf)
+            display_name = display_name.replace('.pdf', '')
+
+        return jsonify({
+            "status": "success",
+            "message": f"Check split successfully into {display_name}",
+            "new_check_id": new_check_id,
+            "new_check_identifier": display_name,
+            "new_check_number": new_check_num,
+            "current_check_id": check_id,
+            "split_pages": len(split_images),
+            "remaining_pages": len(remaining_images)
+        })
+
+    except Exception as e:
+        api_logger.error(f"Error splitting check {check_id}: {str(e)}")
         import traceback
         api_logger.error(traceback.format_exc())
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
@@ -385,7 +581,7 @@ def flag_needs_review(check_id):
 def get_check_details(check_id):
     """Get detailed information for a specific check"""
     try:
-        response = supabase_service.client.table('checks').select('*, provider_name, pay_to, claimant').eq('id', check_id).single().execute()
+        response = supabase_service.client.table('checks').select('id,file_name,batch_id,batch_id_fk,provider_name,insurance_company,claim_number,policy_number,amount,check_number,check_issue_date,pay_to,routing_number,account_number,memo,matter_name,matter_id,matter_url,case_type,delivery_service,tracking_number,claimant,insured_name,status,confidence_score,flags,validated_at,validated_by,reviewed_at,reviewed_by,created_at,updated_at,batch_images,page_count,check_type,n8n_sync_enabled,image_data,image_mime_type').eq('id', check_id).single().execute()
         
         if response.data:
             # Ensure provider_name is available (fallback to pay_to or claimant)
@@ -869,7 +1065,7 @@ def get_batch_checks(batch_id):
         api_logger.info(f"API: Loading checks for batch {batch_id}")
         
         response = supabase_service.client.table('checks')\
-            .select('*')\
+            .select('id,file_name,batch_id,batch_id_fk,provider_name,insurance_company,claim_number,policy_number,amount,check_number,check_issue_date,pay_to,routing_number,account_number,memo,matter_name,matter_id,matter_url,case_type,delivery_service,tracking_number,claimant,insured_name,status,confidence_score,flags,validated_at,validated_by,reviewed_at,reviewed_by,created_at,updated_at,batch_images,page_count')\
             .eq('batch_id', batch_id)\
             .order('created_at', desc=True)\
             .execute()
