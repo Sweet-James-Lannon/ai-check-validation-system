@@ -644,23 +644,8 @@ def serve_check_pdf(check_id, page_index):
     try:
         api_logger.info(f"=== PDF request: check_id={check_id}, page_index={page_index} ===")
         
-        # CHECK CACHE FIRST! 💨
-        cache_key = f"{check_id}_{page_index}"
-        cached_pdf = get_cached_pdf(cache_key)
-        if cached_pdf:
-            return Response(
-                cached_pdf,
-                mimetype='application/pdf',
-                headers={
-                    'Cache-Control': 'public, max-age=86400',
-                    'Access-Control-Allow-Origin': '*',
-                    'Content-Type': 'application/pdf',
-                    'X-Cache': 'HIT'  # Debug header
-                }
-            )
-        
-        # Get check from Supabase
-        response = supabase_service.client.table('checks').select('batch_images, batch_id').eq('id', check_id).single().execute()
+        # Get check from Supabase (need updated_at for cache busting)
+        response = supabase_service.client.table('checks').select('batch_images, batch_id, updated_at').eq('id', check_id).single().execute()
         
         if not response.data:
             api_logger.warning(f"Check {check_id} not found for PDF serving")
@@ -668,9 +653,29 @@ def serve_check_pdf(check_id, page_index):
         
         check = response.data
         batch_images = check.get('batch_images', [])
+        updated_at = check.get('updated_at', '')
+        
+        # Create cache key with updated_at timestamp for cache busting after splits
+        # This ensures that after a split, we don't serve stale cached PDFs
+        cache_key = f"{check_id}_{page_index}_{updated_at}"
+        
+        # CHECK CACHE FIRST! 💨
+        cached_pdf = get_cached_pdf(cache_key)
+        if cached_pdf:
+            api_logger.info(f"💨 Serving cached PDF for {cache_key}")
+            return Response(
+                cached_pdf,
+                mimetype='application/pdf',
+                headers={
+                    'Cache-Control': 'no-cache',  # Changed: Don't cache in browser after splits
+                    'Access-Control-Allow-Origin': '*',
+                    'Content-Type': 'application/pdf',
+                    'X-Cache': 'HIT'  # Debug header
+                }
+            )
         
         if not batch_images or page_index >= len(batch_images):
-            api_logger.warning(f"No batch images or invalid index for check {check_id}")
+            api_logger.warning(f"No batch images or invalid index for check {check_id}. Has {len(batch_images)} pages, requested index {page_index}")
             return "PDF page not found", 404
         
         image_info = batch_images[page_index]
@@ -729,15 +734,18 @@ def serve_check_pdf(check_id, page_index):
                 api_logger.error(f"No data returned from Supabase Storage for: {storage_path}")
                 return "PDF file is empty", 404
             
-            # CACHE IT! 💾
+            # CACHE IT! 💾 (server-side only, with updated_at in key for cache busting)
             cache_pdf(cache_key, pdf_data)
             
-            # Return PDF with aggressive caching and streaming headers
+            # Return PDF with NO BROWSER CACHING to prevent stale data after splits
+            # Server-side cache is still used (with updated_at in key for invalidation)
             return Response(
                 pdf_data,
                 mimetype='application/pdf',
                 headers={
-                    'Cache-Control': 'public, max-age=86400',  # Cache for 24 hours
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',  # Prevent browser caching
+                    'Pragma': 'no-cache',  # HTTP 1.0 compatibility
+                    'Expires': '0',  # Proxies
                     'Access-Control-Allow-Origin': '*',
                     'Content-Type': 'application/pdf',
                     'Content-Length': str(len(pdf_data)),  # Help browser estimate download time

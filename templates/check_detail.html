@@ -1839,6 +1839,8 @@
 
             // Batch Images Setup
             const batchImages = {{ check.batch_images|tojson if check.batch_images else '[]' }};
+            const checkId = '{{ check.id }}';
+            const checkUpdatedAt = '{{ check.updated_at }}';  // For cache busting after splits
             let currentImageIndex = 0;
             
             // ============================================================================
@@ -3055,6 +3057,11 @@
             const pdfCache = new Map();
             let preloadAbortController = null;
             
+            // 🔥 CLEAR PDF CACHE ON PAGE LOAD - Prevents stale data after splits!
+            // The updated_at timestamp in URLs ensures fresh data is loaded
+            console.log('🔄 Clearing PDF cache to ensure fresh data after any splits');
+            pdfCache.clear();
+            
             // Currency formatting helper function
             function formatCurrency(value) {
                 if (!value) return '$0.00';
@@ -3113,8 +3120,8 @@
             async function preloadPDF(pageIndex) {
                 if (!batchImages || pageIndex < 0 || pageIndex >= batchImages.length) return;
                 
-                const checkId = '{{ check.id }}';
-                const pdfUrl = `/checks/pdf/${checkId}/${pageIndex}`;
+                // Add timestamp for cache busting after splits
+                const pdfUrl = `/checks/pdf/${checkId}/${pageIndex}?t=${encodeURIComponent(checkUpdatedAt)}`;
                 
                 // Skip if already cached
                 if (pdfCache.has(pdfUrl)) {
@@ -3188,8 +3195,8 @@
                     if (pdfError) pdfError.style.display = 'none';
                     
                     const currentImg = batchImages[pageIndex];
-                    const checkId = '{{ check.id }}';
-                    const pdfUrl = `/checks/pdf/${checkId}/${pageIndex}`;
+                    // Add timestamp for cache busting after splits
+                    const pdfUrl = `/checks/pdf/${checkId}/${pageIndex}?t=${encodeURIComponent(checkUpdatedAt)}`;
                     
                     // CHECK CACHE FIRST! 🚀
                     let pdfDoc, pdfPage;
@@ -4911,8 +4918,8 @@
                 if (!canvas) return;
 
                 const ctx = canvas.getContext('2d');
-                const checkId = '{{ check.id }}';
-                const pdfUrl = `/checks/pdf/${checkId}/${pageIndex}`;
+                // Add timestamp for cache busting after splits
+                const pdfUrl = `/checks/pdf/${checkId}/${pageIndex}?t=${encodeURIComponent(checkUpdatedAt)}`;
 
                 console.log(`🖼️ Loading thumbnail for page ${pageIndex + 1} from:`, pdfUrl);
 

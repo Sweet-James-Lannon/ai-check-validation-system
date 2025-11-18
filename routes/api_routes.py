@@ -356,17 +356,26 @@ def split_check(check_id):
         remaining_images = [batch_images[i] for i in range(len(batch_images)) if i not in selected_indices]
 
         api_logger.info(f"📄 Total pages before split: {len(batch_images)}")
-        api_logger.info(f"📄 Selected indices: {sorted(selected_indices)}")
-        api_logger.info(f"📄 Split pages (going to new check): {len(split_images)} pages")
-        api_logger.info(f"📄 Remaining pages (staying in original): {len(remaining_images)} pages")
+        api_logger.info(f"📄 Selected indices (will be REMOVED from original): {sorted(selected_indices)}")
+        api_logger.info(f"📄 Remaining indices (will STAY in original): {[i for i in range(len(batch_images)) if i not in selected_indices]}")
+        api_logger.info(f"📄 Split pages (going to NEW check): {len(split_images)} pages")
+        api_logger.info(f"📄 Remaining pages (staying in ORIGINAL): {len(remaining_images)} pages")
 
-        # Log first page of each to verify correct split
-        if batch_images:
-            api_logger.info(f"📄 Original first page data (sample): {str(batch_images[0])[:100]}")
-        if split_images:
-            api_logger.info(f"📄 Split first page data (sample): {str(split_images[0])[:100]}")
-        if remaining_images:
-            api_logger.info(f"📄 Remaining first page data (sample): {str(remaining_images[0])[:100]}")
+        # Log ALL pages with their filenames/URLs to verify correctsplit
+        api_logger.info("📄 === ORIGINAL BATCH IMAGES ===")
+        for idx, img in enumerate(batch_images):
+            filename = img.get('filename') or img.get('file_name') or 'unknown'
+            api_logger.info(f"   Index {idx}: {filename}")
+        
+        api_logger.info("📄 === SPLIT IMAGES (going to NEW check) ===")
+        for idx, img in enumerate(split_images):
+            filename = img.get('filename') or img.get('file_name') or 'unknown'
+            api_logger.info(f"   Index {idx}: {filename}")
+        
+        api_logger.info("📄 === REMAINING IMAGES (staying in ORIGINAL check) ===")
+        for idx, img in enumerate(remaining_images):
+            filename = img.get('filename') or img.get('file_name') or 'unknown'
+            api_logger.info(f"   Index {idx}: {filename}")
 
         # Extract check number from file_name (e.g., "156-001.pdf" -> "001")
         current_file_name = current_check.get('file_name', '')
@@ -505,7 +514,7 @@ def split_check(check_id):
             }
             # Add optional fields if they exist
             if 'check_letter' in current_check:
-                minimal_data['check_letter'] = next_letter
+                minimal_data['check_letter'] = current_check.get('check_letter')
             if 'batch_id' in current_check:
                 minimal_data['batch_id'] = current_check['batch_id']
 
@@ -526,10 +535,10 @@ def split_check(check_id):
         api_logger.info(f"✅ New check created: {new_check_id} ({new_check_num})")
 
         # Update current check - remove split pages and rename to -1 suffix if needed
-        api_logger.info(f"📄 BEFORE UPDATE - Original batch_images had {len(batch_images)} pages")
-        api_logger.info(f"📄 BEFORE UPDATE - Setting remaining_images with {len(remaining_images)} pages")
-        api_logger.info(f"📄 BEFORE UPDATE - First 3 pages of remaining: {remaining_images[:3] if len(remaining_images) >= 3 else remaining_images}")
-
+        api_logger.info(f"📄 === BEFORE UPDATE TO ORIGINAL CHECK ===")
+        api_logger.info(f"📄 Original batch_images had: {len(batch_images)} pages")
+        api_logger.info(f"📄 Will update with remaining_images: {len(remaining_images)} pages")
+        
         update_data = {
             'batch_images': remaining_images,
             'page_count': len(remaining_images),
@@ -545,16 +554,27 @@ def split_check(check_id):
         elif current_split_num is not None:
             api_logger.info(f"Original check already has split number {current_split_num}, keeping file_name unchanged")
 
-        api_logger.info(f"Updating current check {check_id} with {len(remaining_images)} remaining pages...")
+        api_logger.info(f"📄 === UPDATING ORIGINAL CHECK {check_id} ===")
+        api_logger.info(f"📄 Update data - page_count: {update_data['page_count']}")
+        api_logger.info(f"📄 Update data - batch_images length: {len(update_data['batch_images'])}")
+        
         update_response = supabase_service.client.table('checks').update(update_data).eq('id', check_id).execute()
 
         if not update_response.data:
             # Rollback - delete the new check we just created
-            api_logger.error(f"Failed to update current check - rolling back")
+            api_logger.error(f"❌ Failed to update current check - rolling back")
             supabase_service.client.table('checks').delete().eq('id', new_check_id).execute()
             return jsonify({"status": "error", "message": "Failed to update current check"}), 500
 
         api_logger.info(f"✅ Current check updated successfully")
+        
+        # Verify the update by logging what came back
+        updated_check = update_response.data[0]
+        api_logger.info(f"📄 === AFTER UPDATE - VERIFICATION ===")
+        api_logger.info(f"📄 Updated check page_count: {updated_check.get('page_count')}")
+        api_logger.info(f"📄 Updated check batch_images length: {len(updated_check.get('batch_images', []))}")
+        if updated_check.get('batch_images'):
+            api_logger.info(f"📄 First page of updated check: {updated_check['batch_images'][0].get('filename') or updated_check['batch_images'][0].get('file_name')}")
 
         # Get the actual identifier from the created check
         # Prefer file_name over check_identifier for display
