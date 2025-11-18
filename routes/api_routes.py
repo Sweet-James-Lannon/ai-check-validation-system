@@ -377,41 +377,40 @@ def split_check(check_id):
             filename = img.get('filename') or img.get('file_name') or 'unknown'
             api_logger.info(f"   Index {idx}: {filename}")
 
-        # Extract check number from file_name (e.g., "156-001.pdf" -> "001")
+        # Extract check number from file_name (e.g., "156-002.pdf" -> "002")
         current_file_name = current_check.get('file_name', '')
         api_logger.info(f"Current file_name: {current_file_name}")
 
         # Parse the check number from file_name
-        # Format is typically: {batch}-{check_num}.pdf or {batch}-{check_num}-{split_num}.pdf
+        # Format is typically: {batch}-{check_num}.pdf or {batch}-{check_num}-{suffix}.pdf
         check_num = None
-        current_split_num = None
+        current_suffix = None
         if current_file_name:
             # Remove .pdf and COMPLETE suffix
             clean_name = current_file_name.replace('.pdf', '').replace('-COMPLETE', '')
             parts = clean_name.split('-')
             if len(parts) >= 2:
                 # Get the second part (check number)
-                check_num = parts[1]  # e.g., "001", "002", "003", "005"
+                check_num = parts[1]  # e.g., "001", "002", "003"
             if len(parts) >= 3:
-                # Check if there's already a split number
-                try:
-                    current_split_num = int(parts[2])
-                    api_logger.info(f"Current check already has split number: {current_split_num}")
-                except ValueError:
-                    # Third part is not a number (maybe "-COMPLETE" or something else)
-                    pass
+                # Check if there's already a suffix (main, 2, 3, etc.)
+                current_suffix = parts[2]
+                # MIGRATION: Convert old "-1" suffix to "main" for consistency
+                if current_suffix == "1":
+                    current_suffix = "main"
+                    api_logger.info(f"Migrating old '-1' suffix to '-main' for consistency")
+                api_logger.info(f"Current check already has suffix: {current_suffix}")
 
-        api_logger.info(f"Extracted check number: {check_num}, current split: {current_split_num}")
+        api_logger.info(f"Extracted check number: {check_num}, current suffix: {current_suffix}")
 
         # Determine batch prefix for searching existing splits
         batch_prefix = current_file_name.split('-')[0] if '-' in current_file_name else ''
 
         # Find how many splits already exist for this check number
-        # Query for existing checks with the same check number pattern
-        split_count = 1
+        split_count = 2  # First split always creates 002-main and 002-2
         if check_num and batch_prefix:
-            # Search for existing splits with pattern: {batch}-{check_num}-{split_num}
-            # e.g., "156-005-1", "156-005-2", "156-005-3"
+            # Search for existing splits with pattern: {batch}-{check_num}-{suffix}
+            # e.g., "156-002-main", "156-002-2", "156-002-3"
             search_pattern = f"{batch_prefix}-{check_num}-%"
             try:
                 existing_splits_response = supabase_service.client.table('checks')\
@@ -420,42 +419,45 @@ def split_check(check_id):
                     .execute()
 
                 if existing_splits_response.data:
-                    # Extract split numbers from existing splits
+                    # Extract numeric split suffixes from existing splits
                     split_numbers = []
                     for check in existing_splits_response.data:
                         fn = check.get('file_name', '')
-                        # Extract the split number (e.g., "156-005-2.pdf" -> 2)
+                        # Extract the suffix (e.g., "156-002-2.pdf" -> 2)
                         parts = fn.replace('.pdf', '').replace('-COMPLETE', '').split('-')
                         if len(parts) >= 3:
-                            try:
-                                split_num = int(parts[2])
-                                split_numbers.append(split_num)
-                            except ValueError:
-                                pass
+                            suffix = parts[2]
+                            # Only count numeric suffixes (not "main")
+                            if suffix != "main":
+                                try:
+                                    split_num = int(suffix)
+                                    split_numbers.append(split_num)
+                                except ValueError:
+                                    pass
 
                     if split_numbers:
                         # Use the highest split number + 1
                         split_count = max(split_numbers) + 1
-                        api_logger.info(f"Found existing splits: {split_numbers}, using split count: {split_count}")
+                        api_logger.info(f"Found existing numeric splits: {split_numbers}, using split count: {split_count}")
                     else:
-                        # First split - original becomes -1, new becomes -2
+                        # Only "main" exists, so this is the second split
                         split_count = 2
-                else:
-                    # First split - original becomes -1, new becomes -2
-                    split_count = 2
             except Exception as query_error:
                 api_logger.warning(f"Error querying existing splits: {query_error}, defaulting to split count 2")
                 split_count = 2
 
-        # Generate the new split check number
+        # Generate the new split check number and original check name
         if check_num:
-            new_check_num = f"{check_num}-{split_count}"  # e.g., "005-2", "005-3"
-            # Only rename the original if it doesn't already have a split number
-            if current_split_num is None:
-                original_check_num = f"{check_num}-1"  # Original becomes "005-1"
+            new_check_num = f"{check_num}-{split_count}"  # e.g., "002-2", "002-3"
+            # Rename original to "main" if it doesn't already have a suffix
+            if current_suffix is None:
+                original_check_num = f"{check_num}-main"  # Original becomes "002-main"
+            elif current_suffix == "main":
+                # Already has "main" suffix, keep it
+                original_check_num = f"{check_num}-main"
             else:
-                # Keep the current split number (e.g., if splitting "005-1", it stays "005-1")
-                original_check_num = f"{check_num}-{current_split_num}"
+                # Keep the current suffix (e.g., if splitting "002-2", it stays "002-2")
+                original_check_num = f"{check_num}-{current_suffix}"
         else:
             # Fallback if no check number found
             new_check_num = "SPLIT"
@@ -545,14 +547,14 @@ def split_check(check_id):
             'updated_at': datetime.utcnow().isoformat()
         }
 
-        # Rename the original check to include -1 suffix only if it doesn't already have a split number
-        # (e.g., "156-005.pdf" -> "156-005-1.pdf", but "156-005-1.pdf" stays "156-005-1.pdf")
-        if check_num and batch_prefix and original_check_num and current_split_num is None:
+        # Rename the original check to include -main suffix only if it doesn't already have a suffix
+        # (e.g., "156-002.pdf" -> "156-002-main.pdf", but "156-002-main.pdf" stays "156-002-main.pdf")
+        if check_num and batch_prefix and original_check_num and current_suffix is None:
             original_file_name = f"{batch_prefix}-{original_check_num}.pdf"
             update_data['file_name'] = original_file_name
             api_logger.info(f"Renaming original check to: {original_file_name}")
-        elif current_split_num is not None:
-            api_logger.info(f"Original check already has split number {current_split_num}, keeping file_name unchanged")
+        elif current_suffix is not None:
+            api_logger.info(f"Original check already has suffix '{current_suffix}', keeping file_name unchanged")
 
         api_logger.info(f"📄 === UPDATING ORIGINAL CHECK {check_id} ===")
         api_logger.info(f"📄 Update data - page_count: {update_data['page_count']}")
