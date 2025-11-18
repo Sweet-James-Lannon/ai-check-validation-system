@@ -351,11 +351,22 @@ def split_check(check_id):
         if any(idx < 0 or idx >= len(batch_images) for idx in selected_indices):
             return jsonify({"status": "error", "message": "Invalid page index selected"}), 400
 
-        # Split batch_images array
-        split_images = [batch_images[i] for i in selected_indices]
-        remaining_images = [img for i, img in enumerate(batch_images) if i not in selected_indices]
+        # Split batch_images array - maintain order
+        split_images = [batch_images[i] for i in sorted(selected_indices)]
+        remaining_images = [batch_images[i] for i in range(len(batch_images)) if i not in selected_indices]
 
-        api_logger.info(f"Split: {len(split_images)} pages, Remaining: {len(remaining_images)} pages")
+        api_logger.info(f"📄 Total pages before split: {len(batch_images)}")
+        api_logger.info(f"📄 Selected indices: {sorted(selected_indices)}")
+        api_logger.info(f"📄 Split pages (going to new check): {len(split_images)} pages")
+        api_logger.info(f"📄 Remaining pages (staying in original): {len(remaining_images)} pages")
+
+        # Log first page of each to verify correct split
+        if batch_images:
+            api_logger.info(f"📄 Original first page data (sample): {str(batch_images[0])[:100]}")
+        if split_images:
+            api_logger.info(f"📄 Split first page data (sample): {str(split_images[0])[:100]}")
+        if remaining_images:
+            api_logger.info(f"📄 Remaining first page data (sample): {str(remaining_images[0])[:100]}")
 
         # Extract check number from file_name (e.g., "156-001.pdf" -> "001")
         current_file_name = current_check.get('file_name', '')
@@ -515,6 +526,10 @@ def split_check(check_id):
         api_logger.info(f"✅ New check created: {new_check_id} ({new_check_num})")
 
         # Update current check - remove split pages and rename to -1 suffix if needed
+        api_logger.info(f"📄 BEFORE UPDATE - Original batch_images had {len(batch_images)} pages")
+        api_logger.info(f"📄 BEFORE UPDATE - Setting remaining_images with {len(remaining_images)} pages")
+        api_logger.info(f"📄 BEFORE UPDATE - First 3 pages of remaining: {remaining_images[:3] if len(remaining_images) >= 3 else remaining_images}")
+
         update_data = {
             'batch_images': remaining_images,
             'page_count': len(remaining_images),
