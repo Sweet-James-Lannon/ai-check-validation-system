@@ -813,12 +813,16 @@ def salesforce_claimant_lookup():
             insurance_numbers = []
 
             if isinstance(insurances, list):
+                api_logger.info(f"🔍 [SINGLE MATCH] Insurances is a list with {len(insurances)} items")
                 for insurance in insurances:
+                    api_logger.info(f"🔍 [SINGLE MATCH] Processing insurance item: {insurance}")
+                    api_logger.info(f"🔑 [SINGLE MATCH] Available keys in insurance object: {list(insurance.keys())}")
                     claim_num = insurance.get('ClaimNumber')
                     policy_num = insurance.get('PolicyNumber')
                     insurance_id = insurance.get('InsuranceId', '')
-                    insurance_company_name = insurance.get('Insurance Company Name', '')
-                    insurance_company_id = insurance.get('Insurance Company Id', '')
+                    insurance_company_name = insurance.get('InsuranceCompanyName', '')
+                    insurance_company_id = insurance.get('InsuranceCompanyId', '')
+                    api_logger.info(f"🔍 [SINGLE MATCH] Extracted - Claim: {claim_num}, Policy: {policy_num}, Company: {insurance_company_name}, InsuranceId: {insurance_id}")
 
                     if claim_num:
                         insurance_numbers.append({
@@ -1003,12 +1007,13 @@ def salesforce_search_claimants():
                     api_logger.info(f"🔍 Insurances is a list with {len(insurances)} items")
                     for insurance in insurances:
                         api_logger.info(f"🔍 Processing insurance item: {insurance}")
+                        api_logger.info(f"🔑 Available keys in insurance object: {list(insurance.keys())}")
                         claim_num = insurance.get('ClaimNumber')
                         policy_num = insurance.get('PolicyNumber')
                         insurance_id = insurance.get('InsuranceId', '')
-                        insurance_company_name = insurance.get('Insurance Company Name', '')
-                        insurance_company_id = insurance.get('Insurance Company Id', '')
-                        
+                        insurance_company_name = insurance.get('InsuranceCompanyName', '')
+                        insurance_company_id = insurance.get('InsuranceCompanyId', '')
+
                         api_logger.info(f"🔍 Extracted - Claim: {claim_num}, Policy: {policy_num}, Company: {insurance_company_name}, InsuranceId: {insurance_id}")
 
                         if claim_num:

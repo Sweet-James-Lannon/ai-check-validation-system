@@ -2739,10 +2739,11 @@
                             const insuranceRecordsMap = new Map();
                             
                             insuranceNumbers.forEach(ins => {
-                                const insuranceId = ins.insurance_id;
-                                const companyName = ins.insurance_company_name;
-                                const companyId = ins.insurance_company_id;
-                                
+                                const insuranceId = ins.insurance_id || ins.InsuranceId;
+                                // Try multiple possible field names for company data
+                                const companyName = ins.company_name || ins.insurance_company_name || ins.InsuranceCompanyName;
+                                const companyId = ins.company_id || ins.insurance_company_id || ins.InsuranceCompanyId;
+
                                 if (!insuranceRecordsMap.has(insuranceId)) {
                                     insuranceRecordsMap.set(insuranceId, {
                                         insurance_id: insuranceId,
@@ -2792,7 +2793,6 @@
                                     company_name: rec.company_name
                                 }));
                                 addInsuranceDropdown(insuranceCompanyInput, companyDropdownItems, 'company');
-                                console.log('✅ Added LINKED dropdown to RIGHT side Insurance Company');
                             }
                             
                             // 2. SF Claim Number dropdown (Read-only display - updated by company selection)
