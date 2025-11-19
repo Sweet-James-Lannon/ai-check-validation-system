@@ -742,8 +742,8 @@
                         <i class="fa-solid fa-file-invoice-dollar fa-lg text-white"></i>
                     </div>
                     <div>
-                        <h1 class="text-lg font-semibold text-primary">Check {{ check.check_number }}</h1>
-                        <p class="text-xs text-tertiary font-medium">DETAILED VALIDATION</p>
+                        <h1 class="text-lg font-semibold text-primary">Check Validation Workspace</h1>
+                        <p class="text-xs text-tertiary font-medium">Review image and extracted data side-by-side</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
@@ -769,9 +769,25 @@
             <!-- Header with Confidence Score -->
             <div class="px-6 py-3 bg-gradient-to-br from-slate-800 to-slate-700 rounded-t-xl">
                 <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-base font-semibold text-white">Check Validation Workspace</h2>
-                        <p class="text-xs text-white/80">Review image and extracted data side-by-side</p>
+                    <div class="flex items-center gap-4">
+                        <!-- Batch/Check Name - Simple White Design -->
+                        <div class="bg-white px-4 py-2 rounded-lg border border-gray-300 shadow-sm">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-file-invoice text-gray-700 text-lg"></i>
+                                <span class="text-lg font-semibold text-gray-800" id="batchCheckName">
+                                    {% if check.file_name %}
+                                        {% set parts = check.file_name.replace('.pdf', '').split('-') %}
+                                        {% if parts|length >= 2 %}
+                                            Batch {{ parts[0] }} Check {{ parts[1] }}{% if parts|length > 2 %}-{{ parts[2] }}{% endif %}
+                                        {% else %}
+                                            {{ check.file_name }}
+                                        {% endif %}
+                                    {% else %}
+                                        Check {{ check.check_number or 'N/A' }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="flex items-center gap-4">
