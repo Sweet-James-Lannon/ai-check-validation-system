@@ -201,7 +201,7 @@ def approve_check(check_id):
         approval_timestamp = datetime.utcnow().isoformat()
         update_data.update({
             'status': 'approved',
-            'validated_at': approval_timestamp,  # ← THIS triggers Jai's edge function
+            'validated_at': approval_timestamp,  # ← THIS triggers Jai's edge function (ONLY trigger)
             'validated_by': user.get('preferred_username', 'unknown'),  # ← Capture approving user
             'n8n_sync_enabled': True,  # N8N workflow trigger 
             'updated_at': approval_timestamp,

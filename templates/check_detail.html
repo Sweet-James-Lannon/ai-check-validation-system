@@ -4215,36 +4215,51 @@
         // ============================================================================
         
         async function performAutoSearchOnLoad() {
+            console.log('🚀 performAutoSearchOnLoad FIRED!');
+            
             const matterIdInput = document.querySelector('input[name="matter_id"]');
-            const matterNameInput = document.querySelector('select[name="matter_name"]');  // ← FIX: It's a SELECT, not input!
+            const matterNameSelect = document.querySelector('select[name="matter_name"]');  // Hidden select element
             
             console.log('🔍 AUTO-SEARCH DEBUG:');
             console.log('   matterIdInput:', matterIdInput);
             console.log('   matterIdInput.value:', matterIdInput?.value);
-            console.log('   matterNameInput:', matterNameInput);
-            console.log('   matterNameInput.value:', matterNameInput?.value);
+            console.log('   matterNameSelect:', matterNameSelect);
+            console.log('   matterNameSelect.value:', matterNameSelect?.value);
+            
+            // Get the matter name from the HIDDEN select element (still stores the value)
+            const matterName = matterNameSelect?.value?.trim();
+            const matterId = matterIdInput?.value?.trim();
+            
+            console.log('   Extracted matterName:', matterName);
+            console.log('   Extracted matterId:', matterId);
             
             // Only auto-search if we have both matter_id and matter_name
-            if (!matterIdInput || !matterIdInput.value || !matterNameInput || !matterNameInput.value) {
+            if (!matterId || !matterName) {
                 console.log('⏭️ Skipping auto-search: missing matter_id or matter_name');
+                console.log('   Reason: matterId exists?', !!matterId);
+                console.log('   Reason: matterName exists?', !!matterName);
                 return;
             }
             
-            const existingMatterId = matterIdInput.value.trim();
-            const existingMatterName = matterNameInput.value.trim();
-            
             console.log('🔍 AUTO-SEARCH TRIGGERED!');
-            console.log('   Matter ID:', existingMatterId);
-            console.log('   Matter Name:', existingMatterName);
+            console.log('   Matter ID:', matterId);
+            console.log('   Matter Name:', matterName);
             
             try {
                 // Search for the exact matter name
-                const response = await fetch(`/api/salesforce/search?q=${encodeURIComponent(existingMatterName)}`);
+                const response = await fetch(`/api/salesforce/search?q=${encodeURIComponent(matterName)}`);
                 const data = await response.json();
                 
+                console.log('📡 Salesforce API response:', data);
+                
                 if (data.status === 'success' && data.results && data.results.length > 0) {
-                    // Find exact match by matter_name (not matter_id)
-                    const exactMatch = data.results.find(r => r.matter_name === existingMatterName);
+                    console.log(`✅ Found ${data.results.length} results`);
+                    
+                    // Find exact match by matter_name
+                    const exactMatch = data.results.find(r => {
+                        const searchedFor = r.SearchedFor || r;
+                        return searchedFor.MatterName === matterName || searchedFor.matter_name === matterName;
+                    });
                     
                     if (exactMatch) {
                         console.log('✅ EXACT MATCH FOUND by matter_name!', exactMatch);
@@ -4273,8 +4288,20 @@
             }
         }
         
-        // Run auto-search after a short delay to ensure all fields are loaded
-        setTimeout(performAutoSearchOnLoad, 500);
+        // 🔥 Run auto-search IMMEDIATELY on page load
+        console.log('📢 Scheduling performAutoSearchOnLoad...');
+        performAutoSearchOnLoad(); // Try immediately
+        
+        // Also schedule backups in case DOM isn't ready yet
+        setTimeout(() => {
+            console.log('⏰ Backup auto-search call (500ms)');
+            performAutoSearchOnLoad();
+        }, 500);
+        
+        setTimeout(() => {
+            console.log('⏰ Final backup auto-search call (1000ms)');
+            performAutoSearchOnLoad();
+        }, 1000);
         
         // ============================================================================
         // AUTOMATIC CLAIMANT SEARCH - Duplicate Detection 🔍
