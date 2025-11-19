@@ -777,7 +777,7 @@
                                 {% if check.file_name %}
                                     {% set parts = check.file_name.replace('.pdf', '').split('-') %}
                                     {% if parts|length >= 2 %}
-                                        Batch {{ parts[0] }} Check {{ parts[1] }}{% if parts|length > 2 %}-{{ parts[2] }}{% endif %}
+                                        Batch {{ parts[0] }} Check {{ parts[1] }}{% if parts|length > 2 and parts[2] != '1' %}-{{ parts[2] }}{% endif %}
                                     {% else %}
                                         {{ check.file_name }}
                                     {% endif %}
