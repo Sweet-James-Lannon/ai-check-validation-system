@@ -4112,39 +4112,42 @@
         // 🔥 HELPER FUNCTION - EXACT COPY of dropdown creation from manual search
         // ============================================================================
         
-        function createInsuranceDropdowns(matchedResult) {
-            console.log('🎨 Creating insurance dropdowns (AUTO-LOAD):', matchedResult);
+        function createInsuranceDropdowns(insurances) {
+            console.log('🎨 Creating insurance dropdowns (AUTO-LOAD):', insurances);
             
-            const insuranceNumbers = matchedResult.insurance_numbers || [];
+            // Verify insurance input fields exist in DOM
+            const insuranceCompanyField = document.querySelector('input[name="insurance_company"]');
+            const claimNumberField = document.querySelector('input[name="sf_claim_number"]');
+            const policyNumberField = document.querySelector('input[name="sf_policy_number"]');
             
-            if (insuranceNumbers.length === 0) {
-                console.log('⚠️ No insurance numbers to create dropdowns');
+            console.log('🔍 Insurance field check:');
+            console.log('   insurance_company exists?', !!insuranceCompanyField);
+            console.log('   sf_claim_number exists?', !!claimNumberField);
+            console.log('   sf_policy_number exists?', !!policyNumberField);
+            
+            if (!insuranceCompanyField && !claimNumberField && !policyNumberField) {
+                console.error('❌ CRITICAL: No insurance fields found in DOM! Cannot create dropdowns.');
                 return;
             }
             
-            // Group insurance data by InsuranceId (EXACT same as manual - line 2157)
+            if (!insurances || insurances.length === 0) {
+                console.log('⚠️ No insurance records to create dropdowns');
+                return;
+            }
+            
+            // Group by InsuranceId - EXACTLY same as manual click handler (line 2607-2628)
             const insuranceRecordsMap = new Map();
             
-            insuranceNumbers.forEach(ins => {
-                const insuranceId = ins.insurance_id;
-                const companyName = ins.insurance_company_name;
-                const companyId = ins.insurance_company_id;
-                
+            insurances.forEach(ins => {
+                const insuranceId = ins.InsuranceId;
                 if (!insuranceRecordsMap.has(insuranceId)) {
                     insuranceRecordsMap.set(insuranceId, {
                         insurance_id: insuranceId,
-                        company_name: companyName,
-                        company_id: companyId,
-                        claim_number: null,
-                        policy_number: null
+                        company_name: ins.InsuranceCompanyName,
+                        company_id: ins.InsuranceCompanyId,
+                        claim_number: ins.ClaimNumber,
+                        policy_number: ins.PolicyNumber
                     });
-                }
-                
-                const record = insuranceRecordsMap.get(insuranceId);
-                if (ins.type === 'claim' && ins.number) {
-                    record.claim_number = ins.number;
-                } else if (ins.type === 'policy' && ins.number) {
-                    record.policy_number = ins.number;
                 }
             });
             
@@ -4153,6 +4156,15 @@
             
             // Store globally (same as manual - line 2191)
             window.currentInsuranceRecords = insuranceRecords;
+            
+            // Verify addInsuranceDropdown function is available
+            if (typeof window.addInsuranceDropdown !== 'function') {
+                console.error('❌ CRITICAL: addInsuranceDropdown function not found!');
+                console.error('   Make sure the function is defined before calling createInsuranceDropdowns');
+                return;
+            }
+            
+            console.log('✅ addInsuranceDropdown function is available');
             
             // 🔥 Use the globally-defined addInsuranceDropdown function
             // Now call it EXACTLY like manual search does (lines 2482-2530)
@@ -4264,16 +4276,43 @@
                     if (exactMatch) {
                         console.log('✅ EXACT MATCH FOUND by matter_name!', exactMatch);
                         
-                        // Trigger insurance dropdowns by simulating user selection
-                        // This calls the EXISTING click handler which creates the dropdowns
-                        const insuranceNumbers = exactMatch.insurance_numbers || [];
+                        // 🔥 API uses "Insurance" (SINGULAR) NOT "insurance_numbers"!
+                        // Same structure as manual click (line 2090)
+                        const insurances = exactMatch.Insurance || [];
                         
-                        if (insuranceNumbers.length > 0) {
-                            console.log(`💼 Found ${insuranceNumbers.length} insurance records - creating dropdowns!`);
+                        console.log('🔍 Extracting insurance data:');
+                        console.log('   exactMatch structure:', Object.keys(exactMatch));
+                        console.log('   Insurance field exists?', !!exactMatch.Insurance);
+                        console.log('   Insurance count:', insurances.length);
+                        console.log('   Full Insurance data:', insurances);
+                        
+                        if (insurances.length > 0) {
+                            console.log(`💼 Found ${insurances.length} insurance records - creating dropdowns!`);
+                            console.log('📋 Insurance data:', insurances);
                             
-                            // Pass the entire matched result to trigger dropdown creation
-                            createInsuranceDropdowns(exactMatch);
-                            console.log('✅ Insurance dropdowns triggered via simulated click!');
+                            // Pass insurances array to dropdown creation function
+                            // Same structure as manual click handler (line 2450-2460)
+                            createInsuranceDropdowns(insurances);
+                            
+                            // Verify dropdowns were created
+                            setTimeout(() => {
+                                const companyDropdown = document.querySelector('input[name="insurance_company"] + .dropdown-menu');
+                                const claimDropdown = document.querySelector('input[name="sf_claim_number"] + .dropdown-menu');
+                                const policyDropdown = document.querySelector('input[name="sf_policy_number"] + .dropdown-menu');
+                                
+                                console.log('🔍 DROPDOWN VERIFICATION:');
+                                console.log('   Company dropdown exists?', !!companyDropdown);
+                                console.log('   Claim dropdown exists?', !!claimDropdown);
+                                console.log('   Policy dropdown exists?', !!policyDropdown);
+                                
+                                if (companyDropdown || claimDropdown || policyDropdown) {
+                                    console.log('✅ SUCCESS! Insurance dropdowns are visible and ready!');
+                                } else {
+                                    console.warn('⚠️ WARNING: Dropdowns created but not visible in DOM');
+                                }
+                            }, 100);
+                            
+                            console.log('✅ Insurance dropdowns triggered via auto-search!');
                         } else {
                             console.log('ℹ️ No insurance records found for this matter');
                         }
