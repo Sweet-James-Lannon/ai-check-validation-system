@@ -15,6 +15,9 @@ from utils.decorators import login_required
 from utils.logger import get_api_logger
 from services.supabase_service import supabase_service
 from datetime import datetime
+import io
+from PyPDF2 import PdfMerger
+import requests
 
 # =============================================================================
 # CONFIGURATION & SETUP
@@ -22,6 +25,114 @@ from datetime import datetime
 
 api_logger = get_api_logger()
 api_bp = Blueprint("api", __name__)
+
+# =============================================================================
+# PDF MERGING HELPER - FOR SALESFORCE INTEGRATION
+# =============================================================================
+
+def merge_batch_pdfs_and_upload(check_id, batch_images):
+    """
+    Merge all PDFs from batch_images into a single PDF and upload to Supabase Storage.
+    Returns the merged PDF URL for Salesforce integration.
+    
+    This is critical for Salesforce - Jai's function expects a single merged PDF
+    in merged_pdf_url, not individual split pages in batch_images.
+    """
+    try:
+        if not batch_images or len(batch_images) == 0:
+            api_logger.warning(f"⚠️ No batch images to merge for check {check_id}")
+            return None
+        
+        api_logger.info(f"🔄 MERGE FUNCTION CALLED: Merging {len(batch_images)} PDFs for check {check_id}")
+        
+        # If there's only 1 PDF, just copy it as the "merged" PDF
+        if len(batch_images) == 1:
+            api_logger.info(f"📄 Only 1 PDF found - will copy it as merged PDF")
+            pdf_url = batch_images[0].get('url') or batch_images[0].get('primary_url') or batch_images[0].get('download_url')
+            
+            if pdf_url:
+                api_logger.info(f"✅ Single PDF URL will be used as merged_pdf_url: {pdf_url}")
+                return pdf_url
+            else:
+                api_logger.error(f"❌ No URL found in single batch image: {batch_images[0]}")
+                return None
+        
+        api_logger.info(f"🔄 Multiple PDFs detected - proceeding with merge operation")
+        
+        # Create PDF merger
+        merger = PdfMerger()
+        
+        # Download and add each PDF to the merger
+        for idx, img_info in enumerate(batch_images):
+            pdf_url = img_info.get('url') or img_info.get('primary_url') or img_info.get('download_url')
+            
+            if not pdf_url:
+                api_logger.warning(f"No URL found for batch image {idx} in check {check_id}")
+                continue
+            
+            try:
+                # Download PDF from Supabase Storage
+                if '/check-documents/' in pdf_url:
+                    storage_path = pdf_url.split('/check-documents/')[1]
+                else:
+                    api_logger.warning(f"Invalid PDF URL format for check {check_id}, image {idx}: {pdf_url}")
+                    continue
+                
+                api_logger.info(f"  Downloading PDF {idx + 1}/{len(batch_images)}: {storage_path}")
+                pdf_data = supabase_service.client.storage.from_('check-documents').download(storage_path)
+                
+                if not pdf_data:
+                    api_logger.warning(f"No data returned for {storage_path}")
+                    continue
+                
+                # Add to merger
+                pdf_stream = io.BytesIO(pdf_data)
+                merger.append(pdf_stream)
+                api_logger.info(f"  ✅ Added PDF {idx + 1} to merger")
+                
+            except Exception as e:
+                api_logger.error(f"Error downloading/merging PDF {idx} for check {check_id}: {str(e)}")
+                continue
+        
+        # Write merged PDF to bytes
+        merged_pdf_bytes = io.BytesIO()
+        merger.write(merged_pdf_bytes)
+        merger.close()
+        merged_pdf_bytes.seek(0)
+        
+        # Generate filename for merged PDF
+        merged_filename = f"merged_{check_id}.pdf"
+        
+        # Upload merged PDF to Supabase Storage
+        # Use the same batch folder as the first split PDF
+        first_pdf_url = batch_images[0].get('url', '')
+        if '/check-documents/' in first_pdf_url:
+            batch_folder = first_pdf_url.split('/check-documents/')[1].split('/')[0]
+            storage_path = f"{batch_folder}/{merged_filename}"
+        else:
+            # Fallback to root if we can't determine batch folder
+            storage_path = merged_filename
+        
+        api_logger.info(f"📤 Uploading merged PDF to: {storage_path}")
+        
+        # Upload to Supabase Storage
+        upload_response = supabase_service.client.storage.from_('check-documents').upload(
+            storage_path,
+            merged_pdf_bytes.getvalue(),
+            file_options={"content-type": "application/pdf", "upsert": "true"}
+        )
+        
+        # Get public URL
+        merged_url = supabase_service.client.storage.from_('check-documents').get_public_url(storage_path)
+        
+        api_logger.info(f"✅ Merged PDF uploaded successfully: {merged_url}")
+        return merged_url
+        
+    except Exception as e:
+        api_logger.error(f"Error merging PDFs for check {check_id}: {str(e)}")
+        import traceback
+        api_logger.error(f"Full traceback:\n{traceback.format_exc()}")
+        return None
 
 # =============================================================================
 # CHECK VALIDATION API ENDPOINTS
@@ -197,6 +308,36 @@ def approve_check(check_id):
                 else:
                     update_data[db_field] = str(value).strip() if value else None
         
+        # 🔥 MERGE PDFs FOR SALESFORCE - Jai's function needs merged_pdf_url, not batch_images
+        # Get current check to access batch_images
+        api_logger.info(f"🔍 STARTING PDF MERGE PROCESS for check {check_id}")
+        check_response = supabase_service.client.table('checks').select('batch_images').eq('id', check_id).single().execute()
+        
+        api_logger.info(f"🔍 check_response.data: {check_response.data}")
+        
+        if check_response.data and check_response.data.get('batch_images'):
+            batch_images = check_response.data.get('batch_images')
+            api_logger.info(f"📋 Found {len(batch_images)} images to merge for check {check_id}")
+            api_logger.info(f"📋 batch_images content: {batch_images}")
+            
+            # Merge PDFs and upload
+            api_logger.info(f"🔄 CALLING merge_batch_pdfs_and_upload()...")
+            merged_pdf_url = merge_batch_pdfs_and_upload(check_id, batch_images)
+            api_logger.info(f"🔄 merge_batch_pdfs_and_upload() RETURNED: {merged_pdf_url}")
+            
+            if merged_pdf_url:
+                api_logger.info(f"✅ Merged PDF URL generated: {merged_pdf_url}")
+                update_data['merged_pdf_url'] = merged_pdf_url
+                api_logger.info(f"🔧 Added merged_pdf_url to update_data. Will be saved to database.")
+                api_logger.info(f"🔧 Current update_data keys: {list(update_data.keys())}")
+            else:
+                api_logger.warning(f"⚠️ PDF merge RETURNED NULL for check {check_id} - continuing with approval")
+                api_logger.warning(f"⚠️ merged_pdf_url will NOT be set in database")
+        else:
+            api_logger.warning(f"⚠️ No batch_images found for check {check_id} - skipping PDF merge")
+            api_logger.warning(f"⚠️ check_response.data: {check_response.data}")
+            api_logger.warning(f"⚠️ merged_pdf_url will NOT be set in database")
+        
         # Add approval metadata - THIS TRIGGERS THE EDGE FUNCTION
         approval_timestamp = datetime.utcnow().isoformat()
         update_data.update({
@@ -210,10 +351,16 @@ def approve_check(check_id):
         })
         
         # Update in Supabase
+        api_logger.info(f"📝 Updating check {check_id} with {len(update_data)} fields")
+        api_logger.info(f"📝 merged_pdf_url in update_data: {'merged_pdf_url' in update_data}")
+        
         response = supabase_service.client.table('checks').update(update_data).eq('id', check_id).execute()
         
         if response.data and len(response.data) > 0:
+            saved_merged_url = response.data[0].get('merged_pdf_url')
             api_logger.info(f"Check {check_id} APPROVED by {user.get('preferred_username')} - triggering Salesforce protocol")
+            api_logger.info(f"✅ merged_pdf_url SAVED to database: {saved_merged_url if saved_merged_url else 'NOT SET'}")
+            
             return jsonify({
                 "status": "success", 
                 "message": "Check approved successfully - Salesforce protocol initiated",
