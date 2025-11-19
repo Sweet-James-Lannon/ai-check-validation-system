@@ -349,6 +349,8 @@ def approve_check(check_id):
             'reviewed_by': user.get('preferred_username', 'unknown'),
             'reviewed_at': approval_timestamp
         })
+
+        
         
         # Update in Supabase
         api_logger.info(f"📝 Updating check {check_id} with {len(update_data)} fields")
