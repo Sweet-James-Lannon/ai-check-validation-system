@@ -81,7 +81,6 @@ app.config.update(
 # ENVIRONMENT DETECTION & CONFIGURATION
 # =============================================================================
 
-
 # Update your configuration variables
 is_production = config.IS_PRODUCTION
 
@@ -141,8 +140,6 @@ def debug_routes():
             'rule': rule.rule
         })
     return {"routes": routes}
-
-
 
 # =============================================================================
 # APPLICATION STARTUP & DEVELOPMENT SERVER
