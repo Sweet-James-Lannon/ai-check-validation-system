@@ -393,9 +393,9 @@ def undo_approval(check_id):
 
         api_logger.info(f"Undoing approval for check {check_id} by {user.get('preferred_username')}")
 
-        # Get the current check data
+        # Get the current check data (including merged_pdf_url so it carries over to duplicate)
         current_check_response = supabase_service.client.table('checks')\
-            .select('id,file_name,batch_id,batch_id_fk,provider_name,insurance_company,claim_number,policy_number,amount,check_number,check_issue_date,pay_to,routing_number,account_number,memo,matter_name,matter_id,matter_url,case_type,delivery_service,tracking_number,claimant,insured_name,status,confidence_score,flags,validated_at,validated_by,reviewed_at,reviewed_by,created_at,updated_at,batch_images,page_count,check_type,n8n_sync_enabled,image_data,image_mime_type')\
+            .select('id,file_name,batch_id,batch_id_fk,provider_name,insurance_company,claim_number,policy_number,amount,check_number,check_issue_date,pay_to,routing_number,account_number,memo,matter_name,matter_id,matter_url,case_type,delivery_service,tracking_number,claimant,insured_name,status,confidence_score,flags,validated_at,validated_by,reviewed_at,reviewed_by,created_at,updated_at,batch_images,page_count,check_type,n8n_sync_enabled,image_data,image_mime_type,merged_pdf_url')\
             .eq('id', check_id)\
             .single()\
             .execute()
