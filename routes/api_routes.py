@@ -26,9 +26,10 @@ import requests
 api_logger = get_api_logger()
 api_bp = Blueprint("api", __name__)
 
-# =============================================================================
-# PDF MERGING HELPER - FOR SALESFORCE INTEGRATION
-# =============================================================================
+
+#░█▀█░█▀▄░█▀▀░░░█▄█░█▀▀░█▀▄░█▀▀░█▀▀░█▀▄░░░█░█░█▀▀░█░░░█▀█░█▀▀░█▀▄
+#░█▀▀░█░█░█▀▀░░░█░█░█▀▀░█▀▄░█░█░█▀▀░█▀▄░░░█▀█░█▀▀░█░░░█▀▀░█▀▀░█▀▄
+#░▀░░░▀▀░░▀░░░░░▀░▀░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀░░░▀░▀░▀▀▀░▀▀▀░▀░░░▀▀▀░▀░▀
 
 def merge_batch_pdfs_and_upload(check_id, batch_images):
     """
@@ -138,12 +139,16 @@ def merge_batch_pdfs_and_upload(check_id, batch_images):
 # CHECK VALIDATION API ENDPOINTS
 # =============================================================================
 
+#░█▀▀░█▀█░█░█░█▀▀░░░█▀▀░█░█░█▀▀░█▀▀░█░█
+#░▀▀█░█▀█░▀▄▀░█▀▀░░░█░░░█▀█░█▀▀░█░░░█▀▄
+#░▀▀▀░▀░▀░░▀░░▀▀▀░░░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀
+
 @api_bp.route("/api/checks/save/<check_id>", methods=["POST"])
 @login_required
 def save_check(check_id):
     """
     Save check modifications without triggering validation
-    Updates Supabase record but does NOT set validated_at timestam p
+    Updates Supabase record but does NOT set validated_at timestamp
     """
     try:
         user = session.get("user")
@@ -225,6 +230,10 @@ def save_check(check_id):
     except Exception as e:
         api_logger.error(f"Error saving check {check_id}: {str(e)}")
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
+
+#░█▀█░█▀█░█▀█░█▀▄░█▀█░█░█░█▀▀░░░█▀▀░█░█░█▀▀░█▀▀░█░█
+#░█▀█░█▀▀░█▀▀░█▀▄░█░█░▀▄▀░█▀▀░░░█░░░█▀█░█▀▀░█░░░█▀▄
+#░▀░▀░▀░░░▀░░░▀░▀░▀▀▀░░▀░░▀▀▀░░░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀
 
 @api_bp.route("/api/checks/approve/<check_id>", methods=["POST"])
 @login_required
@@ -379,6 +388,10 @@ def approve_check(check_id):
         api_logger.error(f"Error approving check {check_id}: {str(e)}")
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
 
+#░█░█░█▀█░█▀▄░█▀█░░░█▀█░█▀█░█▀█░█▀▄░█▀█░█░█░█▀█░█░░
+#░█░█░█░█░█░█░█░█░░░█▀█░█▀▀░█▀▀░█▀▄░█░█░▀▄▀░█▀█░█░░
+#░▀▀▀░▀░▀░▀▀░░▀▀▀░░░▀░▀░▀░░░▀░░░▀░▀░▀▀▀░░▀░░▀░▀░▀▀▀
+
 @api_bp.route("/api/checks/undo-approval/<check_id>", methods=["POST"])
 @login_required
 def undo_approval(check_id):
@@ -446,6 +459,10 @@ def undo_approval(check_id):
         import traceback
         api_logger.error(traceback.format_exc())
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
+
+#░█▀▀░█▀█░█░░░▀█▀░▀█▀░░░█▀▀░█░█░█▀▀░█▀▀░█░█
+#░▀▀█░█▀▀░█░░░░█░░░█░░░░█░░░█▀█░█▀▀░█░░░█▀▄
+#░▀▀▀░▀░░░▀▀▀░▀▀▀░░▀░░░░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀
 
 @api_bp.route("/api/checks/split/<check_id>", methods=["POST"])
 @login_required
@@ -755,6 +772,10 @@ def split_check(check_id):
         api_logger.error(traceback.format_exc())
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
 
+#░█▀▄░█▀▀░█░░░█▀▀░▀█▀░█▀▀░░░█▀▀░█░█░█▀▀░█▀▀░█░█
+#░█░█░█▀▀░█░░░█▀▀░░█░░█▀▀░░░█░░░█▀█░█▀▀░█░░░█▀▄
+#░▀▀░░▀▀▀░▀▀▀░▀▀▀░░▀░░▀▀▀░░░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀
+
 @api_bp.route("/api/checks/delete/<check_id>", methods=["DELETE"])
 @login_required
 def delete_check(check_id):
@@ -791,6 +812,10 @@ def delete_check(check_id):
         import traceback
         api_logger.error(traceback.format_exc())
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
+
+#░█▀▀░█░░░█▀█░█▀▀░░░█▀█░█▀▀░█▀▀░█▀▄░█▀▀░░░█▀▄░█▀▀░█░█░▀█▀░█▀▀░█░█
+#░█▀▀░█░░░█▀█░█░█░░░█░█░█▀▀░█▀▀░█░█░▀▀█░░░█▀▄░█▀▀░▀▄▀░░█░░█▀▀░█▄█
+#░▀░░░▀▀▀░▀░▀░▀▀▀░░░▀░▀░▀▀▀░▀▀▀░▀▀░░▀▀▀░░░▀░▀░▀▀▀░░▀░░▀▀▀░▀▀▀░▀░▀
 
 @api_bp.route("/api/checks/needs-review/<check_id>", methods=["POST"])
 @login_required
@@ -844,6 +869,10 @@ def flag_needs_review(check_id):
         api_logger.error(f"Error flagging check {check_id} for review: {str(e)}")
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
 
+#░█▀▀░█▀▀░▀█▀░░░█▀▀░█░█░█▀▀░█▀▀░█░█░░░█▀▄░█▀▀░▀█▀░█▀█░▀█▀░█░░░█▀▀
+#░█░█░█▀▀░░█░░░░█░░░█▀█░█▀▀░█░░░█▀▄░░░█░█░█▀▀░░█░░█▀█░░█░░█░░░▀▀█
+#░▀▀▀░▀▀▀░░▀░░░░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀░░░▀▀░░▀▀▀░░▀░░▀░▀░▀▀▀░▀▀▀░▀▀▀
+
 @api_bp.route("/api/checks/<check_id>", methods=["GET"])
 @login_required
 def get_check_details(check_id):
@@ -866,6 +895,10 @@ def get_check_details(check_id):
     except Exception as e:
         api_logger.error(f"Error getting check {check_id}: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+#░█▀▀░█░░░█▀█░▀█▀░█▄█░█▀█░█▀█░▀█▀░█▀▀░░░█░░░▀█▀░█▀▀░▀█▀
+#░█░░░█░░░█▀█░░█░░█░█░█▀█░█░█░░█░░▀▀█░░░█░░░░█░░▀▀█░░█░
+#░▀▀▀░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░▀░░▀░░▀▀▀░░░▀▀▀░▀▀▀░▀▀▀░░▀░
 
 @api_bp.route("/api/claimants/list", methods=["GET"])
 @login_required
@@ -912,6 +945,10 @@ def get_claimants_list():
     except Exception as e:
         api_logger.error(f"Error fetching claimants list: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+#░█▀▀░█▀█░█░░░█▀▀░█▀▀░█▀▀░█▀█░█▀▄░█▀▀░█▀▀░░░█▀▀░█░░░█▀█░▀█▀░█▄█░█▀█░█▀█░▀█▀░░░█░░░█▀█░█▀█░█░█░█░█░█▀█
+#░▀▀█░█▀█░█░░░█▀▀░▀▀█░█▀▀░█░█░█▀▄░█░░░█▀▀░░░█░░░█░░░█▀█░░█░░█░█░█▀█░█░█░░█░░░░█░░░█░█░█░█░█▀▄░█░█░█▀▀
+#░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀▀▀░▀░░░▀▀▀░▀░▀░▀▀▀░▀▀▀░░░▀▀▀░▀▀▀░▀░▀░▀▀▀░▀░▀░▀░▀░▀░▀░░▀░░░░▀▀▀░▀▀▀░▀▀▀░▀░▀░▀▀▀░▀░░
 
 @api_bp.route("/api/salesforce/claimant-lookup", methods=["POST"])
 @login_required
@@ -1080,6 +1117,10 @@ def salesforce_claimant_lookup():
             "message": str(e)
         }), 500
 
+#░█▀▀░█▀█░█░░░█▀▀░█▀▀░█▀▀░█▀█░█▀▄░█▀▀░█▀▀░░░█▀▀░█▀▀░█▀█░█▀▄░█▀▀░█░█
+#░▀▀█░█▀█░█░░░█▀▀░▀▀█░█▀▀░█░█░█▀▄░█░░░█▀▀░░░▀▀█░█▀▀░█▀█░█▀▄░█░░░█▀█
+#░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀▀▀░▀░░░▀▀▀░▀░▀░▀▀▀░▀▀▀░░░▀▀▀░▀▀▀░▀░▀░▀░▀░▀▀▀░▀░▀
+
 @api_bp.route("/api/salesforce/search", methods=["GET"])
 @login_required
 def salesforce_search_claimants():
@@ -1214,6 +1255,10 @@ def salesforce_search_claimants():
             "message": str(e)
         }), 500
 
+#░█▀▀░█░█░█▀▀░█▀▀░█░█░░░█▀▀░▀█▀░█▀█░▀█▀░█▀▀
+#░█░░░█▀█░█▀▀░█░░░█▀▄░░░▀▀█░░█░░█▀█░░█░░▀▀█
+#░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀░░░▀▀▀░░▀░░▀░▀░░▀░░▀▀▀
+
 @api_bp.route("/api/checks/stats", methods=["GET"])
 @login_required
 
@@ -1258,6 +1303,10 @@ def get_check_stats():
         api_logger.error(f"Error getting check stats: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+#░█▀▄░█▀█░▀█▀░█▀▀░█░█░░░█▀▀░█░█░█▀▀░█▀▀░█░█░█▀▀
+#░█▀▄░█▀█░░█░░█░░░█▀█░░░█░░░█▀█░█▀▀░█░░░█▀▄░▀▀█
+#░▀▀░░▀░▀░░▀░░▀▀▀░▀░▀░░░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀░▀▀▀
+
 @api_bp.route("/api/batches/<batch_id>/checks", methods=["GET"])
 def get_batch_checks(batch_id):
     """Get all checks for a specific batch - AJAX endpoint (no auth required, page is already protected)"""
@@ -1291,6 +1340,10 @@ def get_batch_checks(batch_id):
         api_logger.error(f"Error getting batch checks: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+#░█▀▀░█░█░█▀▀░█▀▀░█░█░░░█▀█░█▀█░█▀▀░█▀▀░█▀▀
+#░█░░░█▀█░█▀▀░█░░░█▀▄░░░█▀▀░█▀█░█░█░█▀▀░▀▀█
+#░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀░░░▀░░░▀░▀░▀▀▀░▀▀▀░▀▀▀
+
 @api_bp.route("/api/checks/<check_id>/pages", methods=["GET"])
 @login_required
 def get_check_pages(check_id):
@@ -1320,6 +1373,10 @@ def get_check_pages(check_id):
 # =============================================================================
 # n8n for pink page detection API ENDPOINTS
 # =============================================================================
+
+#░█▀█░█▀▄░█▀█░░░█▀▀░█▀█░█░░░▀█▀░▀█▀░░░█▀█░█▀█░█▀█░█░░░█░█░█▀▀░▀█▀░█▀▀
+#░█░█░▀▀█░█░█░░░▀▀█░█▀▀░█░░░░█░░░█░░░░█▀█░█░█░█▀█░█░░░░█░░▀▀█░░█░░▀▀█
+#░▀░▀░▀▀░░▀░▀░░░▀▀▀░▀░░░▀▀▀░▀▀▀░░▀░░░░▀░▀░▀░▀░▀░▀░▀▀▀░░▀░░▀▀▀░▀▀▀░▀▀▀
 
 @api_bp.route("/api/batch/split-analysis", methods=["POST"])
 def analyze_batch_splits():
@@ -1436,6 +1493,10 @@ def analyze_batch_splits():
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
+#░█▀█░█▀▄░█▀█░░░█▀▀░█▀█░█░░░▀█▀░▀█▀░░░█▀█░█▀█░█▀▀░█▀▀░█▀▀
+#░█░█░▀▀█░█░█░░░▀▀█░█▀▀░█░░░░█░░░█░░░░█▀▀░█▀█░█░█░█▀▀░▀▀█
+#░▀░▀░▀▀░░▀░▀░░░▀▀▀░▀░░░▀▀▀░▀▀▀░░▀░░░░▀░░░▀░▀░▀▀▀░▀▀▀░▀▀▀
+
 @api_bp.route("/api/batch/split-pages", methods=["POST"]) 
 def split_pages():
     """
@@ -1523,6 +1584,10 @@ def split_pages():
         import traceback
         api_logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
+
+#░█▀█░█▀▄░█▀█░░░█▀▄░█▀█░▀█▀░█▀▀░█░█░░░▀█▀░█▀█░█▀▀░█▀▀░█▀▀░▀█▀
+#░█░█░▀▀█░█░█░░░█▀▄░█▀█░░█░░█░░░█▀█░░░░█░░█░█░█░█░█▀▀░▀▀█░░█░
+#░▀░▀░▀▀░░▀░▀░░░▀▀░░▀░▀░░▀░░▀▀▀░▀░▀░░░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀▀▀░░▀░
 
 @api_bp.route("/api/batch/ingest", methods=["POST"])
 def ingest_batch():
@@ -1634,6 +1699,10 @@ def ingest_batch():
 # =============================================================================
 # SYSTEM HEALTH API ENDPOINTS
 # =============================================================================
+
+#░█░█░█▀▀░█▀█░█░░░▀█▀░█░█░░░█▀▀░█░█░█▀▀░█▀▀░█░█
+#░█▀█░█▀▀░█▀█░█░░░░█░░█▀█░░░█░░░█▀█░█▀▀░█░░░█▀▄
+#░▀░▀░▀▀▀░▀░▀░▀▀▀░░▀░░▀░▀░░░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░▀
 
 @api_bp.route("/api/health", methods=["GET"])
 def api_health():
