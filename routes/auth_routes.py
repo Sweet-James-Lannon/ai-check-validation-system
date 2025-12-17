@@ -40,6 +40,10 @@ SCOPE = config.AZURE_SCOPE
 # AUTHENTICATION FLOW ROUTES
 # =============================================================================
 
+#░█░░░█▀█░█▀▀░▀█▀░█▀█
+#░█░░░█░█░█░█░░█░░█░█
+#░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀░▀
+
 @auth_bp.route("/login")
 def login():
     session["state"] = str(uuid.uuid4())
@@ -52,6 +56,10 @@ def login():
         redirect_uri=config.AUTH_REDIRECT_URI
     )
     return redirect(auth_url)
+
+#░█▀█░█░█░▀█▀░█░█░█▀█░█▀▄░▀█▀░▀▀█░█▀▀░█▀▄
+#░█▀█░█░█░░█░░█▀█░█░█░█▀▄░░█░░▄▀░░█▀▀░█░█
+#░▀░▀░▀▀▀░░▀░░▀░▀░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀▀▀░▀▀░
 
 @auth_bp.route(REDIRECT_PATH)
 def authorized():
@@ -83,6 +91,10 @@ def logout():
     return redirect(
         f"{AUTHORITY}/oauth2/v2.0/logout?post_logout_redirect_uri={url_for('dashboard.dashboard_home', _external=True)}"
     )
+
+#░█░░░█▀█░█▀▀░█▀█░█░█░▀█▀
+#░█░░░█░█░█░█░█░█░█░█░░█░
+#░▀▀▀░▀▀▀░▀▀▀░▀▀▀░▀▀▀░░▀░
 
 # =============================================================================
 # END OF FILE

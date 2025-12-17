@@ -18,7 +18,7 @@ Deployment Targets:
 - Development: Local Flask server
 - Production: Azure Web App with GitHub Actions CI/CD
 
-Author: Sweet James Development Team
+Author: Sweet James Development Teamsdedddrdfdefdefrfreedfrtd
 Last Updated: September 2025
 =============================================================================
 """
@@ -34,7 +34,6 @@ from config import Config
 from routes.auth_routes import auth_bp
 from routes.dashboard_routes import dashboard_bp
 from routes.debug_routes import debug_bp
-from routes.automation_routes import automation_bp
 from routes.supabase_debug_routes import supabase_debug_bp
 from routes.direct_test_routes import direct_test_bp
 from routes.api_routes import api_bp
@@ -92,7 +91,6 @@ is_production = config.IS_PRODUCTION
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(debug_bp)
-app.register_blueprint(automation_bp)
 app.register_blueprint(supabase_debug_bp)
 app.register_blueprint(direct_test_bp)
 app.register_blueprint(api_bp)
