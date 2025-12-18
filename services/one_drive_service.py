@@ -242,6 +242,55 @@ class OneDriveService:
         
         return results
     
+
+    def upload_files_parallel_multi_folder(self,files: List[Dict[str, Any]],max_workers: int = 15) -> Dict[str, Any]:
+        '''
+        Upload files to MULTIPLE folders in parallel.
+        
+        Args:
+            files: List of dicts with 'filename', 'content', and 'parent_id'
+            max_workers: Number of parallel upload threads
+            
+        Returns:
+            Dict with 'successful' and 'failed' lists
+        '''
+        results = {
+            'successful': [],
+            'failed': []
+        }
+        
+        def upload_one(file_info):
+            try:
+                result = self.upload_file_with_retry(
+                    file_info['parent_id'],
+                    file_info['filename'],
+                    file_info['content']
+                )
+                return {'filename': file_info['filename'], 'success': True}
+            except Exception as e:
+                return {'filename': file_info['filename'], 'success': False, 'error': str(e)}
+        
+        logger.info(f"Uploading {len(files)} files across multiple folders with {max_workers} workers")
+        start_time = time.time()
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(upload_one, f): f for f in files}
+            
+            for future in as_completed(futures):
+                result = future.result()
+                if result['success']:
+                    results['successful'].append(result['filename'])
+                else:
+                    results['failed'].append({
+                        'filename': result['filename'],
+                        'error': result['error']
+                    })
+        
+        elapsed = time.time() - start_time
+        logger.info(f"Upload complete: {len(results['successful'])} files in {elapsed:.1f}s")
+        
+        return results
+    
     # =========================================================================
     # FILE MANAGEMENT
     # =========================================================================
