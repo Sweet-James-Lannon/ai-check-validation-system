@@ -334,23 +334,21 @@ def process_batch():
             'failed': []
         }
         
-        # Group pages by subfolder for parallel upload
-        for folder_name, subfolder_id in subfolder_ids.items():
-            folder_pages = [p for p in all_pages if p['batch_folder'] == folder_name]
-            
-            files_to_upload = [
-                {'filename': p['filename'], 'content': p['content']}
-                for p in folder_pages
-            ]
-            
-            results = onedrive.upload_files_parallel(
-                subfolder_id,
-                files_to_upload,
-                max_workers=10
-            )
-            
-            upload_results['successful'].extend(results['successful'])
-            upload_results['failed'].extend(results['failed'])
+        # Prepare ALL files with their target folder IDs
+        all_files_to_upload = [
+            {
+                'filename': p['filename'],
+                'content': p['content'],
+                'parent_id': subfolder_ids[p['batch_folder']]
+            }
+            for p in all_pages
+        ]
+        
+        # Upload EVERYTHING at once
+        upload_results = onedrive.upload_files_parallel_multi_folder(
+            all_files_to_upload,
+            max_workers=15
+        )
         
         # ---------------------------------------------------------------------
         # 9. RETURN RESULTS
