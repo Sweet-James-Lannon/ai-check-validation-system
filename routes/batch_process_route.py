@@ -346,7 +346,7 @@ def process_batch():
             results = onedrive.upload_files_parallel(
                 subfolder_id,
                 files_to_upload,
-                max_workers=5
+                max_workers=10
             )
             
             upload_results['successful'].extend(results['successful'])
