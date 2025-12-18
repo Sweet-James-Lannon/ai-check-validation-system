@@ -40,7 +40,7 @@ def get_cached_pdf(cache_key):
             api_logger.info(f"⏰ PDF cache EXPIRED: {cache_key}")
     return None
 
-def cache_pdf(cache_key, pdf_data):
+def cache_pdf(cache_key, pdf_data):       
     """Cache PDF data with timestamp"""
     pdf_cache[cache_key] = (pdf_data, time.time())
     api_logger.info(f"💾 PDF cached: {cache_key} ({len(pdf_data)} bytes)")

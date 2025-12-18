@@ -18,7 +18,7 @@ Deployment Targets:
 - Development: Local Flask server
 - Production: Azure Web App with GitHub Actions CI/CD
 
-Author: Sweet James Development Teamsdedddrdfdefdefrfreedfrtd
+Author: Sweet James Development Teams
 Last Updated: September 2025
 =============================================================================
 """
@@ -35,6 +35,7 @@ from routes.auth_routes import auth_bp
 from routes.dashboard_routes import dashboard_bp
 from routes.status_routes import status_bp 
 from routes.api_routes import api_bp
+from routes.batch_process_route import batch_process_bp
 
 # === AI Service Integration - With Error Handling ===
 
@@ -72,7 +73,7 @@ app.config.update(
     SESSION_FILE_THRESHOLD=config.SESSION_FILE_THRESHOLD,
     SESSION_FILE_MODE=config.SESSION_FILE_MODE,
     SESSION_SERIALIZATION_FORMAT=config.SESSION_SERIALIZATION_FORMAT,
-)
+) 
 
 # =============================================================================
 # ENVIRONMENT DETECTION & CONFIGURATION
@@ -90,6 +91,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(status_bp) 
 app.register_blueprint(api_bp)
+app.register_blueprint(batch_process_bp)
 
 # Only register chat routes if import was successful
 if CHAT_ROUTES_AVAILABLE:
