@@ -20,7 +20,7 @@ from typing import List, Dict, Any, Tuple
 from concurrent.futures import ThreadPoolExecutor
 
 # Import your existing OneDrive service
-# from services.onedrive_service import OneDriveService
+# from services.one_drive_service import OneDriveService
 
 logger = logging.getLogger(__name__)
 
@@ -234,7 +234,7 @@ def process_batch():
     """
     
     # Import here to avoid circular imports
-    from services.onedrive_service import OneDriveService
+    from services.one_drive_service import OneDriveService
     
     try:
         # ---------------------------------------------------------------------
