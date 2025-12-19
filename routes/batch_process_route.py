@@ -39,7 +39,6 @@ PINK_DETECTION = {
     'coverage_threshold': 0.15  # 15% of page must be pink
 }
 
-
 # =============================================================================
 # PDF ANALYSIS FUNCTIONS
 # =============================================================================
@@ -304,6 +303,12 @@ def process_batch():
         # original_file_id = request.form.get('original_file_id')
         # if original_file_id:
         #     onedrive.move_file(original_file_id, batch_folder_id)
+
+        original_file_id = request.form.get('original_file_id')
+        if original_file_id:
+            logger.info(f"Moving original PDF to batch folder...")
+            onedrive.move_file(original_file_id, batch_folder_id)
+            logger.info(f"Moved original PDF: {original_file_id}")
         
         # ---------------------------------------------------------------------
         # 6. SPLIT PDF INTO PAGES
