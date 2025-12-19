@@ -20,7 +20,7 @@ from typing import List, Dict, Any, Tuple
 from concurrent.futures import ThreadPoolExecutor
 
 # Import your existing OneDrive service
-# from services.one_drive_service import OneDriveService
+# from services.onedrive_service import OneDriveService
 
 logger = logging.getLogger(__name__)
 
@@ -106,12 +106,12 @@ def analyze_pink_separators(pdf_bytes: bytes) -> List[Dict[str, Any]]:
     
     # Build check batches
     batches = []
-    letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    check_number = 1  # Start at 001
     
     if not separator_pages:
         # No separators = entire document is one check
         batches.append({
-            'letter': 'A',
+            'check_num': str(check_number).zfill(3),  # "001"
             'start_page': 0,
             'end_page': total_pages - 1,
             'page_count': total_pages
@@ -120,11 +120,12 @@ def analyze_pink_separators(pdf_bytes: bytes) -> List[Dict[str, Any]]:
         # First batch: page 0 to first separator (exclusive)
         if separator_pages[0] > 0:
             batches.append({
-                'letter': letters[len(batches)],
+                'check_num': str(check_number).zfill(3),
                 'start_page': 0,
                 'end_page': separator_pages[0] - 1,
                 'page_count': separator_pages[0]
             })
+            check_number += 1
         
         # Middle batches: between separators
         for i in range(len(separator_pages)):
@@ -137,11 +138,12 @@ def analyze_pink_separators(pdf_bytes: bytes) -> List[Dict[str, Any]]:
             
             if start <= end:  # Only if there are pages in this batch
                 batches.append({
-                    'letter': letters[len(batches)],
+                    'check_num': str(check_number).zfill(3),
                     'start_page': start,
                     'end_page': end,
                     'page_count': end - start + 1
                 })
+                check_number += 1
     
     doc.close()
     logger.info(f"Found {len(batches)} check batches")
@@ -168,11 +170,11 @@ def split_pdf_into_pages(
     all_pages = []
     
     for batch in batches:
-        letter = batch['letter']
+        check_num = batch['check_num']  # "001", "002", etc.
         start = batch['start_page']
         end = batch['end_page']
         
-        batch_folder = f"Batch {batch_number}-{letter}"
+        batch_folder = f"Batch {batch_number}-{check_num}"
         
         # Create COMPLETE PDF (all pages in this check)
         complete_doc = fitz.open()
@@ -183,9 +185,9 @@ def split_pdf_into_pages(
         complete_doc.close()
         
         all_pages.append({
-            'batch': letter,
+            'batch': check_num,
             'batch_folder': batch_folder,
-            'filename': f"{batch_number}-{letter}-COMPLETE.pdf",
+            'filename': f"{batch_number}-{check_num}-COMPLETE.pdf",
             'page_number': 'COMPLETE',
             'content': complete_bytes
         })
@@ -199,9 +201,9 @@ def split_pdf_into_pages(
             
             relative_page = page_num - start + 1
             all_pages.append({
-                'batch': letter,
+                'batch': check_num,
                 'batch_folder': batch_folder,
-                'filename': f"{batch_number}-{letter}-{relative_page}.pdf",
+                'filename': f"{batch_number}-{check_num}-{relative_page}.pdf",
                 'page_number': relative_page,
                 'content': page_bytes
             })
@@ -232,7 +234,7 @@ def process_batch():
     """
     
     # Import here to avoid circular imports
-    from services.one_drive_service import OneDriveService
+    from services.onedrive_service import OneDriveService
     
     try:
         # ---------------------------------------------------------------------
@@ -334,21 +336,23 @@ def process_batch():
             'failed': []
         }
         
-        # Prepare ALL files with their target folder IDs
-        all_files_to_upload = [
-            {
-                'filename': p['filename'],
-                'content': p['content'],
-                'parent_id': subfolder_ids[p['batch_folder']]
-            }
-            for p in all_pages
-        ]
-        
-        # Upload EVERYTHING at once
-        upload_results = onedrive.upload_files_parallel_multi_folder(
-            all_files_to_upload,
-            max_workers=15
-        )
+        # Group pages by subfolder for parallel upload
+        for folder_name, subfolder_id in subfolder_ids.items():
+            folder_pages = [p for p in all_pages if p['batch_folder'] == folder_name]
+            
+            files_to_upload = [
+                {'filename': p['filename'], 'content': p['content']}
+                for p in folder_pages
+            ]
+            
+            results = onedrive.upload_files_parallel(
+                subfolder_id,
+                files_to_upload,
+                max_workers=5
+            )
+            
+            upload_results['successful'].extend(results['successful'])
+            upload_results['failed'].extend(results['failed'])
         
         # ---------------------------------------------------------------------
         # 9. RETURN RESULTS
@@ -364,9 +368,9 @@ def process_batch():
             'checks_found': len(batches),
             'checks': [
                 {
-                    'letter': b['letter'],
+                    'check_num': b['check_num'],
                     'page_count': b['page_count'],
-                    'folder_id': subfolder_ids.get(f"Batch {batch_number_normalized}-{b['letter']}")
+                    'folder_id': subfolder_ids.get(f"Batch {batch_number_normalized}-{b['check_num']}")
                 }
                 for b in batches
             ],
